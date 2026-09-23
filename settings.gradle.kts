@@ -24,4 +24,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "SmartExpense"
 include(":app")
- 
+include(":core:common")
+include(":core:designsystems")
+include(":core:database")
+include(":core:network")
+include(":domain")
+include(":data")
