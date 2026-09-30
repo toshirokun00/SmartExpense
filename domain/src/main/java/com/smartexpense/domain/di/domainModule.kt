@@ -5,6 +5,7 @@ import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
+import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import org.koin.dsl.module
 
 val domainModule = module {
@@ -14,4 +15,5 @@ val domainModule = module {
     factory { AddExpenseUseCase(get()) }
     factory { UpdateExpenseUseCase(get()) }
     factory { DeleteExpenseUseCase(get()) }
+    factory { ValidateAmountUseCase() }
 }

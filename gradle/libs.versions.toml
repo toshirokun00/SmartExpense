@@ -13,6 +13,8 @@ material = "1.14.0"
 ksp = "2.3.6"
 room = "2.8.3"
 koin = "4.1.1"
+mockk = "1.14.7"
+kotlinxCoroutinesTest = "1.10.2"
 
 navigationCompose = "2.9.7"
 
@@ -50,6 +52,10 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.9.0"}
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 
+
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

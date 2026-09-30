@@ -40,6 +40,10 @@ dependencies {
 
     ksp(libs.androidx.room.compiler)
 
+    testImplementation(libs.mockk)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+
     implementation(project(":domain"))
     implementation(project(":core:database"))
 }

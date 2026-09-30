@@ -50,7 +50,7 @@ dependencies {
     implementation(libs.insert.koin)
     implementation(libs.insert.koin.compose)
 
-
+    implementation(project(":core:common"))
     implementation(project(":domain"))
 
 }

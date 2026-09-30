@@ -8,6 +8,7 @@ import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
+import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import com.smartexpense.feature.expenses.effect.ExpenseEffect
 import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.state.ExpenseFormState
@@ -31,6 +32,7 @@ class ExpenseViewModel(
     private val updateExpenseUseCase: UpdateExpenseUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
     private val getExpenseByIdUseCase: GetExpenseByIdUseCase,
+    private val validateExpenseAmountUseCase: ValidateAmountUseCase
 
     ) : ViewModel() {
 
@@ -110,9 +112,9 @@ class ExpenseViewModel(
     fun addExpense() {
         val state = _formState.value
 
-        val amount = state.amount.toDoubleOrNull()
+        val amount = validateExpenseAmountUseCase(state.amount)
 
-        if (amount == null || amount <= 0 ) {
+        if (amount == null) {
             viewModelScope.launch {
                 _effect.emit(ExpenseEffect.ShowError(
                     message = "Please enter valid amount"
@@ -140,9 +142,9 @@ class ExpenseViewModel(
 
     fun updateExpense(intent: ExpenseIntent.UpdateExpense) {
         val state = _formState.value
-        val amount = state.amount.toDoubleOrNull() ?: return
+        val amount = validateExpenseAmountUseCase(state.amount)
 
-        if (amount <=0) {
+        if (amount ==null) {
             viewModelScope.launch {
                 _effect.emit(ExpenseEffect.ShowError("Please enter valid amount"))
             }

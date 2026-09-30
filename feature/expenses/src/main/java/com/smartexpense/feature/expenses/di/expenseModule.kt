@@ -11,6 +11,7 @@ val expenseModule = module {
             addExpenseUseCase = get(),
             updateExpenseUseCase = get(),
             deleteExpenseUseCase = get(),
-            getExpenseByIdUseCase = get())
+            getExpenseByIdUseCase = get(),
+            validateExpenseAmountUseCase = get())
     }
 }
