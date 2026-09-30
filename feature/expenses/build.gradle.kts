@@ -50,6 +50,11 @@ dependencies {
     implementation(libs.insert.koin)
     implementation(libs.insert.koin.compose)
 
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.junit)
+
     implementation(project(":core:common"))
     implementation(project(":domain"))
 

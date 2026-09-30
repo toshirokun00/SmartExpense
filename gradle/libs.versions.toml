@@ -15,6 +15,7 @@ room = "2.8.3"
 koin = "4.1.1"
 mockk = "1.14.7"
 kotlinxCoroutinesTest = "1.10.2"
+turbine = "1.2.1"
 
 navigationCompose = "2.9.7"
 
@@ -56,6 +57,8 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
