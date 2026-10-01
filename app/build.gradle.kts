@@ -67,5 +67,6 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":core:database"))
     implementation(project(":feature:expenses"))
+    implementation(project(":feature:categories"))
 
 }

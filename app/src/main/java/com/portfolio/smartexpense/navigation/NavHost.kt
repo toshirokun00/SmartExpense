@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.smartexpene.categories.screen.CategoryScreen
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
 import com.smartexpense.feature.expenses.ui.ExpenseDetailScreen
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
@@ -25,6 +26,9 @@ fun AppNavHost() {
                 },
                 onExpenseClick = { expenseId ->
                     navController.navigate(ExpenseDetailRoute(expenseId))
+                },
+                onAddExpenseCategoryClick = {
+                    navController.navigate(CategoryRoute)
                 }
             )
         }
@@ -44,6 +48,17 @@ fun AppNavHost() {
                 onBackClick = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+
+        composable<CategoryRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<CategoryRoute>()
+
+            CategoryScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
             )
         }
     }

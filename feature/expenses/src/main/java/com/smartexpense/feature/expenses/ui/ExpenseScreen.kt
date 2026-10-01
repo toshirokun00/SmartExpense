@@ -29,7 +29,8 @@ import org.koin.androidx.compose.koinViewModel
 fun ExpenseScreen(
     viewModel: ExpenseViewModel = koinViewModel(),
     onAddExpenseClick: () -> Unit,
-    onExpenseClick: (Long) -> Unit
+    onExpenseClick: (Long) -> Unit,
+    onAddExpenseCategoryClick : () -> Unit
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -130,6 +131,13 @@ fun ExpenseScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Add Expense")
+        }
+
+        Button(
+            onClick = onAddExpenseCategoryClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Add Expense Category")
         }
     }
 }

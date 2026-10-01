@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.usecase.AddExpenseUseCase
+import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
@@ -32,8 +33,8 @@ class ExpenseViewModel(
     private val updateExpenseUseCase: UpdateExpenseUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
     private val getExpenseByIdUseCase: GetExpenseByIdUseCase,
-    private val validateExpenseAmountUseCase: ValidateAmountUseCase
-
+    private val validateExpenseAmountUseCase: ValidateAmountUseCase,
+    private val categoryUseCase: CategoryUseCase
     ) : ViewModel() {
 
     private val _formState = MutableStateFlow(ExpenseFormState())
@@ -55,10 +56,20 @@ class ExpenseViewModel(
 
     val effect = _effect.asSharedFlow()
 
+    private val categoriesFlow = categoryUseCase.getCategories()
+        .catch { exception ->
+            _effect.emit(
+                ExpenseEffect.ShowError(
+                    exception.message ?: "Failed to load categories"
+                )
+            )
+        }
+
 
     val uiState: StateFlow<ExpenseUiState> =
-        combine(expensesFlow, _formState,) { expenses, formState,  ->
-            ExpenseUiState(expenses, formState,
+        combine(expensesFlow,
+            categoriesFlow, _formState,) { expenses, categories, formState,  ->
+            ExpenseUiState(expenses, categories, formState,
                 isLoading = false)
         }
             .stateIn(
@@ -106,6 +117,16 @@ class ExpenseViewModel(
             is ExpenseIntent.RequestDeleteExpense -> {
                 requestDeleteExpense(intent.id)
             }
+
+            is ExpenseIntent.CategoryChanged -> {
+
+                _formState.update {
+                    it.copy(
+                        categoryId = intent.categoryId
+                    )
+                }
+
+            }
         }
     }
 
@@ -122,10 +143,19 @@ class ExpenseViewModel(
             }
             return
         }
+        val categoryId = state.categoryId
 
+        if (categoryId ==null) {
+            viewModelScope.launch {
+                _effect.emit(
+                    ExpenseEffect.ShowError("Please select a category")
+                )
+            }
+            return
+        }
         val expense: Expense = Expense(
             amount = amount,
-            categoryId = 1L,
+            categoryId = categoryId,
             description = state.description,
             date = System.currentTimeMillis()
         )
@@ -133,10 +163,7 @@ class ExpenseViewModel(
             addExpenseUseCase(expense)
             _effect.emit(ExpenseEffect.ExpenseAdded)
 
-            _formState.value = _formState.value.copy(
-                amount = "",
-                description = ""
-            )
+            _formState.value = ExpenseFormState()
         }
     }
 
@@ -151,6 +178,18 @@ class ExpenseViewModel(
             return
         }
 
+        val categoryId = state.categoryId
+
+        if (categoryId ==null) {
+            viewModelScope.launch {
+                _effect.emit(
+                    ExpenseEffect.ShowError(
+                        "Please select category"
+                    )
+                )
+            }
+            return
+        }
         viewModelScope.launch {
             val existingExpense= getExpenseByIdUseCase(intent.id)
             if (existingExpense == null) {
@@ -164,7 +203,8 @@ class ExpenseViewModel(
 
             val updatedExpense = existingExpense.copy(
                 amount = amount,
-                description = state.description
+                description = state.description,
+                categoryId = state.categoryId
             )
             updateExpenseUseCase(updatedExpense)
 
@@ -181,7 +221,8 @@ class ExpenseViewModel(
             if (expense != null) {
                 _formState.value = _formState.value.copy(
                     amount = expense.amount.toString(),
-                    description = expense.description
+                    description = expense.description,
+                    categoryId = expense.categoryId
                 )
             }
         }

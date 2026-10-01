@@ -19,6 +19,8 @@ sealed interface ExpenseIntent {
 
     data class DescriptionChanged(val description: String) : ExpenseIntent
 
+    data class CategoryChanged(val categoryId: Long) : ExpenseIntent
+
     data class RequestDeleteExpense(
         val id: Long
     ) : ExpenseIntent

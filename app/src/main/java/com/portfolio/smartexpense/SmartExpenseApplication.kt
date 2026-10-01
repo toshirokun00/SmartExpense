@@ -1,6 +1,7 @@
 package com.portfolio.smartexpense
 
 import android.app.Application
+import com.smartexpene.categories.di.categoryModule
 import com.smartexpense.data.di.dataModule
 import com.smartexpense.database.di.databaseModule
 import com.smartexpense.domain.di.domainModule
@@ -19,7 +20,8 @@ class SmartExpenseApplication : Application() {
                 databaseModule,
                 dataModule,
                 domainModule,
-                expenseModule
+                expenseModule,
+                categoryModule
             )
         }
     }

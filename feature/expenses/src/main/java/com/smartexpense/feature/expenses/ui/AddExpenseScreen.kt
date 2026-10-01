@@ -1,20 +1,18 @@
 package com.smartexpense.feature.expenses.ui
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -34,7 +32,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.smartexpense.domain.model.Expense
 import com.smartexpense.feature.expenses.effect.ExpenseEffect
 import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
@@ -51,6 +48,13 @@ fun AddExpenseScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    var categoryExpanded by remember {
+        mutableStateOf(false)
+    }
+
+     val selectedCategory = uiState.categories.find {
+         it.id == uiState.form.categoryId
+     }
 
     val snackBarHostState = remember { SnackbarHostState() }
 
@@ -124,6 +128,53 @@ fun AddExpenseScreen(
                 }
             )
 
+            ExposedDropdownMenuBox(
+                expanded = categoryExpanded,
+                onExpandedChange = {
+                    categoryExpanded != categoryExpanded
+                }
+            ) {
+                OutlinedTextField(
+                    value = selectedCategory?.name ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = {
+                        Text("Category")
+                    },
+                    placeholder = {
+                        Text("Select Category")
+                    },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = categoryExpanded
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                        .menuAnchor()
+                )
+
+                ExposedDropdownMenu(
+                    expanded =  categoryExpanded,
+                    onDismissRequest = {
+                        categoryExpanded = false
+                    }
+                ) {
+                    uiState.categories.forEach { category ->
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(category.name)
+                            },
+                            onClick = {
+                                viewModel.onIntent(
+                                    ExpenseIntent.CategoryChanged(categoryId = category.id)
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = uiState.form.description,
                 onValueChange = {
@@ -133,6 +184,7 @@ fun AddExpenseScreen(
                     Text("Description")
                 }
             )
+
 
             Button(
                 onClick = {

@@ -18,6 +18,7 @@ kotlinxCoroutinesTest = "1.10.2"
 turbine = "1.2.1"
 
 navigationCompose = "2.9.7"
+material3 = "1.4.0"
 
 
 
@@ -59,6 +60,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
