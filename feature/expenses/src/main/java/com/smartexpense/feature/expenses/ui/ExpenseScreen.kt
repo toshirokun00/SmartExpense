@@ -9,11 +9,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -25,11 +32,13 @@ import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseScreen(
     viewModel: ExpenseViewModel = koinViewModel(),
     onAddExpenseClick: () -> Unit,
     onExpenseClick: (Long) -> Unit,
+    onNavigateBack: () -> Unit,
     onAddExpenseCategoryClick : () -> Unit
 ) {
 
@@ -72,76 +81,99 @@ fun ExpenseScreen(
         )
     }
 
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Expenses")
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                      onNavigateBack()
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "back"
+                        )
+                    }
+                }
+            )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding()
-            .padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = "Total number of expenses: ${uiState.expenses.size}"
-        )
+        }
 
-        Text(
-            text = "Total amount of expenses : ${uiState.totalAmount.toPesoAmount()}"
-        )
-
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(
-                items = uiState.expenses,
-                key = { expense -> expense.id }) { expense ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        onExpenseClick(expense.id)
-                    }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+            Text(
+                text = "Total number of expenses: ${uiState.expenses.size}"
+            )
 
-                        Column(
-                            modifier = Modifier.padding(12.dp)
-                        ) {
-                            Text(text = expense.amount.toPesoAmount())
-                            Text(text = expense.description)
-                        }
-                    }
+            Text(
+                text = "Total amount of expenses : ${uiState.totalAmount.toPesoAmount()}"
+            )
 
-                    TextButton(
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+
+            ) {
+                items(
+                    items = uiState.expenses,
+                    key = { expense -> expense.id }) { expense ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
                         onClick = {
-                            viewModel.onIntent(ExpenseIntent.RequestDeleteExpense(id = expense.id))
+                            onExpenseClick(expense.id)
+                        }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            Column(
+                                modifier = Modifier.padding(12.dp)
+                            ) {
+                                Text(text = expense.amount.toPesoAmount())
+                                Text(text = expense.description)
+                            }
                         }
 
-                    ) {
-                        Text(text = "Delete")
-                    }
+                        TextButton(
+                            onClick = {
+                                viewModel.onIntent(ExpenseIntent.RequestDeleteExpense(id = expense.id))
+                            }
 
+                        ) {
+                            Text(text = "Delete")
+                        }
+
+                    }
                 }
             }
-        }
-        Button(
-            onClick = onAddExpenseClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Add Expense")
-        }
+            Button(
+                onClick = onAddExpenseClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Add Expense")
+            }
 
-        Button(
-            onClick = onAddExpenseCategoryClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Add Expense Category")
+            Button(
+                onClick = onAddExpenseCategoryClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Add Expense Category")
+            }
         }
     }
+
+
 }

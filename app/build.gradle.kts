@@ -68,5 +68,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":feature:expenses"))
     implementation(project(":feature:categories"))
+    implementation(project(":feature:dashboard"))
+    implementation(project(":feature:budget"))
 
 }

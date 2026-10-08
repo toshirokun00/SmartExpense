@@ -21,4 +21,8 @@ val databaseModule = module {
     single {
         get<AppDatabase>().categoryDao()
     }
+
+    single { get<AppDatabase>().budgetDao() }
+
+
 }

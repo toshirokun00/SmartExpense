@@ -6,6 +6,7 @@ import com.smartexpene.categories.intent.CategoryIntent
 import com.smartexpene.categories.viewmodel.CategoryViewModel
 import com.smartexpense.domain.model.Category
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.test.MainDispatcherRule
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify

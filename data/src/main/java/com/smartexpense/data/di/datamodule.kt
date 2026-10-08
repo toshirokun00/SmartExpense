@@ -1,7 +1,9 @@
 package com.smartexpense.data.di
 
+import com.smartexpense.data.repositoryimpl.BudgetRepositoryImpl
 import com.smartexpense.data.repositoryimpl.CategoryRepositoryImpl
 import com.smartexpense.data.repositoryimpl.ExpenseRepositoryImpl
+import com.smartexpense.domain.repository.BudgetRepository
 import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
 import org.koin.dsl.module
@@ -14,4 +16,12 @@ val dataModule = module {
     single<CategoryRepository> {
         CategoryRepositoryImpl(get())
     }
+
+    single<BudgetRepository> {
+        BudgetRepositoryImpl(
+            budgetDao = get()
+        )
+    }
+
+
 }

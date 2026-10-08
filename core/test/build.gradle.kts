@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.smartexpense.dashoard"
+    namespace = "com.smartexpense.test"
     compileSdk {
         version = release(37) {
             minorApiLevel = 1
@@ -30,4 +30,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+
+    implementation(libs.kotlinx.coroutines.test)
+    implementation(libs.junit)
+
 }

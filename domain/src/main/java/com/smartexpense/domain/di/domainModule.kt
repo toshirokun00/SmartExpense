@@ -1,6 +1,7 @@
 package com.smartexpense.domain.di
 
 import com.smartexpense.domain.usecase.AddExpenseUseCase
+import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
@@ -19,5 +20,7 @@ val domainModule = module {
     factory { ValidateAmountUseCase() }
 
     factory { CategoryUseCase(get()) }
+
+    factory { BudgetUseCase(get()) }
 
 }
