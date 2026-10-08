@@ -8,7 +8,8 @@ val dashboardModule = module {
 
     viewModel {
         DashboardViewModel(
-            getExpenseUseCase = get()
+            getExpenseUseCase = get(),
+            budgetUseCase = get()
         )
     }
 }

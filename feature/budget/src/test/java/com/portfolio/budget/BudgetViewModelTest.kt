@@ -21,6 +21,7 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -964,6 +965,323 @@ class BudgetViewModelTest {
             assertEquals(-200.0, summary.remainingAmount, 0.001)
             assertEquals(1f, summary.progress, 0.001f)
             assertTrue(summary.isOverBudget)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun budgetSummaryIgnoresExpenseFromDifferentCategory() = runTest {
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        val categories = listOf(
+            Category(1L, "Food"),
+            Category(2L, "Transport")
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 300.0,
+                categoryId = 1L,
+                description = "Lunch",
+                date = dateMillis(2026, 10, 10)
+            ),
+            Expense(
+                id = 2L,
+                amount = 500.0,
+                categoryId = 2L,
+                description = "Taxi",
+                date = dateMillis(2026, 10, 10)
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(categories)
+        every { getExpenseUseCase() } returns flowOf(expenses)
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            val state = awaitItem()
+
+            assertEquals(300.0, state.budgetSummaries.first().spentAmount)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun budgetSummaryIgnoresExpenseOutsideDateRange() = runTest {
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 10),
+            endDate = dateMillis(2026, 10, 20)
+        )
+
+        val categories = listOf(
+            Category(1L, "Food")
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 300.0,
+                categoryId = 1L,
+                description = "Inside range",
+                date = dateMillis(2026, 10, 15)
+            ),
+            Expense(
+                id = 2L,
+                amount = 500.0,
+                categoryId = 1L,
+                description = "Outside range",
+                date = dateMillis(2026, 10, 25)
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(categories)
+        every { getExpenseUseCase() } returns flowOf(expenses)
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            val state = awaitItem()
+
+            assertEquals(300.0, state.budgetSummaries.first().spentAmount)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun budgetSummaryIncludesExpenseOnEndDate() = runTest {
+        val endDate = dateMillis(2026, 10, 20)
+
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 10),
+            endDate = endDate
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 350.0,
+                categoryId = 1L,
+                description = "End date expense",
+                date = endDate
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(
+            listOf(Category(1L, "Food"))
+        )
+        every { getExpenseUseCase() } returns flowOf(expenses)
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            val state = awaitItem()
+
+            assertEquals(350.0, state.budgetSummaries.first().spentAmount)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun budgetSummaryReturnsZeroSpentWhenThereAreNoExpenses() = runTest {
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(
+            listOf(Category(1L, "Food"))
+        )
+        every { getExpenseUseCase() } returns flowOf(emptyList())
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            val state = awaitItem()
+            val summary = state.budgetSummaries.first()
+
+            assertEquals(0.0, summary.spentAmount)
+            assertEquals(1_000.0, summary.remainingAmount)
+            assertEquals(0f, summary.progress)
+            assertEquals(false, summary.isOverBudget)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun multipleBudgetsCalculateIndependently() = runTest {
+        val foodBudget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        val transportBudget = Budget(
+            id = 2L,
+            categoryId = 2L,
+            amount = 2_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        val categories = listOf(
+            Category(1L, "Food"),
+            Category(2L, "Transport")
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 300.0,
+                categoryId = 1L,
+                description = "Lunch",
+                date = dateMillis(2026, 10, 10)
+            ),
+            Expense(
+                id = 2L,
+                amount = 500.0,
+                categoryId = 2L,
+                description = "Taxi",
+                date = dateMillis(2026, 10, 10)
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(
+            listOf(foodBudget, transportBudget)
+        )
+        every { categoryUseCase.getCategories() } returns flowOf(categories)
+        every { getExpenseUseCase() } returns flowOf(expenses)
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            val state = awaitItem()
+
+            val foodSummary = state.budgetSummaries
+                .first { it.budget.id == 1L }
+
+            val transportSummary = state.budgetSummaries
+                .first { it.budget.id == 2L }
+
+            assertEquals(300.0, foodSummary.spentAmount)
+            assertEquals(700.0, foodSummary.remainingAmount)
+
+            assertEquals(500.0, transportSummary.spentAmount)
+            assertEquals(1_500.0, transportSummary.remainingAmount)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun budgetSummaryUpdatesWhenExpensesChange() = runTest {
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        val expensesFlow = MutableStateFlow(
+            listOf(
+                Expense(
+                    id = 1L,
+                    amount = 300.0,
+                    categoryId = 1L,
+                    description = "Lunch",
+                    date = dateMillis(2026, 10, 10)
+                )
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(
+            listOf(Category(1L, "Food"))
+        )
+        every { getExpenseUseCase() } returns expensesFlow
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            var state = awaitItem()
+            assertEquals(300.0, state.budgetSummaries.first().spentAmount)
+
+            expensesFlow.value += Expense(
+                            id = 2L,
+                            amount = 200.0,
+                            categoryId = 1L,
+                            description = "Dinner",
+                            date = dateMillis(2026, 10, 11)
+                        )
+
+            state = awaitItem()
+
+            assertEquals(500.0, state.budgetSummaries.first().spentAmount)
+            assertEquals(500.0, state.budgetSummaries.first().remainingAmount)
 
             cancelAndIgnoreRemainingEvents()
         }
