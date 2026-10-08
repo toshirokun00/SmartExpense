@@ -101,7 +101,7 @@ class CategoryViewModel(
     private fun loadCategory(id: Long) {
 
         viewModelScope.launch {
-            val category = categoryUseCase.getCategoriesById(id)
+            val category = categoryUseCase.getCategoryById(id)
 
             if (category == null) {
                 _effect.emit(
@@ -127,10 +127,6 @@ class CategoryViewModel(
 
         val name = state.name.trim()
 
-        if (categoryId == null){
-            return
-        }
-
         if (name.isBlank()) {
             viewModelScope.launch {
                 _effect.emit(
@@ -142,8 +138,21 @@ class CategoryViewModel(
             return
         }
 
+        if (categoryId == null){
+            viewModelScope.launch {
+                _effect.emit(
+                    CategoryEffect.ShowError(
+                        "No category selected for editing"
+                    )
+                )
+            }
+            return
+        }
+
+
+
         viewModelScope.launch {
-            val existingCategory = categoryUseCase.getCategoriesById(categoryId)
+            val existingCategory = categoryUseCase.getCategoryById(categoryId)
 
             if (existingCategory == null) {
                 _effect.emit(
@@ -207,7 +216,7 @@ class CategoryViewModel(
         val categoryId = _screenState.value.categoryToDeleteId ?: return
 
         viewModelScope.launch {
-            val category = categoryUseCase.getCategoriesById(id = categoryId)
+            val category = categoryUseCase.getCategoryById(id = categoryId)
 
             if (category == null) {
                 _effect.emit(CategoryEffect.ShowError("Category not found"))

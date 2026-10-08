@@ -37,6 +37,7 @@ import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
 import org.koin.androidx.compose.koinViewModel
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(
@@ -131,30 +132,31 @@ fun AddExpenseScreen(
             ExposedDropdownMenuBox(
                 expanded = categoryExpanded,
                 onExpandedChange = {
-                    categoryExpanded != categoryExpanded
+                    categoryExpanded = !categoryExpanded
                 }
             ) {
                 OutlinedTextField(
-                    value = selectedCategory?.name ?: "",
+                    value = uiState.categories
+                        .find { it.id == uiState.form.categoryId }
+                        ?.name
+                        ?: "",
                     onValueChange = {},
                     readOnly = true,
                     label = {
                         Text("Category")
-                    },
-                    placeholder = {
-                        Text("Select Category")
                     },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(
                             expanded = categoryExpanded
                         )
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
                         .menuAnchor()
+                        .fillMaxWidth()
                 )
 
                 ExposedDropdownMenu(
-                    expanded =  categoryExpanded,
+                    expanded = categoryExpanded,
                     onDismissRequest = {
                         categoryExpanded = false
                     }
@@ -166,9 +168,14 @@ fun AddExpenseScreen(
                                 Text(category.name)
                             },
                             onClick = {
+
                                 viewModel.onIntent(
-                                    ExpenseIntent.CategoryChanged(categoryId = category.id)
+                                    ExpenseIntent.CategoryChanged(
+                                        category.id
+                                    )
                                 )
+
+                                categoryExpanded = false
                             }
                         )
                     }

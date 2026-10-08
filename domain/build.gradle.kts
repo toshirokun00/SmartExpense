@@ -38,5 +38,9 @@ dependencies {
     implementation(libs.insert.koin)
     implementation(libs.insert.koin.compose)
 
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.junit)
+
     ksp(libs.androidx.room.compiler)
 }

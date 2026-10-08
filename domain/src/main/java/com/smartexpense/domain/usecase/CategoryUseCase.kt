@@ -10,7 +10,7 @@ class CategoryUseCase(
 
     fun getCategories() : Flow<List<Category>> = repository.getCategories()
 
-    suspend fun getCategoriesById(id : Long) : Category? = repository.getCategoriesById(id)
+    suspend fun getCategoryById(id : Long) : Category? = repository.getCategoriesById(id)
 
     suspend fun addCategory(category: Category) {
         repository.addCategory(category)

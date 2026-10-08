@@ -81,7 +81,11 @@ fun ExpenseScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Expenses : ${uiState.expenses.size}"
+            text = "Total number of expenses: ${uiState.expenses.size}"
+        )
+
+        Text(
+            text = "Total amount of expenses : ${uiState.totalAmount.toPesoAmount()}"
         )
 
         LazyColumn(

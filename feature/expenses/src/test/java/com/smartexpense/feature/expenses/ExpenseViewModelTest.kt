@@ -3,6 +3,7 @@ package com.smartexpense.feature.expenses
 import app.cash.turbine.test
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.usecase.AddExpenseUseCase
+import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
@@ -18,6 +19,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,6 +35,8 @@ class ExpenseViewModelTest {
     private lateinit var addExpenseUseCase: AddExpenseUseCase
     private lateinit var updateExpenseUseCase: UpdateExpenseUseCase
     private lateinit var deleteExpenseUseCase: DeleteExpenseUseCase
+
+    private lateinit var categoryUseCase: CategoryUseCase
     private lateinit var validateExpenseAmountUseCase: ValidateAmountUseCase
 
     private lateinit var viewModel: ExpenseViewModel
@@ -45,9 +49,14 @@ class ExpenseViewModelTest {
         updateExpenseUseCase = mockk()
         deleteExpenseUseCase = mockk()
         validateExpenseAmountUseCase = mockk()
+        categoryUseCase = mockk()
 
         every {
             getExpensesUseCase()
+        } returns flowOf(emptyList())
+
+        every {
+            categoryUseCase.getCategories()
         } returns flowOf(emptyList())
 
         viewModel = ExpenseViewModel(
@@ -56,7 +65,8 @@ class ExpenseViewModelTest {
             addExpenseUseCase = addExpenseUseCase,
             updateExpenseUseCase = updateExpenseUseCase,
             deleteExpenseUseCase = deleteExpenseUseCase,
-            validateExpenseAmountUseCase = validateExpenseAmountUseCase
+            validateExpenseAmountUseCase = validateExpenseAmountUseCase,
+            categoryUseCase = categoryUseCase
         )
 
     }
@@ -94,6 +104,14 @@ class ExpenseViewModelTest {
 
     @Test
     fun addExpenseWithValidAmountCallUseCase() = runTest {
+
+        every {
+            validateExpenseAmountUseCase("100.50")
+        } returns 100.50
+        coEvery {
+            addExpenseUseCase(any())
+        } just Runs
+
         viewModel.onIntent(
             ExpenseIntent.AmountChanged("100.50")
         )
@@ -102,30 +120,21 @@ class ExpenseViewModelTest {
             ExpenseIntent.DescriptionChanged("Lunch")
         )
 
-        every {
-            validateExpenseAmountUseCase("100.50")
-        } returns 100.50
+        viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
 
-        coEvery {
-            addExpenseUseCase(any())
-        } just Runs
+        viewModel.onIntent(ExpenseIntent.AddExpenses)
 
-        viewModel.effect.test {
-            viewModel.onIntent(ExpenseIntent.AddExpenses)
+        advanceUntilIdle()
 
-            assertEquals(
-                ExpenseEffect.ExpenseAdded, awaitItem()
+        coVerify(exactly = 1) {
+            addExpenseUseCase(
+                match {
+                    it.amount == 100.50 &&
+                            it.description == "Lunch" &&
+                            it.categoryId == 1L
+                }
             )
-            coEvery {
-                addExpenseUseCase(
-                    match<Expense> {
-                        it.amount == 100.50 &&
-                                it.description == "Lunch"
-                    }
-                )
-            }
         }
-
 
     }
 
@@ -203,7 +212,8 @@ class ExpenseViewModelTest {
             addExpenseUseCase = addExpenseUseCase,
             updateExpenseUseCase = updateExpenseUseCase,
             deleteExpenseUseCase = deleteExpenseUseCase,
-            validateExpenseAmountUseCase =  validateExpenseAmountUseCase
+            validateExpenseAmountUseCase = validateExpenseAmountUseCase,
+            categoryUseCase = categoryUseCase
         )
 
         viewModel.uiState.test {
@@ -219,7 +229,7 @@ class ExpenseViewModelTest {
                     ExpenseIntent.ConfirmDeleteExpense
                 )
 
-                  val effect = awaitItem()
+                val effect = awaitItem()
                 assertEquals(ExpenseEffect.ExpenseDeleted, effect)
             }
 
@@ -235,6 +245,63 @@ class ExpenseViewModelTest {
         )
 
         assertNull(viewModel.screenState.value.expenseToDeleteId)
+    }
+
+    @Test
+    fun totalAmountIsCalculatedFromExpenses() = runTest {
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 100.0,
+                categoryId = 1L,
+                description = "Lunch",
+                date = 1L
+            ), Expense(
+                id = 2L,
+                amount = 250.50,
+                categoryId = 1L,
+                description = "Groceries",
+                date = 2L
+            ),
+            Expense(
+                id = 3L,
+                amount = 75.25,
+                categoryId = 2L,
+                description = "Transport",
+                date = 3L
+            )
+        )
+
+
+        every {
+            getExpensesUseCase()
+        } returns flowOf(expenses)
+
+
+        viewModel = ExpenseViewModel(
+            getExpenseUseCase = getExpensesUseCase,
+            addExpenseUseCase = addExpenseUseCase,
+            updateExpenseUseCase = updateExpenseUseCase,
+            deleteExpenseUseCase = deleteExpenseUseCase,
+            getExpenseByIdUseCase = getExpenseByIdUseCase,
+            validateExpenseAmountUseCase = validateExpenseAmountUseCase,
+            categoryUseCase = categoryUseCase
+        )
+
+       viewModel.uiState.test {
+           awaitItem()
+
+           val state = awaitItem()
+
+
+           assertEquals(
+               425.75,
+               state.totalAmount,
+               0.001
+           )
+
+           cancelAndIgnoreRemainingEvents()
+       }
     }
 
 

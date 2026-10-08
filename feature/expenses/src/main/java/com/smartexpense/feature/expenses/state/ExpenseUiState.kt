@@ -8,5 +8,6 @@ data class ExpenseUiState(
     val categories: List<Category> = emptyList(),
     val form: ExpenseFormState = ExpenseFormState(),
     val isLoading : Boolean = false,
+    val totalAmount: Double = 0.0,
     val error : String? = null
 )

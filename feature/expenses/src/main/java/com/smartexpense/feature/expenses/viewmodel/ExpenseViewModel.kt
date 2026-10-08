@@ -35,7 +35,7 @@ class ExpenseViewModel(
     private val getExpenseByIdUseCase: GetExpenseByIdUseCase,
     private val validateExpenseAmountUseCase: ValidateAmountUseCase,
     private val categoryUseCase: CategoryUseCase
-    ) : ViewModel() {
+) : ViewModel() {
 
     private val _formState = MutableStateFlow(ExpenseFormState())
 
@@ -67,10 +67,18 @@ class ExpenseViewModel(
 
 
     val uiState: StateFlow<ExpenseUiState> =
-        combine(expensesFlow,
-            categoriesFlow, _formState,) { expenses, categories, formState,  ->
-            ExpenseUiState(expenses, categories, formState,
-                isLoading = false)
+        combine(
+            expensesFlow,
+            categoriesFlow,
+            _formState,
+        ) { expenses, categories, formState ->
+            ExpenseUiState(
+                expenses,
+                categories,
+                formState,
+                totalAmount = expenses.sumOf { it.amount },
+                isLoading = false
+            )
         }
             .stateIn(
                 scope = viewModelScope,
@@ -111,9 +119,11 @@ class ExpenseViewModel(
                 cancelDeleteExpense()
 
             }
+
             ExpenseIntent.ConfirmDeleteExpense -> {
                 confirmDeleteExpense()
             }
+
             is ExpenseIntent.RequestDeleteExpense -> {
                 requestDeleteExpense(intent.id)
             }
@@ -137,15 +147,17 @@ class ExpenseViewModel(
 
         if (amount == null) {
             viewModelScope.launch {
-                _effect.emit(ExpenseEffect.ShowError(
-                    message = "Please enter valid amount"
-                ))
+                _effect.emit(
+                    ExpenseEffect.ShowError(
+                        message = "Please enter valid amount"
+                    )
+                )
             }
             return
         }
         val categoryId = state.categoryId
 
-        if (categoryId ==null) {
+        if (categoryId == null) {
             viewModelScope.launch {
                 _effect.emit(
                     ExpenseEffect.ShowError("Please select a category")
@@ -171,7 +183,7 @@ class ExpenseViewModel(
         val state = _formState.value
         val amount = validateExpenseAmountUseCase(state.amount)
 
-        if (amount ==null) {
+        if (amount == null) {
             viewModelScope.launch {
                 _effect.emit(ExpenseEffect.ShowError("Please enter valid amount"))
             }
@@ -180,7 +192,7 @@ class ExpenseViewModel(
 
         val categoryId = state.categoryId
 
-        if (categoryId ==null) {
+        if (categoryId == null) {
             viewModelScope.launch {
                 _effect.emit(
                     ExpenseEffect.ShowError(
@@ -191,7 +203,7 @@ class ExpenseViewModel(
             return
         }
         viewModelScope.launch {
-            val existingExpense= getExpenseByIdUseCase(intent.id)
+            val existingExpense = getExpenseByIdUseCase(intent.id)
             if (existingExpense == null) {
                 _effect.emit(
                     ExpenseEffect.ShowError(
@@ -245,6 +257,7 @@ class ExpenseViewModel(
             )
         }
     }
+
     private fun confirmDeleteExpense() {
         val expenseId = _screenState.value.expenseToDeleteId ?: return
 
@@ -258,8 +271,10 @@ class ExpenseViewModel(
             _effect.emit(ExpenseEffect.ExpenseDeleted)
 
             _screenState.update {
-                it.copy(showDeleteConfirmation = false,
-                    expenseToDeleteId = null)
+                it.copy(
+                    showDeleteConfirmation = false,
+                    expenseToDeleteId = null
+                )
             }
 
 
