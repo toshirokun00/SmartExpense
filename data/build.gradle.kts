@@ -46,4 +46,5 @@ dependencies {
 
     implementation(project(":domain"))
     implementation(project(":core:database"))
+    implementation(project(":core:common"))
 }

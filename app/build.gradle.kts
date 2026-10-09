@@ -65,10 +65,13 @@ dependencies {
 
     implementation(project(":data"))
     implementation(project(":domain"))
+    implementation(project(":core:common"))
     implementation(project(":core:database"))
     implementation(project(":feature:expenses"))
     implementation(project(":feature:categories"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:budget"))
+    implementation(project(":feature:settings"))
+
 
 }

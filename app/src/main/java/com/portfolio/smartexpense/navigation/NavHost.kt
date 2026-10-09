@@ -1,11 +1,13 @@
 package com.portfolio.smartexpense.navigation
 
+import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.portfolio.budget.screen.BudgetScreen
+import com.portfolio.settings.SettingsScreen
 import com.smartexpene.categories.screen.CategoryScreen
 import com.smartexpense.dashoard.screen.DashboardScreen
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
@@ -32,7 +34,11 @@ fun AppNavHost() {
                 },
                 onNavigateToBudgets = {
                     navController.navigate(BudgetRoute)
+                },
+                onNavigateToSettings = {
+                    navController.navigate(SettingsRoute)
                 }
+
             )
         }
         composable<ExpensesRoute> {
@@ -83,6 +89,14 @@ fun AppNavHost() {
 
         composable<BudgetRoute> {
             BudgetScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable<SettingsRoute> {
+            SettingsScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

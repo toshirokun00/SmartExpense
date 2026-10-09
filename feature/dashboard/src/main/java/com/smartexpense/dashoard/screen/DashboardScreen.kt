@@ -40,7 +40,8 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = koinViewModel(),
     onNavigateToExpenses: () -> Unit,
     onNavigateToCategories: () -> Unit,
-    onNavigateToBudgets: () -> Unit
+    onNavigateToBudgets: () -> Unit,
+    onNavigateToSettings: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -162,6 +163,16 @@ fun DashboardScreen(
                     }
                 }
             }
+
+            item {
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onNavigateToSettings
+                ) {
+                    Text("Settings")
+                }
+            }
+
             item {
                 OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
