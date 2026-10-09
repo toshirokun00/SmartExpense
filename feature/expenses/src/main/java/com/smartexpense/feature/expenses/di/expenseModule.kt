@@ -13,6 +13,9 @@ val expenseModule = module {
             deleteExpenseUseCase = get(),
             getExpenseByIdUseCase = get(),
             validateExpenseAmountUseCase = get(),
-            categoryUseCase = get())
+            categoryUseCase = get(),
+            settingsUseCase = get(),
+            expenseNotificationManager = get())
+
     }
 }

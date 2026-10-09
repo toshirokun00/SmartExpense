@@ -1,4 +1,4 @@
-package com.portfolio.smartexpense
+package com.portfolio.smartexpense.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,7 +18,7 @@ class AppThemeViewModel(
             .map { settings -> settings.theme }
             .stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
+                started = SharingStarted.Companion.WhileSubscribed(5_000),
                 initialValue = AppTheme.SYSTEM
             )
 }

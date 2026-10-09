@@ -8,6 +8,7 @@ import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import com.smartexpense.feature.expenses.effect.ExpenseEffect
@@ -15,6 +16,8 @@ import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.state.ExpenseFormState
 import com.smartexpense.feature.expenses.state.ExpenseScreenState
 import com.smartexpense.feature.expenses.state.ExpenseUiState
+import com.smartexpense.notification.ExpenseNotificationManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -34,7 +38,9 @@ class ExpenseViewModel(
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
     private val getExpenseByIdUseCase: GetExpenseByIdUseCase,
     private val validateExpenseAmountUseCase: ValidateAmountUseCase,
-    private val categoryUseCase: CategoryUseCase
+    private val categoryUseCase: CategoryUseCase,
+    private val settingsUseCase: SettingsUseCase,
+    private val expenseNotificationManager: ExpenseNotificationManager
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(ExpenseFormState())
@@ -172,7 +178,34 @@ class ExpenseViewModel(
             date = System.currentTimeMillis()
         )
         viewModelScope.launch {
-            addExpenseUseCase(expense)
+            try {
+                addExpenseUseCase(expense)
+                try {
+
+                    val settings = settingsUseCase
+                        .getSettings()
+                        .first()
+
+
+                    if (settings.notificationsEnabled) {
+                        expenseNotificationManager.showExpenseAddedNotification(
+                            description = expense.description.ifBlank {
+                                "New expense"
+                            },
+                            amount = "₱${"%.2f".format(amount)}"
+                        )
+                    }
+                }catch (exception : CancellationException) {
+                    throw exception
+                }
+            }catch (exception : Exception) {
+                _effect.emit(
+                    ExpenseEffect.ShowError(
+                        message = exception.message ?: "Failed to add expense"
+                    )
+                )
+            }
+
             _effect.emit(ExpenseEffect.ExpenseAdded)
 
             _formState.value = ExpenseFormState()
