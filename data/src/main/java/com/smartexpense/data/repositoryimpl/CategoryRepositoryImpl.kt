@@ -20,7 +20,7 @@ class CategoryRepositoryImpl(
     }
 
     override suspend fun getCategoriesById(id: Long): Category? {
-       return categoryDao.getCategoryById(id).toDomain()
+       return categoryDao.getCategoryById(id)?.toDomain()
     }
 
     override suspend fun addCategory(category: Category) {

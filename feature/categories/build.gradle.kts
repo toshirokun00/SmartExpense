@@ -56,4 +56,5 @@ dependencies {
     testImplementation(libs.junit)
 
     implementation(project(":domain"))
+    implementation(project(":core:test"))
 }

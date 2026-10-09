@@ -20,3 +20,12 @@ data class ExpenseDetailRoute(
 @Serializable
 data object CategoryRoute
 
+
+@Serializable
+data object DashboardRoute
+
+@Serializable
+data object BudgetRoute
+
+@Serializable
+data object SettingsRoute

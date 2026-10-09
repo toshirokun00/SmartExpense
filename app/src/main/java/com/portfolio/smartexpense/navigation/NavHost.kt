@@ -1,11 +1,15 @@
 package com.portfolio.smartexpense.navigation
 
+import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.portfolio.budget.screen.BudgetScreen
+import com.portfolio.settings.SettingsScreen
 import com.smartexpene.categories.screen.CategoryScreen
+import com.smartexpense.dashoard.screen.DashboardScreen
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
 import com.smartexpense.feature.expenses.ui.ExpenseDetailScreen
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
@@ -17,8 +21,26 @@ fun AppNavHost() {
 
     NavHost(
         navController = navController,
-    startDestination = ExpensesRoute
+    startDestination = DashboardRoute
     ) {
+
+        composable<DashboardRoute> {
+            DashboardScreen(
+                onNavigateToExpenses = {
+                    navController.navigate(ExpensesRoute)
+                },
+                onNavigateToCategories = {
+                    navController.navigate(CategoryRoute)
+                },
+                onNavigateToBudgets = {
+                    navController.navigate(BudgetRoute)
+                },
+                onNavigateToSettings = {
+                    navController.navigate(SettingsRoute)
+                }
+
+            )
+        }
         composable<ExpensesRoute> {
             ExpenseScreen(
                 onAddExpenseClick = {
@@ -29,6 +51,9 @@ fun AppNavHost() {
                 },
                 onAddExpenseCategoryClick = {
                     navController.navigate(CategoryRoute)
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -59,6 +84,22 @@ fun AppNavHost() {
                 onBackClick = {
                     navController.popBackStack()
                 },
+            )
+        }
+
+        composable<BudgetRoute> {
+            BudgetScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable<SettingsRoute> {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }
