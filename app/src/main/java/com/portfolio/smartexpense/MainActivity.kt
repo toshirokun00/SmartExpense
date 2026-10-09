@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.portfolio.smartexpense.navigation.AppNavHost
 import com.portfolio.smartexpense.ui.theme.SmartExpenseTheme
+import com.portfolio.smartexpense.viewmodel.AppThemeViewModel
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
 import org.koin.androidx.compose.koinViewModel
 
@@ -30,21 +31,5 @@ class MainActivity : ComponentActivity() {
                 AppNavHost()
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SmartExpenseTheme {
-        Greeting("Android")
     }
 }

@@ -1,23 +1,28 @@
 package com.smartexpense.feature.expenses
 
 import app.cash.turbine.test
+import com.smartexpense.domain.model.AppSettings
+import com.smartexpense.domain.model.AppTheme
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.usecase.AddExpenseUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import com.smartexpense.feature.expenses.effect.ExpenseEffect
 import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
+import com.smartexpense.notification.ExpenseNotificationManager
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -39,6 +44,10 @@ class ExpenseViewModelTest {
     private lateinit var categoryUseCase: CategoryUseCase
     private lateinit var validateExpenseAmountUseCase: ValidateAmountUseCase
 
+    private lateinit var settingsUseCase: SettingsUseCase
+
+    private lateinit var expenseNotificationManager : ExpenseNotificationManager
+
     private lateinit var viewModel: ExpenseViewModel
 
     @Before
@@ -50,6 +59,15 @@ class ExpenseViewModelTest {
         deleteExpenseUseCase = mockk()
         validateExpenseAmountUseCase = mockk()
         categoryUseCase = mockk()
+        expenseNotificationManager = mockk()
+        settingsUseCase = mockk()
+
+        every {
+            expenseNotificationManager.showExpenseAddedNotification(
+                description = any(),
+                amount = any()
+            )
+        } returns true
 
         every {
             getExpensesUseCase()
@@ -59,6 +77,15 @@ class ExpenseViewModelTest {
             categoryUseCase.getCategories()
         } returns flowOf(emptyList())
 
+        every {
+            settingsUseCase.getSettings()
+        } returns flowOf(
+            AppSettings(
+                theme = AppTheme.SYSTEM,
+                notificationsEnabled = true
+            )
+        )
+
         viewModel = ExpenseViewModel(
             getExpenseUseCase = getExpensesUseCase,
             getExpenseByIdUseCase = getExpenseByIdUseCase,
@@ -66,7 +93,9 @@ class ExpenseViewModelTest {
             updateExpenseUseCase = updateExpenseUseCase,
             deleteExpenseUseCase = deleteExpenseUseCase,
             validateExpenseAmountUseCase = validateExpenseAmountUseCase,
-            categoryUseCase = categoryUseCase
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            expenseNotificationManager = expenseNotificationManager
         )
 
     }
@@ -213,7 +242,9 @@ class ExpenseViewModelTest {
             updateExpenseUseCase = updateExpenseUseCase,
             deleteExpenseUseCase = deleteExpenseUseCase,
             validateExpenseAmountUseCase = validateExpenseAmountUseCase,
-            categoryUseCase = categoryUseCase
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            expenseNotificationManager = expenseNotificationManager
         )
 
         viewModel.uiState.test {
@@ -285,7 +316,9 @@ class ExpenseViewModelTest {
             deleteExpenseUseCase = deleteExpenseUseCase,
             getExpenseByIdUseCase = getExpenseByIdUseCase,
             validateExpenseAmountUseCase = validateExpenseAmountUseCase,
-            categoryUseCase = categoryUseCase
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            expenseNotificationManager = expenseNotificationManager
         )
 
        viewModel.uiState.test {
@@ -302,6 +335,99 @@ class ExpenseViewModelTest {
 
            cancelAndIgnoreRemainingEvents()
        }
+    }
+
+    @Test
+    fun addExpenseShowsNotificationWhenEnabled() = runTest {
+        every {
+            validateExpenseAmountUseCase("100")
+        } returns 100.0
+
+        coEvery {
+            addExpenseUseCase(any())
+        } just Runs
+
+        viewModel.onIntent(ExpenseIntent.AmountChanged("100"))
+        viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
+        viewModel.onIntent(ExpenseIntent.AddExpenses)
+
+        advanceUntilIdle()
+
+        verify {
+            expenseNotificationManager.showExpenseAddedNotification(
+                description = any(),
+                amount = "₱100.00"
+            )
+        }
+    }
+
+    @Test
+    fun addExpenseDoesNotShowNotificationWhenDisabled() = runTest {
+        every {
+            settingsUseCase.getSettings()
+        } returns flowOf(
+            AppSettings(
+                theme = AppTheme.SYSTEM,
+                notificationsEnabled = false
+            )
+        )
+
+        every {
+            validateExpenseAmountUseCase("100")
+        } returns 100.0
+
+        coEvery {
+            addExpenseUseCase(any())
+        } just Runs
+
+        viewModel = ExpenseViewModel(
+            getExpenseUseCase = getExpensesUseCase,
+            getExpenseByIdUseCase = getExpenseByIdUseCase,
+            addExpenseUseCase = addExpenseUseCase,
+            updateExpenseUseCase = updateExpenseUseCase,
+            deleteExpenseUseCase = deleteExpenseUseCase,
+            validateExpenseAmountUseCase = validateExpenseAmountUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            expenseNotificationManager = expenseNotificationManager
+        )
+
+        viewModel.onIntent(ExpenseIntent.AmountChanged("100"))
+        viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
+        viewModel.onIntent(ExpenseIntent.AddExpenses)
+
+        advanceUntilIdle()
+
+        verify(exactly = 0) {
+            expenseNotificationManager.showExpenseAddedNotification(
+                description = any(),
+                amount = any()
+            )
+        }
+    }
+
+    @Test
+    fun addExpenseDoesNotShowNotificationWhenSaveFails() = runTest {
+        every {
+            validateExpenseAmountUseCase("100")
+        } returns 100.0
+
+        coEvery {
+            addExpenseUseCase(any())
+        } throws IllegalStateException("Save failed")
+
+        viewModel.onIntent(ExpenseIntent.AmountChanged("100"))
+        viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
+        viewModel.onIntent(ExpenseIntent.AddExpenses)
+
+        advanceUntilIdle()
+
+        verify(exactly = 0) {
+            expenseNotificationManager.showExpenseAddedNotification(
+                description = any(),
+                amount = any()
+            )
+        }
     }
 
 

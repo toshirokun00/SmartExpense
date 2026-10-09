@@ -57,6 +57,7 @@ dependencies {
     testImplementation(libs.junit)
 
     implementation(project(":core:common"))
+    implementation(project(":core:notification"))
     implementation(project(":core:test"))
     implementation(project(":domain"))
 
