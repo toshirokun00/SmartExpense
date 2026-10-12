@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.portfolio.budget.screen.BudgetScreen
+import com.portfolio.reports.ReportsScreen
 import com.portfolio.settings.SettingsScreen
 import com.smartexpene.categories.screen.CategoryScreen
 import com.smartexpense.dashoard.screen.DashboardScreen
@@ -37,6 +38,9 @@ fun AppNavHost() {
                 },
                 onNavigateToSettings = {
                     navController.navigate(SettingsRoute)
+                },
+                onNavigateToReports = {
+                    navController.navigate(ReportsRoute  )
                 }
 
             )
@@ -101,6 +105,10 @@ fun AppNavHost() {
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable<ReportsRoute> {
+            ReportsScreen()
         }
     }
 }

@@ -2,6 +2,7 @@ package com.portfolio.smartexpense
 
 import android.app.Application
 import com.portfolio.budget.di.budgetModule
+import com.portfolio.reports.expenseReportModule
 import com.portfolio.settings.settingsModule
 import com.portfolio.smartexpense.di.mainModule
 import com.smartexpene.categories.di.categoryModule
@@ -33,7 +34,9 @@ class SmartExpenseApplication : Application() {
                 budgetModule,
                 settingsModule,
                 dataStoreModule,
-                notificationModule
+                notificationModule,
+                expenseReportModule,
+
             )
         }
     }

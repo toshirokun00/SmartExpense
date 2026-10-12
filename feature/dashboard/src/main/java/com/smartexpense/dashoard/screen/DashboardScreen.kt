@@ -42,6 +42,7 @@ fun DashboardScreen(
     onNavigateToCategories: () -> Unit,
     onNavigateToBudgets: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToReports : () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -170,6 +171,14 @@ fun DashboardScreen(
                     onClick = onNavigateToSettings
                 ) {
                     Text("Settings")
+                }
+            }
+            item {
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onNavigateToReports
+                ) {
+                    Text("Reports")
                 }
             }
 
