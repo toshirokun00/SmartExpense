@@ -73,6 +73,7 @@ dependencies {
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:budget"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:reports"))
 
 
 }
