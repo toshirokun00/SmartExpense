@@ -1,4 +1,4 @@
-package com.portfolio.reports
+package com.portfolio.reports.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,13 +13,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,11 +33,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.portfolio.reports.component.CategorySpendingChart
+import com.portfolio.reports.component.DailySpendingChart
+import com.portfolio.reports.effect.ReportsEffect
+import com.portfolio.reports.intent.ReportsIntent
+import com.portfolio.reports.state.ReportsUiState
+import com.portfolio.reports.viewmodel.ReportsViewModel
 import com.smartexpense.domain.model.CategorySpending
 import com.smartexpense.domain.model.DailySpending
 import org.koin.androidx.compose.koinViewModel
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 
@@ -100,6 +112,82 @@ private fun ReportsContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        onIntent(ReportsIntent.StartDatePickerOpened)
+                    }
+                ) {
+                    Text("Start Date")
+                }
+
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        onIntent(ReportsIntent.EndDatePickerOpened)
+                    }
+                ) {
+                    Text("End Date")
+                }
+            }
+
+            if (uiState.isStartDatePickerOpen) {
+                ReportDatePickerDialog(
+                    initialDate = uiState.startDateInclusive,
+                    title = "Select start date",
+                    onDismiss = {
+                        onIntent(ReportsIntent.DatePickerDismissed)
+                    },
+                    onDateSelected = { selectedMillis ->
+                        val zone = ZoneId.systemDefault()
+                        val selectedStart = Instant.ofEpochMilli(selectedMillis)
+                            .atZone(zone)
+                            .toLocalDate()
+                            .atStartOfDay(zone)
+                            .toInstant()
+                            .toEpochMilli()
+
+                        onIntent(
+                            ReportsIntent.DateRangeChanged(
+                                startDateInclusive = selectedStart,
+                                endDateExclusive = uiState.endDateExclusive
+                            )
+                        )
+                    }
+                )
+            }
+
+            if (uiState.isEndDatePickerOpen) {
+                ReportDatePickerDialog(
+                    initialDate = uiState.endDateExclusive - 1L,
+                    title = "Select end date",
+                    onDismiss = {
+                        onIntent(ReportsIntent.DatePickerDismissed)
+                    },
+                    onDateSelected = { selectedMillis ->
+                        val zone = ZoneId.systemDefault()
+                        val selectedEndDate = Instant.ofEpochMilli(selectedMillis)
+                            .atZone(zone)
+                            .toLocalDate()
+                            .plusDays(1)
+                            .atStartOfDay(zone)
+                            .toInstant()
+                            .toEpochMilli()
+
+                        onIntent(
+                            ReportsIntent.DateRangeChanged(
+                                startDateInclusive = uiState.startDateInclusive,
+                                endDateExclusive = selectedEndDate
+                            )
+                        )
+                    }
+                )
+            }
+
             when {
                 uiState.isLoading -> {
                     Column(
@@ -151,6 +239,22 @@ private fun ReportsContent(
                             SectionTitle("Spending by Category")
                         }
 
+                        item {
+                            SectionTitle("Daily Spending")
+                        }
+
+                        item {
+                            SectionTitle("Spending by Category")
+                        }
+
+                        item {
+                            CategorySpendingChart(
+                                categoryBreakdown = uiState.report.categoryBreakdown,
+                                categoryNames = uiState.categoryNames
+                            )
+                        }
+
+
                         if (uiState.report.categoryBreakdown.isEmpty()) {
                             item {
                                 EmptySectionMessage(
@@ -162,9 +266,20 @@ private fun ReportsContent(
                                 items = uiState.report.categoryBreakdown,
                                 key = { it.categoryId }
                             ) { category ->
-                                CategorySpendingItem(category = category)
+                                CategorySpendingItem(
+                                    category = category,
+                                    categoryName = uiState.categoryNames[category.categoryId]
+                                        ?: "Unknown Category"
+                                )
                             }
                         }
+
+                        item {
+                            DailySpendingChart(
+                                dailySpending = uiState.report.dailySpending
+                            )
+                        }
+
 
                         item {
                             SectionTitle("Daily Spending")
@@ -282,7 +397,8 @@ private fun SectionTitle(
 
 @Composable
 private fun CategorySpendingItem(
-    category: CategorySpending
+    category: CategorySpending,
+    categoryName: String
 ) {
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -297,7 +413,7 @@ private fun CategorySpendingItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Category ${category.categoryId}",
+                    text = categoryName,
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -380,4 +496,42 @@ private fun formatDateRange(
     val end = formatDate(endDateExclusive - 1L)
 
     return "$start – $end"
+}
+
+@Composable
+private fun ReportDatePickerDialog(
+    initialDate: Long,
+    title: String,
+    onDismiss: () -> Unit,
+    onDateSelected: (Long) -> Unit
+) {
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDate
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    pickerState.selectedDateMillis?.let(onDateSelected)
+                }
+            ) {
+                Text("Select")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium
+            )
+            DatePicker(state = pickerState)
+        }
+    }
 }

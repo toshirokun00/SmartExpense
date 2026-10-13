@@ -1,7 +1,12 @@
-package com.portfolio.reports
+package com.portfolio.reports.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.portfolio.reports.effect.ReportsEffect
+import com.portfolio.reports.effect.ReportsEffect.*
+import com.portfolio.reports.intent.ReportsIntent
+import com.portfolio.reports.state.ReportsUiState
+import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.GetExpenseReportUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,11 +20,11 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class ReportsViewModel(
-    private val getExpenseReportUseCase: GetExpenseReportUseCase
+    private val getExpenseReportUseCase: GetExpenseReportUseCase,
+    private val categoryUseCase: CategoryUseCase
 ) : ViewModel() {
 
     private val zoneId = ZoneId.systemDefault()
-
     private val initialDateRange = getCurrentMonthRange()
 
     private val _uiState = MutableStateFlow(
@@ -37,6 +42,8 @@ class ReportsViewModel(
     private var reportJob: Job? = null
 
     init {
+        observeCategories()
+
         loadReport(
             startDateInclusive = initialDateRange.first,
             endDateExclusive = initialDateRange.second
@@ -49,7 +56,7 @@ class ReportsViewModel(
                 if (intent.endDateExclusive <= intent.startDateInclusive) {
                     viewModelScope.launch {
                         _effect.emit(
-                            ReportsEffect.ShowError(
+                            ShowError(
                                 "End date must be after start date"
                             )
                         )
@@ -70,6 +77,62 @@ class ReportsViewModel(
                     endDateExclusive = state.endDateExclusive
                 )
             }
+
+            ReportsIntent.DatePickerDismissed -> {
+                _uiState.update {
+                    it.copy(
+                        isStartDatePickerOpen = false,
+                        isEndDatePickerOpen = false
+                    )
+                }
+
+            }
+            ReportsIntent.EndDatePickerOpened -> {
+                _uiState.update {
+                    it.copy(
+                        isStartDatePickerOpen = false,
+                        isEndDatePickerOpen = true
+                    )
+                }
+            }
+            ReportsIntent.StartDatePickerOpened -> {
+                _uiState.update {
+                    it.copy(
+                        isStartDatePickerOpen = true,
+                        isEndDatePickerOpen = false
+                    )
+                }
+            }
+        }
+    }
+
+    private fun observeCategories() {
+        viewModelScope.launch {
+            categoryUseCase.getCategories()
+                .catch { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            error = throwable.message
+                                ?: "Failed to load categories",
+                            isLoading = false
+                        )
+                    }
+
+                    _effect.emit(
+                        ReportsEffect.ShowError(
+                            throwable.message ?: "Failed to load categories"
+                        )
+                    )
+                }
+                .collect { categories ->
+                    _uiState.update { state ->
+                        state.copy(
+                            categoryNames = categories.associate {
+                                it.id to it.name
+                            }
+                        )
+                    }
+                }
         }
     }
 
@@ -83,6 +146,8 @@ class ReportsViewModel(
             it.copy(
                 startDateInclusive = startDateInclusive,
                 endDateExclusive = endDateExclusive,
+                isStartDatePickerOpen = false,
+                isEndDatePickerOpen = false,
                 isLoading = true,
                 error = null
             )
@@ -94,20 +159,14 @@ class ReportsViewModel(
                 endDateExclusive = endDateExclusive
             )
                 .catch { throwable ->
+                    val message = throwable.message
+                        ?: "Failed to load expense report"
+
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = throwable.message
-                                ?: "Failed to load expense report"
-                        )
+                        it.copy(isLoading = false, error = message)
                     }
 
-                    _effect.emit(
-                        ReportsEffect.ShowError(
-                            throwable.message
-                                ?: "Failed to load expense report"
-                        )
-                    )
+                    _effect.emit(ReportsEffect.ShowError(message))
                 }
                 .collect { report ->
                     _uiState.update {
@@ -122,13 +181,14 @@ class ReportsViewModel(
     }
 
     private fun getCurrentMonthRange(): Pair<Long, Long> {
-        val today = LocalDate.now(zoneId)
-        val startOfMonth = today.withDayOfMonth(1)
-        val startOfNextMonth = startOfMonth.plusMonths(1)
+        val firstDay = LocalDate.now(zoneId).withDayOfMonth(1)
+        val firstDayOfNextMonth = firstDay.plusMonths(1)
 
         return Pair(
-            startOfMonth.atStartOfDay(zoneId).toInstant().toEpochMilli(),
-            startOfNextMonth.atStartOfDay(zoneId).toInstant().toEpochMilli()
+            firstDay.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+            firstDayOfNextMonth.atStartOfDay(zoneId)
+                .toInstant()
+                .toEpochMilli()
         )
     }
 }
