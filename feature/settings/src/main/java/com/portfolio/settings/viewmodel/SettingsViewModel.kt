@@ -1,17 +1,25 @@
-package com.portfolio.settings
+package com.portfolio.settings.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.portfolio.settings.effect.SettingsEffect
+import com.portfolio.settings.state.SettingsUiState
+import com.portfolio.settings.intent.SettingsIntent
+import com.smartexpense.domain.usecase.AuthUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class SettingsViewModel(
-    private val settingsUseCase: SettingsUseCase
+    private val settingsUseCase: SettingsUseCase,
+    private val authUseCase: AuthUseCase
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> =
@@ -38,6 +46,9 @@ class SettingsViewModel(
                 )
             )
 
+    private val _effect = MutableSharedFlow<SettingsEffect>()
+    val effect = _effect.asSharedFlow()
+
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
 
@@ -52,6 +63,22 @@ class SettingsViewModel(
                     settingsUseCase.setNotificationsEnabled(
                         intent.enabled
                     )
+                }
+            }
+            is SettingsIntent.SignOut -> {
+                viewModelScope.launch {
+                    try {
+                        authUseCase.signOut()
+                        _effect.emit(SettingsEffect.NavigateToSignIn)
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (exception: Exception) {
+                        _effect.emit(
+                            SettingsEffect.ShowError(
+                                exception.message ?: "Failed to sign out"
+                            )
+                        )
+                    }
                 }
             }
         }

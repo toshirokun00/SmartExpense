@@ -1,4 +1,4 @@
-package com.portfolio.settings
+package com.portfolio.settings.state
 
 import com.smartexpense.domain.model.AppTheme
 

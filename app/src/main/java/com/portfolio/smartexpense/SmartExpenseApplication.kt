@@ -3,12 +3,14 @@ package com.portfolio.smartexpense
 import android.app.Application
 import com.portfolio.budget.di.budgetModule
 import com.portfolio.reports.di.expenseReportModule
-import com.portfolio.settings.settingsModule
+import com.portfolio.settings.di.settingsModule
 import com.portfolio.smartexpense.di.mainModule
 import com.smartexpene.categories.di.categoryModule
+import com.smartexpense.auth.di.authFeatureModule
 import com.smartexpense.core.common.dataStoreModule
 import com.smartexpense.dashoard.di.dashboardModule
 import com.smartexpense.data.di.dataModule
+import com.smartexpense.data.di.supabaseModule
 import com.smartexpense.database.di.databaseModule
 import com.smartexpense.domain.di.domainModule
 import com.smartexpense.feature.expenses.di.expenseModule
@@ -36,7 +38,8 @@ class SmartExpenseApplication : Application() {
                 dataStoreModule,
                 notificationModule,
                 expenseReportModule,
-
+                supabaseModule,
+                authFeatureModule
             )
         }
     }

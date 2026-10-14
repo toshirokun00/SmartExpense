@@ -1,8 +1,12 @@
 package com.portfolio.settings
 
 import app.cash.turbine.test
+import com.portfolio.settings.effect.SettingsEffect
+import com.portfolio.settings.intent.SettingsIntent
+import com.portfolio.settings.viewmodel.SettingsViewModel
 import com.smartexpense.domain.model.AppSettings
 import com.smartexpense.domain.model.AppTheme
+import com.smartexpense.domain.usecase.AuthUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.test.MainDispatcherRule
 import io.mockk.coEvery
@@ -28,11 +32,13 @@ class SettingsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var settingsUseCase: SettingsUseCase
+    private lateinit var authUseCase: AuthUseCase
     private lateinit var viewModel: SettingsViewModel
 
     @Before
     fun setup() {
         settingsUseCase = mockk()
+        authUseCase = mockk()
 
         every {
             settingsUseCase.getSettings()
@@ -51,7 +57,12 @@ class SettingsViewModelTest {
             settingsUseCase.setNotificationsEnabled(any())
         } returns Unit
 
-        viewModel = SettingsViewModel(settingsUseCase)
+        coEvery {
+            authUseCase.signOut()
+        } returns Unit
+
+
+        viewModel = SettingsViewModel(settingsUseCase, authUseCase)
     }
 
 
@@ -110,7 +121,7 @@ class SettingsViewModelTest {
             throw IllegalStateException("Unable to load settings")
         }
 
-        viewModel = SettingsViewModel(settingsUseCase)
+        viewModel = SettingsViewModel(settingsUseCase, authUseCase)
 
         viewModel.uiState.test {
             // Initial state: isLoading = true
@@ -129,5 +140,45 @@ class SettingsViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+    @Test
+    fun signOutSuccessEmitsNavigateToSignIn() = runTest {
+        viewModel.effect.test {
+            viewModel.onIntent(SettingsIntent.SignOut)
+
+            assertEquals(
+                SettingsEffect.NavigateToSignIn,
+                awaitItem()
+            )
+
+            coVerify(exactly = 1) {
+                authUseCase.signOut()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun signOutFailureEmitsShowError() = runTest {
+        coEvery {
+            authUseCase.signOut()
+        } throws IllegalStateException("Unable to sign out")
+
+        viewModel.effect.test {
+            viewModel.onIntent(SettingsIntent.SignOut)
+
+            assertEquals(
+                SettingsEffect.ShowError("Unable to sign out"),
+                awaitItem()
+            )
+
+            coVerify(exactly = 1) {
+                authUseCase.signOut()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
 
 }

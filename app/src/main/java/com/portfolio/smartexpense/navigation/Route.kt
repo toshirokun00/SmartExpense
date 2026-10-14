@@ -18,17 +18,26 @@ data class ExpenseDetailRoute(
 ) : Route
 
 @Serializable
-data object CategoryRoute
+data object CategoryRoute : Route
 
 
 @Serializable
-data object DashboardRoute
+data object DashboardRoute : Route
 
 @Serializable
-data object BudgetRoute
+data object BudgetRoute : Route
 
 @Serializable
-data object SettingsRoute
+data object SettingsRoute : Route
 
 @Serializable
-data object ReportsRoute
+data object ReportsRoute : Route
+
+@Serializable
+data object AuthRoute : Route
+
+@Serializable
+data object EmailConfirmationRoute
+
+@Serializable
+data object SplashRoute : Route

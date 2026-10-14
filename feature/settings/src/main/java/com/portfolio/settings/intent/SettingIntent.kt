@@ -1,4 +1,4 @@
-package com.portfolio.settings
+package com.portfolio.settings.intent
 
 import com.smartexpense.domain.model.AppTheme
 
@@ -11,4 +11,6 @@ sealed interface SettingsIntent {
     data class NotificationsChanged(
         val enabled: Boolean
     ) : SettingsIntent
+
+    data object SignOut : SettingsIntent
 }
