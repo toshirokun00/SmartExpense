@@ -1,6 +1,6 @@
-package com.portfolio.smartexpense
+package com.smartexpense
 
-import com.portfolio.smartexpense.navigation.Route
+import com.smartexpense.navigation.Route
 
 data class StartupUiState(
     val isLoading: Boolean = true,

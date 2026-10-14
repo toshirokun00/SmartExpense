@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.portfolio.smartexpense"
+    namespace = "com.smartexpense"
     compileSdk {
         version = release(37) {
             minorApiLevel = 1
@@ -13,7 +13,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.portfolio.smartexpense"
+        applicationId = "com.smartexpense"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

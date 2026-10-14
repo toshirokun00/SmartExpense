@@ -24,7 +24,8 @@ class SupabaseAuthRepository(
         email: String,
         password: String
     ) {
-        supabaseClient.auth.signUpWith(Email) {
+        supabaseClient.auth.signUpWith(Email,
+            redirectUrl = "com.smartexpense://auth/callback") {
             this.email = email
             this.password = password
         }

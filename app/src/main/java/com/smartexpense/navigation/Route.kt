@@ -1,4 +1,4 @@
-package com.portfolio.smartexpense.navigation
+package com.smartexpense.navigation
 
 import kotlinx.serialization.Serializable
 

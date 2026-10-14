@@ -1,4 +1,4 @@
-package com.portfolio.smartexpense.navigation
+package com.smartexpense.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,8 +10,8 @@ import androidx.navigation.toRoute
 import com.portfolio.budget.screen.BudgetScreen
 import com.portfolio.reports.screen.ReportsScreen
 import com.portfolio.settings.screen.SettingsScreen
-import com.portfolio.smartexpense.SplashScreen
-import com.portfolio.smartexpense.StartupViewModel
+import com.smartexpense.SplashScreen
+import com.smartexpense.StartupViewModel
 import com.smartexpene.categories.screen.CategoryScreen
 import com.smartexpense.auth.screen.AuthScreen
 import com.smartexpense.auth.screen.EmailConfirmationScreen

@@ -1,4 +1,4 @@
-package com.portfolio.smartexpense.ui.theme
+package com.smartexpense.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

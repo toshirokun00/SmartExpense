@@ -1,4 +1,4 @@
-package com.portfolio.smartexpense.ui.theme
+package com.smartexpense.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

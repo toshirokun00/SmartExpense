@@ -1,10 +1,10 @@
-package com.portfolio.smartexpense
+package com.smartexpense
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.portfolio.smartexpense.navigation.AuthRoute
-import com.portfolio.smartexpense.navigation.DashboardRoute
+import com.smartexpense.navigation.AuthRoute
+import com.smartexpense.navigation.DashboardRoute
 import com.smartexpense.domain.usecase.AuthUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,10 +1,10 @@
-package com.portfolio.smartexpense
+package com.smartexpense
 
 import android.app.Application
 import com.portfolio.budget.di.budgetModule
 import com.portfolio.reports.di.expenseReportModule
 import com.portfolio.settings.di.settingsModule
-import com.portfolio.smartexpense.di.mainModule
+import com.smartexpense.di.mainModule
 import com.smartexpene.categories.di.categoryModule
 import com.smartexpense.auth.di.authFeatureModule
 import com.smartexpense.core.common.dataStoreModule
