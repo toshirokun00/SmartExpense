@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.portfolio.settings"
+    namespace = "com.smartexpense.settings"
     compileSdk {
         version = release(37) {
             minorApiLevel = 1

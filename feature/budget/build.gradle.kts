@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.portfolio.budget"
+    namespace = "com.smartexpense.budget"
     compileSdk {
         version = release(37) {
             minorApiLevel = 1

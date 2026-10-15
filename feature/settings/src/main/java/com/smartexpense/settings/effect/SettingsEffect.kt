@@ -1,0 +1,6 @@
+package com.smartexpense.settings.effect
+
+sealed interface SettingsEffect {
+    data object NavigateToSignIn : SettingsEffect
+    data class ShowError(val message: String) : SettingsEffect
+}

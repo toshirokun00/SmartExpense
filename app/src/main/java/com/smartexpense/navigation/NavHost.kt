@@ -7,9 +7,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.portfolio.budget.screen.BudgetScreen
-import com.portfolio.reports.screen.ReportsScreen
-import com.portfolio.settings.screen.SettingsScreen
+import com.smartexpense.budget.screen.BudgetScreen
+import com.smartexpense.reports.screen.ReportsScreen
+import com.smartexpense.settings.screen.SettingsScreen
 import com.smartexpense.SplashScreen
 import com.smartexpense.StartupViewModel
 import com.smartexpene.categories.screen.CategoryScreen

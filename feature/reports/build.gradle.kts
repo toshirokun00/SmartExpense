@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.portfolio.reports"
+    namespace = "com.smartexpense.reports"
     compileSdk {
         version = release(37) {
             minorApiLevel = 1

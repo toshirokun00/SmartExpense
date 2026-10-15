@@ -1,9 +1,9 @@
 package com.smartexpense
 
 import android.app.Application
-import com.portfolio.budget.di.budgetModule
-import com.portfolio.reports.di.expenseReportModule
-import com.portfolio.settings.di.settingsModule
+import com.smartexpense.budget.di.budgetModule
+import com.smartexpense.reports.di.expenseReportModule
+import com.smartexpense.settings.di.settingsModule
 import com.smartexpense.di.mainModule
 import com.smartexpene.categories.di.categoryModule
 import com.smartexpense.auth.di.authFeatureModule

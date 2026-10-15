@@ -13,8 +13,8 @@ val localProperties = Properties().apply {
     }
 }
 
-val supabaseUrl = localProperties.getProperty("SUPABASE_URL", "")
-val supabasePublishableKey =
+val supabaseUrl: String? = localProperties.getProperty("SUPABASE_URL", "")
+val supabasePublishableKey: String? =
     localProperties.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
 
 
