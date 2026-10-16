@@ -25,4 +25,10 @@ interface CategoryDao {
 
     @Delete
     suspend fun deleteCategory(category: CategoryEntity)
+
+    @Query("SELECT * FROM categories")
+    suspend fun getAllCategoriesForSync(): List<CategoryEntity>
+
+    @Query("SELECT * FROM categories")
+    suspend fun getCategoriesOnce(): List<CategoryEntity>
 }

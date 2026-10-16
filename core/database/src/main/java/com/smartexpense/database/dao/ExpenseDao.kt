@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.smartexpense.database.entity.ExpenseEntity
+import com.smartexpense.database.entity.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -25,4 +26,17 @@ interface ExpenseDao {
 
     @Delete
     suspend fun deleteExpense(expense: ExpenseEntity)
+
+    @Query("""SELECT * FROM expenses WHERE syncStatus IN ('PENDING', 'FAILED') ORDER BY date ASC""")
+    suspend fun getUnsyncedExpenses(): List<ExpenseEntity>
+
+    @Query("UPDATE expenses SET syncStatus = :status WHERE id = :expenseId")
+    suspend fun updateSyncStatus(
+        expenseId: Long,
+        status: String
+    )
+
+    @Query("DELETE FROM expenses WHERE id = :expenseId")
+    suspend fun deleteExpenseById(expenseId: Long)
+
 }

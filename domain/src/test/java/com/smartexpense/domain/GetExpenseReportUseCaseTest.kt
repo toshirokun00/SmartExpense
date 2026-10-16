@@ -145,6 +145,17 @@ class GetExpenseReportUseCaseTest {
         }
     }
 
+
+    @Test
+    fun invokeRejectsDateRangeWhenStartAndEndAreEqual() {
+        val date = timestamp(2026, 10, 10)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase(date, date)
+        }
+    }
+
+
     private fun expense(
         amount: Double,
         categoryId: Long,

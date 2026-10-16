@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.smartexpense.feature.expenses"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }

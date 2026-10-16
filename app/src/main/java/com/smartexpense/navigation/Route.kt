@@ -2,15 +2,14 @@ package com.smartexpense.navigation
 
 import kotlinx.serialization.Serializable
 
-
+@Serializable
 sealed interface Route
 
 @Serializable
 data object ExpensesRoute : Route
 
 @Serializable
-data object
-AddExpenseRoute : Route
+data object AddExpenseRoute : Route
 
 @Serializable
 data class ExpenseDetailRoute(
@@ -19,7 +18,6 @@ data class ExpenseDetailRoute(
 
 @Serializable
 data object CategoryRoute : Route
-
 
 @Serializable
 data object DashboardRoute : Route
@@ -37,7 +35,7 @@ data object ReportsRoute : Route
 data object AuthRoute : Route
 
 @Serializable
-data object EmailConfirmationRoute
+data object EmailConfirmationRoute : Route
 
 @Serializable
 data object SplashRoute : Route

@@ -1,28 +1,35 @@
 package com.smartexpense
 
 import android.app.Application
-import com.smartexpense.budget.di.budgetModule
-import com.smartexpense.reports.di.expenseReportModule
-import com.smartexpense.settings.di.settingsModule
-import com.smartexpense.di.mainModule
+import androidx.work.Configuration
 import com.smartexpene.categories.di.categoryModule
 import com.smartexpense.auth.di.authFeatureModule
+import com.smartexpense.budget.di.budgetModule
 import com.smartexpense.core.common.dataStoreModule
 import com.smartexpense.dashoard.di.dashboardModule
 import com.smartexpense.data.di.dataModule
 import com.smartexpense.data.di.supabaseModule
+import com.smartexpense.data.sync.ExpenseSyncWorkerFactory
 import com.smartexpense.database.di.databaseModule
+import com.smartexpense.di.mainModule
 import com.smartexpense.domain.di.domainModule
 import com.smartexpense.feature.expenses.di.expenseModule
 import com.smartexpense.notification.notificationModule
+import com.smartexpense.reports.di.expenseReportModule
+import com.smartexpense.settings.di.settingsModule
 import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 import org.koin.core.context.startKoin
 
-class SmartExpenseApplication : Application() {
+class SmartExpenseApplication : Application(), Configuration.Provider, KoinComponent {
+
     override fun onCreate() {
         super.onCreate()
 
         startKoin {
+            androidLogger(org.koin.core.logger.Level.ERROR)
             androidContext(this@SmartExpenseApplication)
 
             modules(
@@ -43,4 +50,10 @@ class SmartExpenseApplication : Application() {
             )
         }
     }
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(get<ExpenseSyncWorkerFactory>())
+            .build()
 }
+

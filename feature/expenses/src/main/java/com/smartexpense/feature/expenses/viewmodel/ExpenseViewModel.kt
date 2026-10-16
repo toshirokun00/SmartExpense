@@ -192,7 +192,7 @@ class ExpenseViewModel(
                             description = expense.description.ifBlank {
                                 "New expense"
                             },
-                            amount = "₱${"%.2f".format(amount)}"
+                            amount = "₱${String.format(java.util.Locale.US, "%.2f", amount)}"
                         )
                     }
                 }catch (exception : CancellationException) {

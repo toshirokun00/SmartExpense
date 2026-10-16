@@ -1,9 +1,13 @@
 package com.smartexpense.data
 
+import android.content.Context
+import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
 import com.smartexpense.data.repositoryimpl.CategoryRepositoryImpl
+import com.smartexpense.data.sync.ExpenseSyncEnqueuer
 import com.smartexpense.database.dao.CategoryDao
 import com.smartexpense.database.entity.CategoryEntity
 import com.smartexpense.domain.model.Category
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -19,13 +23,25 @@ import org.junit.Test
 
 class CategoryRepositoryImplTest {
 
-    private lateinit var categoryDao : CategoryDao
-    private lateinit var repository : CategoryRepositoryImpl
+    private lateinit var categoryDao: CategoryDao
+    private lateinit var supabaseCategoryRemoteDataSource: SupabaseCategoryRemoteDataSource
+    private lateinit var supabaseClient: SupabaseClient
+    private val expenseSyncEnqueuer =
+        mockk<ExpenseSyncEnqueuer>(relaxed = true)
+    private lateinit var repository: CategoryRepositoryImpl
 
     @Before
     fun setup(){
         categoryDao = mockk()
-        repository = CategoryRepositoryImpl(categoryDao)
+        supabaseCategoryRemoteDataSource = mockk()
+        supabaseClient = mockk()
+
+        repository = CategoryRepositoryImpl(
+            categoryDao = categoryDao,
+            supabaseCategoryRemoteDataSource = supabaseCategoryRemoteDataSource,
+            supabaseClient = supabaseClient,
+           expenseSyncEnqueuer = expenseSyncEnqueuer
+        )
     }
 
     @Test
@@ -57,26 +73,47 @@ class CategoryRepositoryImplTest {
         )
     }
 
+
     @Test
     fun getCategoryByIdMapsEntityToDomain() = runTest {
-        val entity = CategoryEntity(id = 1L, name = "Food")
+        val entity = CategoryEntity(
+            id = 1L,
+            name = "Food",
+            clientId = "test-client-id"
+        )
 
         coEvery {
             categoryDao.getCategoryById(1L)
         } returns entity
 
-        val result = categoryDao.getCategoryById(1L)
+        val result = repository.getCategoriesById(1L)
 
-        assertEquals(CategoryEntity(id = 1L, "Food"), result)
+        assertEquals(
+            Category(id = 1L, name = "Food"),
+            result
+        )
 
         coVerify {
             categoryDao.getCategoryById(1L)
         }
     }
 
+
+
     @Test
     fun updateCategoryMapsDomainEntity() = runTest {
-        val category = Category(id = 1L, name = "Updated Food")
+        val category = Category(
+            id = 1L,
+            name = "Updated Food"
+        )
+
+        coEvery {
+            categoryDao.getCategoryById(1L)
+        } returns CategoryEntity(
+            id = 1L,
+            name = "Food",
+            clientId = "test-client-id"
+        )
 
         coEvery {
             categoryDao.updateCategory(any())
@@ -85,32 +122,57 @@ class CategoryRepositoryImplTest {
         repository.updateCategory(category)
 
         coVerify {
+            categoryDao.getCategoryById(1L)
+        }
+
+        coVerify {
             categoryDao.updateCategory(
                 match {
-                    it.id == 1L && it.name == "Updated Food"
+                    it.id == 1L &&
+                            it.name == "Updated Food" &&
+                            it.clientId == "test-client-id"
                 }
             )
         }
     }
 
+
+
     @Test
     fun deleteCategoryMapsDomainToEntity() = runTest {
-        val category = Category(id = 1L, name = "Food")
+        val category = Category(
+            id = 1L,
+            name = "Food"
+        )
 
         coEvery {
-            repository.deleteCategory(category)
+            categoryDao.getCategoryById(1L)
+        } returns CategoryEntity(
+            id = 1L,
+            name = "Food",
+            clientId = "test-client-id"
+        )
+
+        coEvery {
+            categoryDao.deleteCategory(any())
         } just Runs
 
         repository.deleteCategory(category)
 
         coVerify {
+            categoryDao.getCategoryById(1L)
+        }
+
+        coVerify {
             categoryDao.deleteCategory(
                 match {
-                    it.id == 1L && it.name == "Food"
+                    it.id == 1L &&
+                            it.name == "Food" &&
+                            it.clientId == "test-client-id"
                 }
             )
         }
-
     }
+
 
 }
