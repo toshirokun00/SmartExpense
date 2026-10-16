@@ -235,13 +235,6 @@ private fun ReportsContent(
                             SummaryCard(uiState = uiState)
                         }
 
-                        item {
-                            SectionTitle("Spending by Category")
-                        }
-
-                        item {
-                            SectionTitle("Daily Spending")
-                        }
 
                         item {
                             SectionTitle("Spending by Category")
@@ -275,15 +268,15 @@ private fun ReportsContent(
                         }
 
                         item {
+                            SectionTitle("Daily Spending")
+                        }
+
+                        item {
                             DailySpendingChart(
                                 dailySpending = uiState.report.dailySpending
                             )
                         }
 
-
-                        item {
-                            SectionTitle("Daily Spending")
-                        }
 
                         if (uiState.report.dailySpending.isEmpty()) {
                             item {

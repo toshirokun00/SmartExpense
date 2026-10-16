@@ -14,4 +14,8 @@ interface CategoryRepository {
     suspend fun updateCategory(category: Category)
 
     suspend fun deleteCategory(category: Category)
+
+    suspend fun syncCategories()
+
+    suspend fun getRemoteCategoryId(localCategoryId: Long): Long?
 }

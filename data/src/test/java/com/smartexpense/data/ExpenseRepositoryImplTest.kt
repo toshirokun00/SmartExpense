@@ -1,9 +1,16 @@
 package com.smartexpense.data
 
+import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
 import com.smartexpense.data.repositoryimpl.ExpenseRepositoryImpl
+import com.smartexpense.data.sync.ExpenseSyncEnqueuer
+import com.smartexpense.database.ExpenseDeletionTransaction
 import com.smartexpense.database.dao.ExpenseDao
+import com.smartexpense.database.dao.PendingExpenseDeletionDao
 import com.smartexpense.database.entity.ExpenseEntity
+import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.Expense
+import com.smartexpense.domain.repository.CategoryRepository
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -17,12 +24,34 @@ import org.junit.Test
 class ExpenseRepositoryImplTest {
 
     private lateinit var expenseDao: ExpenseDao
+    private lateinit var supabaseExpenseRemoteDataSource: SupabaseExpenseRemoteDataSource
+    private lateinit var supabaseClient: SupabaseClient
+    private lateinit var categoryRepository: CategoryRepository
+    private lateinit var pendingExpenseDeletionDao: PendingExpenseDeletionDao
+    private lateinit var deletionTransaction: ExpenseDeletionTransaction
     private lateinit var repository: ExpenseRepositoryImpl
+
+    private val expenseSyncEnqueuer =
+        mockk<ExpenseSyncEnqueuer>(relaxed = true)
 
     @Before
     fun setup() {
         expenseDao = mockk()
-        repository = ExpenseRepositoryImpl(expenseDao)
+        supabaseExpenseRemoteDataSource = mockk()
+        supabaseClient = mockk()
+        categoryRepository = mockk()
+        pendingExpenseDeletionDao = mockk()
+        deletionTransaction = mockk()
+
+        repository = ExpenseRepositoryImpl(
+            expenseDao = expenseDao,
+            supabaseExpenseRemoteDataSource = supabaseExpenseRemoteDataSource,
+            supabaseClient = supabaseClient,
+            categoryRepository = categoryRepository,
+            expenseSyncEnqueuer = expenseSyncEnqueuer,
+            pendingExpenseDeletionDao = pendingExpenseDeletionDao,
+            deletionTransaction = deletionTransaction
+        )
     }
 
     @Test
@@ -101,85 +130,100 @@ class ExpenseRepositoryImplTest {
             description = "Lunch",
             date = 1000L
         )
-        coEvery {
-            expenseDao.insertExpense(any())
-        } returns Unit
+
+        coEvery { expenseDao.insertExpense(any()) } returns Unit
 
         repository.addExpense(expense)
 
-        coVerify {
+        coVerify(exactly = 1) {
             expenseDao.insertExpense(
-                ExpenseEntity(
-                    1L,
-                    amount = 100.50,
-                    categoryId = 1L,
-                    description = "Lunch",
-                    date = 1000L
-                )
+                match { entity ->
+                    entity.id == 1L &&
+                            entity.amount == 100.50 &&
+                            entity.categoryId == 1L &&
+                            entity.description == "Lunch" &&
+                            entity.date == 1000L &&
+                            entity.syncStatus == SyncStatus.PENDING &&
+                            entity.clientId.isNotBlank()
+                }
             )
         }
     }
 
     @Test
     fun updateExpenseCallsDaoWithMappedEntity() = runTest {
+        val existingEntity = ExpenseEntity(
+            id = 1L,
+            amount = 80.00,
+            categoryId = 1L,
+            description = "Breakfast",
+            date = 900L,
+            clientId = "test-client-id"
+        )
+
         val expense = Expense(
-            1L,
+            id = 1L,
             amount = 100.50,
             categoryId = 1L,
             description = "Lunch",
             date = 1000L
         )
 
-        coEvery {
-            expenseDao.updateExpense(any())
-        } returns Unit
+        coEvery { expenseDao.getExpenseById(1L) } returns existingEntity
+        coEvery { expenseDao.updateExpense(any()) } returns Unit
 
         repository.updateExpense(expense)
 
-        coVerify {
+        coVerify(exactly = 1) {
             expenseDao.updateExpense(
-                ExpenseEntity(
-                    1L,
-                    amount = 100.50,
-                    categoryId = 1L,
-                    description = "Lunch",
-                    date = 1000L
-                )
+                match { entity ->
+                    entity.id == 1L &&
+                            entity.amount == 100.50 &&
+                            entity.categoryId == 1L &&
+                            entity.description == "Lunch" &&
+                            entity.date == 1000L &&
+                            entity.clientId == "test-client-id" &&
+                            entity.syncStatus == SyncStatus.PENDING
+                }
             )
-
         }
     }
 
     @Test
-    fun deleteExpenseCallsDaoWithMappedEntity() = runTest {
+    fun deleteExpenseCallsDeletionTransaction() = runTest {
+        val expenseEntity = ExpenseEntity(
+            id = 1L,
+            amount = 100.50,
+            categoryId = 1L,
+            description = "Lunch",
+            date = 1000L,
+            clientId = "test-client-id"
+        )
+
         val expense = Expense(
-            1L,
+            id = 1L,
             amount = 100.50,
             categoryId = 1L,
             description = "Lunch",
             date = 1000L
         )
 
+        coEvery { expenseDao.getExpenseById(1L) } returns expenseEntity
         coEvery {
-            expenseDao.deleteExpense(any())
+            deletionTransaction.deleteExpense(1L, "test-client-id")
         } returns Unit
 
         repository.deleteExpense(expense)
 
-        coVerify {
-            expenseDao.deleteExpense(
-                expense = ExpenseEntity(
-                    1L,
-                    amount = 100.50,
-                    categoryId = 1L,
-                    description = "Lunch",
-                    date = 1000L
-                )
-            )
+        coVerify(exactly = 1) {
+            expenseDao.getExpenseById(1L)
         }
 
-
+        coVerify(exactly = 1) {
+            deletionTransaction.deleteExpense(1L, "test-client-id")
+        }
     }
+
 
 
 }

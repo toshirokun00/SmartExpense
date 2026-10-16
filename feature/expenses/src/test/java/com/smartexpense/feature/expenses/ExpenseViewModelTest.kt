@@ -23,8 +23,10 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -116,19 +118,20 @@ class ExpenseViewModelTest {
 
     @Test
     fun descriptionChangedUpdatesFormState() = runTest {
-
         viewModel.uiState.test {
-
+            // Consume the initial state.
             awaitItem()
+
             viewModel.onIntent(
                 ExpenseIntent.DescriptionChanged("Lunch")
             )
 
-            val state = awaitItem()
+            val updatedState = awaitItem()
 
-            assertEquals("Lunch", state.form.description)
+            assertEquals("Lunch", updatedState.form.description)
         }
     }
+
 
 
     @Test
@@ -217,6 +220,7 @@ class ExpenseViewModelTest {
         assertNull(state.expenseToDeleteId)
     }
 
+
     @Test
     fun confirmDeleteExpenseCallsDeleteUseCase() = runTest {
         val expense = Expense(
@@ -227,13 +231,8 @@ class ExpenseViewModelTest {
             date = 123456L
         )
 
-        every {
-            getExpensesUseCase()
-        } returns flowOf(listOf(expense))
-
-        coEvery {
-            deleteExpenseUseCase(expense)
-        } just Runs
+        every { getExpensesUseCase() } returns flowOf(listOf(expense))
+        coEvery { deleteExpenseUseCase(expense) } just Runs
 
         viewModel = ExpenseViewModel(
             getExpenseUseCase = getExpensesUseCase,
@@ -248,8 +247,11 @@ class ExpenseViewModelTest {
         )
 
         viewModel.uiState.test {
-
-            awaitItem()
+            // Wait until the expense flow has populated uiState.
+            var state = awaitItem()
+            while (expense !in state.expenses) {
+                state = awaitItem()
+            }
 
             viewModel.effect.test {
                 viewModel.onIntent(
@@ -260,23 +262,25 @@ class ExpenseViewModelTest {
                     ExpenseIntent.ConfirmDeleteExpense
                 )
 
-                val effect = awaitItem()
-                assertEquals(ExpenseEffect.ExpenseDeleted, effect)
+                assertEquals(
+                    ExpenseEffect.ExpenseDeleted,
+                    awaitItem()
+                )
+
+                coVerify(exactly = 1) {
+                    deleteExpenseUseCase(expense)
+                }
+
+                cancelAndIgnoreRemainingEvents()
             }
 
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify {
-            deleteExpenseUseCase(expense)
-        }
-
-        assertFalse(
-            viewModel.screenState.value.showDeleteConfirmation
-        )
-
+        assertFalse(viewModel.screenState.value.showDeleteConfirmation)
         assertNull(viewModel.screenState.value.expenseToDeleteId)
     }
+
 
     @Test
     fun totalAmountIsCalculatedFromExpenses() = runTest {

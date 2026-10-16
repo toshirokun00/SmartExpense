@@ -6,6 +6,7 @@ import org.koin.dsl.module
 import com.smartexpense.data.BuildConfig
 import com.smartexpense.data.auth.SupabaseAuthRepository
 import com.smartexpense.domain.repository.AuthRepository
+import io.github.jan.supabase.postgrest.Postgrest
 
 
 val supabaseModule = module {
@@ -23,6 +24,7 @@ val supabaseModule = module {
             supabaseKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY
         ) {
             install(Auth)
+            install(Postgrest)
         }
     }
 
