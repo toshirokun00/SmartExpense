@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.smartexpense.navigation.AuthRoute
 import com.smartexpense.navigation.DashboardRoute
 import com.smartexpense.domain.usecase.AuthUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +16,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
 
 class StartupViewModel(
-    private val authUseCase: AuthUseCase
+    private val authUseCase: AuthUseCase,
+    private val scheduleSyncUseCase: ScheduleSyncUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StartupUiState())
@@ -35,6 +37,8 @@ class StartupViewModel(
                 }
 
                 val destination = if (userId != null) {
+                    // Restore this user's data from Supabase in the background.
+                    scheduleSyncUseCase()
                     DashboardRoute
                 } else {
                     AuthRoute

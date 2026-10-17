@@ -1,8 +1,8 @@
 package com.smartexpense.data.sync
 
-interface ExpenseSyncEnqueuer {
-    fun enqueue()
-}
+import com.smartexpense.domain.repository.SyncEnqueuer
+
+interface ExpenseSyncEnqueuer : SyncEnqueuer
 
 class ExpenseSyncEnqueuerImpl(
     private val scheduler: ExpenseSyncScheduler

@@ -11,6 +11,6 @@ val mainModule  = module {
 
     }
     viewModel {
-        StartupViewModel(get())
+        StartupViewModel(get(), get())
     }
 }

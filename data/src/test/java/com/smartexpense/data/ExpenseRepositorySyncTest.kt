@@ -3,6 +3,7 @@ package com.smartexpense.data
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
 import com.smartexpense.data.repositoryimpl.ExpenseRepositoryImpl
 import com.smartexpense.data.sync.ExpenseSyncEnqueuer
+import com.smartexpense.data.sync.RemoteDataSync
 import com.smartexpense.database.ExpenseDeletionTransaction
 import com.smartexpense.database.dao.ExpenseDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
@@ -33,6 +34,9 @@ class ExpenseRepositorySyncTest {
 
     private val expenseSyncEnqueuer =
         mockk<ExpenseSyncEnqueuer>(relaxed = true)
+
+    private val remoteDataSync =
+        mockk<RemoteDataSync>(relaxed = true)
 
     @Test
     fun successfulRemoteDeletionRemovesPendingDeletion() = runTest {
@@ -185,7 +189,8 @@ class ExpenseRepositorySyncTest {
         categoryRepository = categoryRepository,
         expenseSyncEnqueuer = expenseSyncEnqueuer,
         pendingExpenseDeletionDao = pendingDeletionDao,
-        deletionTransaction = deletionTransaction
+        deletionTransaction = deletionTransaction,
+        remoteDataSync = remoteDataSync
     )
 
     @Test

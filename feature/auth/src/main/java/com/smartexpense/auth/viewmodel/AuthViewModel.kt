@@ -6,6 +6,7 @@ import com.smartexpense.auth.effect.AuthEffect
 import com.smartexpense.auth.intent.AuthIntent
 import com.smartexpense.auth.state.AuthUiState
 import com.smartexpense.domain.usecase.AuthUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -14,7 +15,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authUseCase: AuthUseCase
+    private val authUseCase: AuthUseCase,
+    private val scheduleSyncUseCase: ScheduleSyncUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -89,6 +91,8 @@ class AuthViewModel(
                     password = state.password
                 )
 
+                scheduleSyncUseCase()
+
                 _effect.emit(AuthEffect.NavigateToHome)
             } catch (exception: Exception) {
                 _uiState.update {
@@ -129,6 +133,7 @@ class AuthViewModel(
                 val currentUserId = authUseCase.getCurrentUserId()
 
                 if (currentUserId != null) {
+                    scheduleSyncUseCase()
                     _effect.emit(AuthEffect.NavigateToHome)
                 } else {
                     _effect.emit(AuthEffect.NavigateToEmailConfirmation)

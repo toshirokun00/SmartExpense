@@ -8,6 +8,7 @@ import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseReportUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import org.koin.dsl.module
@@ -28,4 +29,6 @@ val domainModule = module {
     factory { SettingsUseCase(get()) }
 
     factory { GetExpenseReportUseCase(expenseRepository = get()) }
+
+    factory { ScheduleSyncUseCase(syncEnqueuer = get()) }
 }
