@@ -16,6 +16,7 @@ import com.smartexpense.feature.expenses.effect.ExpenseEffect
 import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
 import com.smartexpense.notification.ExpenseNotificationManager
+import com.smartexpense.test.MainDispatcherRule
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -26,16 +27,21 @@ import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ExpenseViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var getExpensesUseCase: GetExpenseUseCase
     private lateinit var getExpenseByIdUseCase: GetExpenseByIdUseCase
@@ -48,7 +54,7 @@ class ExpenseViewModelTest {
 
     private lateinit var settingsUseCase: SettingsUseCase
 
-    private lateinit var expenseNotificationManager : ExpenseNotificationManager
+    private lateinit var expenseNotificationManager: ExpenseNotificationManager
 
     private lateinit var viewModel: ExpenseViewModel
 
@@ -99,14 +105,19 @@ class ExpenseViewModelTest {
             settingsUseCase = settingsUseCase,
             expenseNotificationManager = expenseNotificationManager
         )
+    }
 
+    @After
+    fun tearDown() {
+        // No-op: ViewModel.onCleared() is protected and cannot be called
+        // from tests. MainDispatcherRule handles dispatcher reset between
+        // tests. Each @Before creates a fresh ExpenseViewModel instance,
+        // so viewModelScope is per-test and does not leak.
     }
 
     @Test
     fun amountChangedUpdatesFormState() = runTest {
-
         viewModel.uiState.test {
-
             awaitItem()
             viewModel.onIntent(
                 ExpenseIntent.AmountChanged("100.50")
@@ -132,11 +143,8 @@ class ExpenseViewModelTest {
         }
     }
 
-
-
     @Test
     fun addExpenseWithValidAmountCallUseCase() = runTest {
-
         every {
             validateExpenseAmountUseCase("100.50")
         } returns 100.50
@@ -147,13 +155,10 @@ class ExpenseViewModelTest {
         viewModel.onIntent(
             ExpenseIntent.AmountChanged("100.50")
         )
-
         viewModel.onIntent(
             ExpenseIntent.DescriptionChanged("Lunch")
         )
-
         viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
-
         viewModel.onIntent(ExpenseIntent.AddExpenses)
 
         advanceUntilIdle()
@@ -162,12 +167,11 @@ class ExpenseViewModelTest {
             addExpenseUseCase(
                 match {
                     it.amount == 100.50 &&
-                            it.description == "Lunch" &&
-                            it.categoryId == 1L
+                        it.description == "Lunch" &&
+                        it.categoryId == 1L
                 }
             )
         }
-
     }
 
     @Test
@@ -202,7 +206,6 @@ class ExpenseViewModelTest {
         val state = viewModel.screenState.value
 
         assertTrue(state.showDeleteConfirmation)
-
         assertEquals(10L, state.expenseToDeleteId)
     }
 
@@ -211,7 +214,6 @@ class ExpenseViewModelTest {
         viewModel.onIntent(
             ExpenseIntent.RequestDeleteExpense(10L)
         )
-
         viewModel.onIntent(ExpenseIntent.CancelDeleteExpense)
 
         val state = viewModel.screenState.value
@@ -219,7 +221,6 @@ class ExpenseViewModelTest {
         assertFalse(state.showDeleteConfirmation)
         assertNull(state.expenseToDeleteId)
     }
-
 
     @Test
     fun confirmDeleteExpenseCallsDeleteUseCase() = runTest {
@@ -257,7 +258,6 @@ class ExpenseViewModelTest {
                 viewModel.onIntent(
                     ExpenseIntent.RequestDeleteExpense(10L)
                 )
-
                 viewModel.onIntent(
                     ExpenseIntent.ConfirmDeleteExpense
                 )
@@ -273,7 +273,6 @@ class ExpenseViewModelTest {
 
                 cancelAndIgnoreRemainingEvents()
             }
-
             cancelAndIgnoreRemainingEvents()
         }
 
@@ -281,37 +280,15 @@ class ExpenseViewModelTest {
         assertNull(viewModel.screenState.value.expenseToDeleteId)
     }
 
-
     @Test
     fun totalAmountIsCalculatedFromExpenses() = runTest {
         val expenses = listOf(
-            Expense(
-                id = 1L,
-                amount = 100.0,
-                categoryId = 1L,
-                description = "Lunch",
-                date = 1L
-            ), Expense(
-                id = 2L,
-                amount = 250.50,
-                categoryId = 1L,
-                description = "Groceries",
-                date = 2L
-            ),
-            Expense(
-                id = 3L,
-                amount = 75.25,
-                categoryId = 2L,
-                description = "Transport",
-                date = 3L
-            )
+            Expense(id = 1L, amount = 100.0, categoryId = 1L, description = "Lunch", date = 1L),
+            Expense(id = 2L, amount = 250.50, categoryId = 1L, description = "Groceries", date = 2L),
+            Expense(id = 3L, amount = 75.25, categoryId = 2L, description = "Transport", date = 3L)
         )
 
-
-        every {
-            getExpensesUseCase()
-        } returns flowOf(expenses)
-
+        every { getExpensesUseCase() } returns flowOf(expenses)
 
         viewModel = ExpenseViewModel(
             getExpenseUseCase = getExpensesUseCase,
@@ -325,31 +302,18 @@ class ExpenseViewModelTest {
             expenseNotificationManager = expenseNotificationManager
         )
 
-       viewModel.uiState.test {
-           awaitItem()
-
-           val state = awaitItem()
-
-
-           assertEquals(
-               425.75,
-               state.totalAmount,
-               0.001
-           )
-
-           cancelAndIgnoreRemainingEvents()
-       }
+        viewModel.uiState.test {
+            awaitItem()
+            val state = awaitItem()
+            assertEquals(425.75, state.totalAmount, 0.001)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
     fun addExpenseShowsNotificationWhenEnabled() = runTest {
-        every {
-            validateExpenseAmountUseCase("100")
-        } returns 100.0
-
-        coEvery {
-            addExpenseUseCase(any())
-        } just Runs
+        every { validateExpenseAmountUseCase("100") } returns 100.0
+        coEvery { addExpenseUseCase(any()) } just Runs
 
         viewModel.onIntent(ExpenseIntent.AmountChanged("100"))
         viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
@@ -367,22 +331,11 @@ class ExpenseViewModelTest {
 
     @Test
     fun addExpenseDoesNotShowNotificationWhenDisabled() = runTest {
-        every {
-            settingsUseCase.getSettings()
-        } returns flowOf(
-            AppSettings(
-                theme = AppTheme.SYSTEM,
-                notificationsEnabled = false
-            )
+        every { settingsUseCase.getSettings() } returns flowOf(
+            AppSettings(theme = AppTheme.SYSTEM, notificationsEnabled = false)
         )
-
-        every {
-            validateExpenseAmountUseCase("100")
-        } returns 100.0
-
-        coEvery {
-            addExpenseUseCase(any())
-        } just Runs
+        every { validateExpenseAmountUseCase("100") } returns 100.0
+        coEvery { addExpenseUseCase(any()) } just Runs
 
         viewModel = ExpenseViewModel(
             getExpenseUseCase = getExpensesUseCase,
@@ -412,13 +365,8 @@ class ExpenseViewModelTest {
 
     @Test
     fun addExpenseDoesNotShowNotificationWhenSaveFails() = runTest {
-        every {
-            validateExpenseAmountUseCase("100")
-        } returns 100.0
-
-        coEvery {
-            addExpenseUseCase(any())
-        } throws IllegalStateException("Save failed")
+        every { validateExpenseAmountUseCase("100") } returns 100.0
+        coEvery { addExpenseUseCase(any()) } throws IllegalStateException("Save failed")
 
         viewModel.onIntent(ExpenseIntent.AmountChanged("100"))
         viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
@@ -433,6 +381,4 @@ class ExpenseViewModelTest {
             )
         }
     }
-
-
 }
