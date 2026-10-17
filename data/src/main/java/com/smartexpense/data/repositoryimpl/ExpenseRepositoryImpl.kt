@@ -5,6 +5,7 @@ import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
 import com.smartexpense.data.repositoryimpl.mapper.toDomain
 import com.smartexpense.data.repositoryimpl.mapper.toEntity
 import com.smartexpense.data.sync.ExpenseSyncEnqueuer
+import com.smartexpense.data.sync.RemoteDataSync
 import com.smartexpense.database.ExpenseDeletionTransaction
 import com.smartexpense.database.dao.ExpenseDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
@@ -25,7 +26,8 @@ class ExpenseRepositoryImpl(
     private val categoryRepository: CategoryRepository,
     private val expenseSyncEnqueuer: ExpenseSyncEnqueuer,
     private val pendingExpenseDeletionDao: PendingExpenseDeletionDao,
-    private val deletionTransaction: ExpenseDeletionTransaction
+    private val deletionTransaction: ExpenseDeletionTransaction,
+    private val remoteDataSync: RemoteDataSync
 ) : ExpenseRepository {
 
     override fun getExpense(): Flow<List<Expense>> =
@@ -78,6 +80,10 @@ class ExpenseRepositoryImpl(
     }
 
     internal suspend fun syncPendingExpensesForUser(userId: String) {
+        // Pull the user's remote data into Room first so a fresh install (or a
+        // new device) restores what they previously saved to Supabase.
+        remoteDataSync.pullRemoteData(userId)
+
         categoryRepository.syncCategories()
 
         var hasFailures = false

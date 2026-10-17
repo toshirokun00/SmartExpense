@@ -5,6 +5,7 @@ import com.smartexpense.auth.effect.AuthEffect
 import com.smartexpense.auth.intent.AuthIntent
 import com.smartexpense.auth.viewmodel.AuthViewModel
 import com.smartexpense.domain.usecase.AuthUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -28,6 +29,7 @@ import org.junit.Test
 class AuthViewModelTest {
 
     private lateinit var authUseCase: AuthUseCase
+    private lateinit var scheduleSyncUseCase: ScheduleSyncUseCase
     private lateinit var viewModel: AuthViewModel
     private lateinit var testDispatcher: TestDispatcher
 
@@ -37,7 +39,8 @@ class AuthViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         authUseCase = mockk()
-        viewModel = AuthViewModel(authUseCase)
+        scheduleSyncUseCase = mockk(relaxed = true)
+        viewModel = AuthViewModel(authUseCase, scheduleSyncUseCase)
     }
 
     @After
@@ -110,6 +113,22 @@ class AuthViewModelTest {
             coVerify(exactly = 1) {
                 authUseCase.signIn("user@example.com", "Password123")
             }
+        }
+
+    @Test
+    fun `successful sign in schedules a background sync`() =
+        runTest(testDispatcher) {
+            coEvery {
+                authUseCase.signIn("user@example.com", "Password123")
+            } returns Unit
+
+            viewModel.onIntent(AuthIntent.EmailChanged("user@example.com"))
+            viewModel.onIntent(AuthIntent.PasswordChanged("Password123"))
+            viewModel.onIntent(AuthIntent.SignIn)
+
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { scheduleSyncUseCase() }
         }
 
     @Test

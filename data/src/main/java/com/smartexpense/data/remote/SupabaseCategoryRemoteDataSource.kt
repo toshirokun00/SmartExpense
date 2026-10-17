@@ -36,4 +36,19 @@ class SupabaseCategoryRemoteDataSource(
             .decodeList<SupabaseCategoryResponseDto>()
             .firstOrNull()
     }
+
+    suspend fun getCategories(
+        userId: String
+    ): List<SupabaseCategoryResponseDto> {
+        return supabaseClient
+            .from("categories")
+            .select(
+                columns = Columns.list("id", "client_id", "name")
+            ) {
+                filter {
+                    eq("user_id", userId)
+                }
+            }
+            .decodeList<SupabaseCategoryResponseDto>()
+    }
 }

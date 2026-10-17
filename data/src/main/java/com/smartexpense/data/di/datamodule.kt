@@ -10,11 +10,12 @@ import com.smartexpense.data.sync.ExpenseSyncEnqueuer
 import com.smartexpense.data.sync.ExpenseSyncEnqueuerImpl
 import com.smartexpense.data.sync.ExpenseSyncScheduler
 import com.smartexpense.data.sync.ExpenseSyncWorkerFactory
-import com.smartexpense.data.sync.WorkManagerExpenseSyncEnqueuer
+import com.smartexpense.data.sync.RemoteDataSync
 import com.smartexpense.domain.repository.BudgetRepository
 import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
 import com.smartexpense.domain.repository.SettingsRepository
+import com.smartexpense.domain.repository.SyncEnqueuer
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -27,6 +28,10 @@ val dataModule = module {
         ExpenseSyncEnqueuerImpl(
             scheduler = get()
         )
+    }
+
+    single<SyncEnqueuer> {
+        get<ExpenseSyncEnqueuer>()
     }
 
     single {
@@ -47,6 +52,16 @@ val dataModule = module {
         )
     }
 
+    single {
+        RemoteDataSync(
+            categoryDao = get(),
+            expenseDao = get(),
+            pendingExpenseDeletionDao = get(),
+            categoryRemoteDataSource = get(),
+            expenseRemoteDataSource = get()
+        )
+    }
+
     single<ExpenseRepository> {
         ExpenseRepositoryImpl(
             expenseDao = get(),
@@ -55,7 +70,8 @@ val dataModule = module {
             categoryRepository = get(),
             expenseSyncEnqueuer = get(),
             pendingExpenseDeletionDao = get(),
-            deletionTransaction = get()
+            deletionTransaction = get(),
+            remoteDataSync = get()
         )
     }
 
