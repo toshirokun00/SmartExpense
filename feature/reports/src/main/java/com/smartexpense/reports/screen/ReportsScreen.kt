@@ -42,11 +42,10 @@ import com.smartexpense.reports.viewmodel.ReportsViewModel
 import com.smartexpense.domain.model.CategorySpending
 import com.smartexpense.domain.model.DailySpending
 import org.koin.androidx.compose.koinViewModel
+import com.smartexpense.core.common.toDateString
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
-import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -440,7 +439,7 @@ private fun DailySpendingItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = formatDate(daily.date),
+                text = daily.date.toDateString(),
                 style = MaterialTheme.typography.bodyLarge
             )
 
@@ -470,13 +469,6 @@ private fun formatCurrency(amount: Double): String {
     ).format(amount)
 }
 
-private fun formatDate(timestamp: Long): String {
-    return SimpleDateFormat(
-        "MMM dd, yyyy",
-        Locale.getDefault()
-    ).format(Date(timestamp))
-}
-
 private fun formatDateRange(
     startDateInclusive: Long,
     endDateExclusive: Long
@@ -485,8 +477,8 @@ private fun formatDateRange(
         return "Selected period"
     }
 
-    val start = formatDate(startDateInclusive)
-    val end = formatDate(endDateExclusive - 1L)
+    val start = startDateInclusive.toDateString()
+    val end = (endDateExclusive - 1L).toDateString()
 
     return "$start – $end"
 }

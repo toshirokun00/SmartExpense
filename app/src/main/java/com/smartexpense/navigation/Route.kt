@@ -39,3 +39,6 @@ data object EmailConfirmationRoute : Route
 
 @Serializable
 data object SplashRoute : Route
+
+@Serializable
+data object TransactionsRoute : Route

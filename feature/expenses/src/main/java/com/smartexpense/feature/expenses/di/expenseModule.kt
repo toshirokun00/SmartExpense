@@ -1,6 +1,8 @@
 package com.smartexpense.feature.expenses.di
 
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
+import com.smartexpense.feature.expenses.viewmodel.TransactionViewModel
+import com.smartexpense.domain.usecase.SearchExpensesUseCase
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -16,6 +18,11 @@ val expenseModule = module {
             categoryUseCase = get(),
             settingsUseCase = get(),
             expenseNotificationManager = get())
+    }
 
+    viewModel {
+        TransactionViewModel(
+            searchExpensesUseCase = get(),
+            categoryUseCase = get())
     }
 }

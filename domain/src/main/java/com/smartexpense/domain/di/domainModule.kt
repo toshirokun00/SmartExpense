@@ -7,6 +7,7 @@ import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseReportUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.SearchExpensesUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
@@ -29,6 +30,8 @@ val domainModule = module {
     factory { SettingsUseCase(get()) }
 
     factory { GetExpenseReportUseCase(expenseRepository = get()) }
+
+    factory { SearchExpensesUseCase(get()) }
 
     factory { ScheduleSyncUseCase(syncEnqueuer = get()) }
 }

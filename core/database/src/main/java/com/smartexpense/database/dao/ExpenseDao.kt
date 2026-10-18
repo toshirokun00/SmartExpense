@@ -42,4 +42,30 @@ interface ExpenseDao {
     @Query("SELECT clientId FROM expenses")
     suspend fun getAllClientIds(): List<String>
 
+    @Query("""
+        SELECT * FROM expenses
+        WHERE (:query IS NULL OR :query = '' OR LOWER(description) LIKE LOWER('%' || :query || '%'))
+          AND (:categoryIdCount = 0 OR categoryId IN (:categoryIds))
+          AND (:minAmount IS NULL OR amount >= :minAmount)
+          AND (:maxAmount IS NULL OR amount <= :maxAmount)
+          AND (:startTime IS NULL OR date >= :startTime)
+          AND (:endTime IS NULL OR date < :endTime)
+        ORDER BY
+          CASE WHEN :sortOrder = 'NEWEST' THEN date END DESC,
+          CASE WHEN :sortOrder = 'OLDEST' THEN date END ASC,
+          CASE WHEN :sortOrder = 'HIGHEST_AMOUNT' THEN amount END DESC,
+          CASE WHEN :sortOrder = 'LOWEST_AMOUNT' THEN amount END ASC,
+          id ASC
+    """)
+    fun searchExpenses(
+        query: String?,
+        categoryIds: List<Long>,
+        categoryIdCount: Int,
+        minAmount: Double?,
+        maxAmount: Double?,
+        startTime: Long?,
+        endTime: Long?,
+        sortOrder: String
+    ): Flow<List<ExpenseEntity>>
+
 }
