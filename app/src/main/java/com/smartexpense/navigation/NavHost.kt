@@ -19,6 +19,7 @@ import com.smartexpense.dashoard.screen.DashboardScreen
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
 import com.smartexpense.feature.expenses.ui.ExpenseDetailScreen
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
+import com.smartexpense.feature.expenses.screen.TransactionScreen
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -48,6 +49,9 @@ fun AppNavHost() {
                     onNavigateToExpenses = {
                         navController.navigate(ExpensesRoute)
                     },
+                    onNavigateToTransactions = {
+                        navController.navigate(TransactionsRoute)
+                    },
                     onNavigateToCategories = {
                         navController.navigate(CategoryRoute)
                     },
@@ -73,6 +77,16 @@ fun AppNavHost() {
                     },
                     onAddExpenseCategoryClick = {
                         navController.navigate(CategoryRoute)
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable<TransactionsRoute> {
+                TransactionScreen(
+                    onExpenseClick = { expenseId ->
+                        navController.navigate(ExpenseDetailRoute(expenseId))
                     },
                     onNavigateBack = {
                         navController.popBackStack()

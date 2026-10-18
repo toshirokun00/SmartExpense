@@ -25,20 +25,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
 import com.smartexpense.dashoard.viewmodel.DashboardViewModel
 import com.smartexpense.dashoard.intent.DashboardIntent
 import com.smartexpense.domain.model.Expense
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = koinViewModel(),
     onNavigateToExpenses: () -> Unit,
+    onNavigateToTransactions: () -> Unit,
     onNavigateToCategories: () -> Unit,
     onNavigateToBudgets: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -166,11 +165,23 @@ fun DashboardScreen(
             }
 
             item {
-                OutlinedButton(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = onNavigateToSettings
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Settings")
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = onNavigateToTransactions
+                    ) {
+                        Text("Transactions")
+                    }
+
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = onNavigateToSettings
+                    ) {
+                        Text("Settings")
+                    }
                 }
             }
             item {
@@ -332,7 +343,7 @@ private fun RecentExpenseItem(
                 )
 
                 Text(
-                    text = formatDate(expense.date),
+                    text = expense.date.toDateString(),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -343,13 +354,4 @@ private fun RecentExpenseItem(
             )
         }
     }
-}
-
-private fun formatDate(timestamp: Long): String {
-    val formatter = SimpleDateFormat(
-        "MMM dd, yyyy",
-        Locale.getDefault()
-    )
-
-    return formatter.format(Date(timestamp))
 }

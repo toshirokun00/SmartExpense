@@ -11,6 +11,7 @@ import com.smartexpense.database.dao.ExpenseDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
 import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.Expense
+import com.smartexpense.domain.model.SearchCriteria
 import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
 import io.github.jan.supabase.SupabaseClient
@@ -144,6 +145,25 @@ class ExpenseRepositoryImpl(
             throw IllegalStateException(
                 "Some expenses failed to synchronize"
             )
+        }
+    }
+
+    override fun searchExpenses(criteria: SearchCriteria): Flow<List<Expense>> {
+        val normalized = criteria.normalize()
+        val query = normalized.query.takeIf { it.isNotEmpty() }
+        val categoryIdList = normalized.selectedCategoryIds.toList()
+
+        return expenseDao.searchExpenses(
+            query = query,
+            categoryIds = categoryIdList,
+            categoryIdCount = categoryIdList.size,
+            minAmount = normalized.minAmount,
+            maxAmount = normalized.maxAmount,
+            startTime = normalized.startTime,
+            endTime = normalized.endTime,
+            sortOrder = normalized.sortOrder.name
+        ).map { expenses ->
+            expenses.map { it.toDomain() }
         }
     }
 }
