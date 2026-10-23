@@ -1,5 +1,6 @@
 package com.smartexpense.settings.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,6 +40,7 @@ import com.smartexpense.settings.effect.SettingsEffect
 import com.smartexpense.settings.intent.SettingsIntent
 import com.smartexpense.settings.viewmodel.SettingsViewModel
 import com.smartexpense.domain.model.AppTheme
+import com.smartexpense.domain.model.BudgetAlertThresholds
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -217,6 +220,47 @@ fun SettingsScreen(
                 )
             }
 
+            HorizontalDivider()
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text("Budget alerts")
+
+                Text("Notify me when a budget reaches")
+
+                BudgetAlertThresholds.SUPPORTED.forEach { threshold ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = uiState.notificationsEnabled) {
+                                viewModel.onIntent(
+                                    SettingsIntent.BudgetAlertThresholdsChanged(
+                                        toggleThreshold(
+                                            uiState.budgetAlertThresholds,
+                                            threshold
+                                        )
+                                    )
+                                )
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = uiState.budgetAlertThresholds.contains(threshold),
+                            onCheckedChange = null,
+                            enabled = uiState.notificationsEnabled
+                        )
+
+                        Text(
+                            text = "$threshold%",
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            }
+
             Button(
                 onClick = {
                     showSignOutDialog = true
@@ -258,5 +302,16 @@ private fun ThemeOption(
             text = title,
             modifier = Modifier.padding(start = 8.dp)
         )
+    }
+}
+
+private fun toggleThreshold(
+    current: Set<Int>,
+    threshold: Int
+): Set<Int> {
+    return if (current.contains(threshold)) {
+        current - threshold
+    } else {
+        current + threshold
     }
 }

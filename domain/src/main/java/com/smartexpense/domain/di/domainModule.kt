@@ -4,6 +4,8 @@ import com.smartexpense.domain.usecase.AddExpenseUseCase
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
+import com.smartexpense.domain.usecase.EvaluateBudgetAlertsUseCase
+import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseReportUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
@@ -26,6 +28,10 @@ val domainModule = module {
     factory { CategoryUseCase(get()) }
 
     factory { BudgetUseCase(get()) }
+
+    factory { GetBudgetInsightsUseCase() }
+
+    factory { EvaluateBudgetAlertsUseCase() }
 
     factory { SettingsUseCase(get()) }
 

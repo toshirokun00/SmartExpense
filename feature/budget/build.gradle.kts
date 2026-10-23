@@ -54,8 +54,14 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.junit)
 
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.mockk.android)
+
     implementation(project(":domain"))
     implementation(project(":core:common"))
+    implementation(project(":core:notification"))
     implementation(project(":core:test"))
 
 

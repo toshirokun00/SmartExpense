@@ -5,11 +5,16 @@ import com.smartexpense.budget.effect.BudgetEffect
 import com.smartexpense.budget.intent.BudgetIntent
 import com.smartexpense.budget.viewmodel.BudgetViewModel
 import com.smartexpense.domain.model.Budget
+import com.smartexpense.domain.model.BudgetInsight
+import com.smartexpense.domain.model.BudgetStatus
 import com.smartexpense.domain.model.Category
+import com.smartexpense.domain.model.AppSettings
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.test.MainDispatcherRule
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -41,6 +46,10 @@ class BudgetViewModelTest {
 
     private lateinit var getExpenseUseCase: GetExpenseUseCase
 
+    private lateinit var settingsUseCase: SettingsUseCase
+
+    private lateinit var getBudgetInsightsUseCase: GetBudgetInsightsUseCase
+
     private lateinit var viewModel: BudgetViewModel
 
     @Before
@@ -49,6 +58,8 @@ class BudgetViewModelTest {
         budgetUseCase = mockk()
         categoryUseCase = mockk()
         getExpenseUseCase = mockk()
+        settingsUseCase = mockk()
+        getBudgetInsightsUseCase = GetBudgetInsightsUseCase()
 
         /*
          * BudgetViewModel calls these flows
@@ -69,10 +80,16 @@ class BudgetViewModelTest {
             getExpenseUseCase()
         } returns flowOf(emptyList())
 
+        every {
+            settingsUseCase.getSettings()
+        } returns flowOf(AppSettings())
+
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
     }
 
@@ -661,29 +678,40 @@ class BudgetViewModelTest {
     @Test
     fun cancelEditClearsForm() = runTest {
 
-        viewModel.onIntent(
-            BudgetIntent.CategoryChanged(1L)
-        )
-
-        viewModel.onIntent(
-            BudgetIntent.AmountChanged("5000")
-        )
-
-        viewModel.onIntent(
-            BudgetIntent.StartDateChanged(1L)
-        )
-
-        viewModel.onIntent(
-            BudgetIntent.EndDateChanged(10L)
-        )
-
-        viewModel.onIntent(
-            BudgetIntent.CancelEdit
-        )
-
         viewModel.uiState.test {
 
             awaitItem()
+
+            viewModel.onIntent(
+                BudgetIntent.CategoryChanged(1L)
+            )
+
+            viewModel.onIntent(
+                BudgetIntent.AmountChanged("5000")
+            )
+
+            viewModel.onIntent(
+                BudgetIntent.StartDateChanged(1L)
+            )
+
+            viewModel.onIntent(
+                BudgetIntent.EndDateChanged(10L)
+            )
+
+            advanceUntilIdle()
+
+            val populated = awaitItem()
+
+            assertEquals(
+                "5000",
+                populated.form.amount
+            )
+
+            viewModel.onIntent(
+                BudgetIntent.CancelEdit
+            )
+
+            advanceUntilIdle()
 
             val state = awaitItem()
 
@@ -883,7 +911,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -951,7 +981,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -1009,7 +1041,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -1061,7 +1095,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -1106,7 +1142,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -1139,7 +1177,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -1206,7 +1246,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -1261,7 +1303,9 @@ class BudgetViewModelTest {
         viewModel = BudgetViewModel(
             budgetUseCase = budgetUseCase,
             categoryUseCase = categoryUseCase,
-            getExpenseUseCase = getExpenseUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
         )
 
         viewModel.uiState.test {
@@ -1282,6 +1326,156 @@ class BudgetViewModelTest {
 
             assertEquals(500.0, state.budgetSummaries.first().spentAmount)
             assertEquals(500.0, state.budgetSummaries.first().remainingAmount)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun budgetSummaryExposesUtilizationAndStatus() = runTest {
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 850.0,
+                categoryId = 1L,
+                description = "Groceries",
+                date = dateMillis(2026, 10, 10)
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(
+            listOf(Category(1L, "Food"))
+        )
+        every { getExpenseUseCase() } returns flowOf(expenses)
+        every { settingsUseCase.getSettings() } returns flowOf(
+            AppSettings(budgetAlertThresholds = setOf(80, 100))
+        )
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+            val state = awaitItem()
+            val summary = state.budgetSummaries.first()
+
+            assertEquals(85.0, summary.utilizationPercentage, 0.001)
+            assertEquals(0.85f, summary.progress, 0.001f)
+            assertEquals(BudgetStatus.APPROACHING_LIMIT, summary.status)
+            assertFalse(summary.isOverBudget)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun configuredWarningThresholdChangesBudgetStatus() = runTest {
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 850.0,
+                categoryId = 1L,
+                description = "Groceries",
+                date = dateMillis(2026, 10, 10)
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(
+            listOf(Category(1L, "Food"))
+        )
+        every { getExpenseUseCase() } returns flowOf(expenses)
+        every { settingsUseCase.getSettings() } returns flowOf(
+            AppSettings(budgetAlertThresholds = setOf(90, 100))
+        )
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+            val state = awaitItem()
+
+            assertEquals(
+                BudgetStatus.WITHIN_BUDGET,
+                state.budgetSummaries.first().status
+            )
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun insightsAreGeneratedForExceededBudget() = runTest {
+        val budget = Budget(
+            id = 1L,
+            categoryId = 1L,
+            amount = 1_000.0,
+            startDate = dateMillis(2026, 10, 1),
+            endDate = dateMillis(2026, 10, 31)
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = 1L,
+                amount = 1_200.0,
+                categoryId = 1L,
+                description = "Groceries",
+                date = dateMillis(2026, 10, 10)
+            )
+        )
+
+        every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
+        every { categoryUseCase.getCategories() } returns flowOf(
+            listOf(Category(1L, "Food"))
+        )
+        every { getExpenseUseCase() } returns flowOf(expenses)
+        every { settingsUseCase.getSettings() } returns flowOf(
+            AppSettings(budgetAlertThresholds = setOf(80, 100))
+        )
+
+        viewModel = BudgetViewModel(
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            getExpenseUseCase = getExpenseUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+            val state = awaitItem()
+
+            assertTrue(
+                state.insights.any { it is BudgetInsight.ExceededLimit }
+            )
 
             cancelAndIgnoreRemainingEvents()
         }

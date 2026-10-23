@@ -1,3 +1,4 @@
+
 package com.smartexpense.budget.screen
 
 import androidx.compose.foundation.layout.Arrangement
@@ -27,11 +28,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,14 +43,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smartexpense.budget.effect.BudgetEffect
 import com.smartexpense.budget.viewmodel.BudgetViewModel
 import com.smartexpense.budget.intent.BudgetIntent
 import com.smartexpense.budget.state.BudgetSummaryState
+import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
+import com.smartexpense.domain.model.BudgetInsight
+import com.smartexpense.domain.model.BudgetStatus
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +61,23 @@ fun BudgetScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val screenState by viewModel.screenState.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            val message = when (effect) {
+                is BudgetEffect.ShowError -> effect.message
+                BudgetEffect.BudgetAdded -> "Budget added"
+                BudgetEffect.BudgetUpdated -> "Budget updated"
+                BudgetEffect.BudgetDeleted -> "Budget deleted"
+            }
+
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     var showStartDatePicker by remember {
         mutableStateOf(false)
@@ -70,6 +92,9 @@ fun BudgetScreen(
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbarHostState)
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -189,7 +214,7 @@ fun BudgetScreen(
                 // Start Date
                 OutlinedTextField(
                     value = uiState.form.startDate
-                        ?.let(::formatDate)
+                        ?.toDateString()
                         ?: "",
                     onValueChange = {},
                     readOnly = true,
@@ -219,7 +244,7 @@ fun BudgetScreen(
                 // End Date
                 OutlinedTextField(
                     value = uiState.form.endDate
-                        ?.let(::formatDate)
+                        ?.toDateString()
                         ?: "",
                     onValueChange = {},
                     readOnly = true,
@@ -324,6 +349,27 @@ fun BudgetScreen(
                         )
                     }
                 )
+            }
+
+            if (uiState.insights.isNotEmpty()) {
+
+                item {
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        text = "Insights"
+                    )
+                }
+
+                items(
+                    items = uiState.insights,
+                    key = { insight -> insight.key() }
+                ) { insight ->
+
+                    InsightCard(insight = insight)
+                }
             }
         }
 
@@ -504,13 +550,9 @@ private fun BudgetCard(
                     )
 
                     Text(
-                        text = formatDate(
-                            summary.budget.startDate
-                        ) +
+                        text = summary.budget.startDate.toDateString() +
                                 " - " +
-                                formatDate(
-                                    summary.budget.endDate
-                                )
+                                summary.budget.endDate.toDateString()
                     )
                 }
 
@@ -592,7 +634,8 @@ private fun BudgetCard(
             )
 
             Text(
-                text = "${(summary.progress * 100).toInt()}% used"
+                text = "${summary.utilizationPercentage.toInt()}% used" +
+                        summary.status.indicatorSuffix()
             )
         }
     }
@@ -600,13 +643,57 @@ private fun BudgetCard(
 
 
 
-private fun formatDate(
-    timestamp: Long
-): String {
-    return SimpleDateFormat(
-        "MMM dd, yyyy",
-        Locale.getDefault()
-    ).format(
-        Date(timestamp)
-    )
+@Composable
+private fun InsightCard(
+    insight: BudgetInsight
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = insight.message(),
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+private fun BudgetStatus.indicatorSuffix(): String {
+    return when (this) {
+        BudgetStatus.WITHIN_BUDGET -> ""
+        BudgetStatus.APPROACHING_LIMIT -> " • Approaching limit"
+        BudgetStatus.EXCEEDED -> " • Exceeded limit"
+    }
+}
+
+private fun BudgetInsight.key(): String {
+    return when (this) {
+        is BudgetInsight.ApproachingLimit -> "approaching-$budgetId"
+        is BudgetInsight.ExceededLimit -> "exceeded-$budgetId"
+        is BudgetInsight.SpendingTrend -> "trend"
+        is BudgetInsight.CategorySpendingChange -> "category-$categoryId"
+    }
+}
+
+private fun BudgetInsight.message(): String {
+    return when (this) {
+        is BudgetInsight.ApproachingLimit ->
+            "You've used ${utilizationPercentage.toInt()}% of your " +
+                "$categoryName budget. ${remainingAmount.toPesoAmount()} remaining."
+
+        is BudgetInsight.ExceededLimit ->
+            "You're over your $categoryName budget by " +
+                "${overAmount.toPesoAmount()} (${utilizationPercentage.toInt()}% used)."
+
+        is BudgetInsight.SpendingTrend -> {
+            val direction = if (isIncrease) "up" else "down"
+            "Spending is $direction ${kotlin.math.abs(changePercentage).toInt()}% " +
+                "versus the previous period " +
+                "(${currentAmount.toPesoAmount()} vs ${previousAmount.toPesoAmount()})."
+        }
+
+        is BudgetInsight.CategorySpendingChange ->
+            "$categoryName spending is up ${changePercentage.toInt()}% " +
+                "versus the previous period " +
+                "(${currentAmount.toPesoAmount()} vs ${previousAmount.toPesoAmount()})."
+    }
 }

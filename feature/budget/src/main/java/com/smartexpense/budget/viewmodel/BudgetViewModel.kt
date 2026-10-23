@@ -8,10 +8,14 @@ import com.smartexpense.budget.state.BudgetFormState
 import com.smartexpense.budget.state.BudgetScreenState
 import com.smartexpense.budget.state.BudgetSummaryState
 import com.smartexpense.budget.state.BudgetUiState
+import com.smartexpense.domain.budget.BudgetCalculator
 import com.smartexpense.domain.model.Budget
+import com.smartexpense.domain.model.BudgetAlertThresholds
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.SettingsUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,13 +27,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
 
 class BudgetViewModel(
     private val budgetUseCase: BudgetUseCase,
     private val categoryUseCase: CategoryUseCase,
-    private val getExpenseUseCase: GetExpenseUseCase
+    private val getExpenseUseCase: GetExpenseUseCase,
+    private val settingsUseCase: SettingsUseCase,
+    private val getBudgetInsightsUseCase: GetBudgetInsightsUseCase
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(
@@ -76,38 +80,36 @@ class BudgetViewModel(
                 )
             }
 
+    private val settingsFlow =
+        settingsUseCase.getSettings()
+            .catch {
+                _effect.emit(
+                    BudgetEffect.ShowError(
+                        it.message ?: "Failed to load settings"
+                    )
+                )
+            }
+
     val uiState: StateFlow<BudgetUiState> =
         combine(
-          budgetUseCase.getBudgets(),
-            categoryUseCase.getCategories(),
+            budgetsFlow,
+            categoriesFlow,
             expensesFlow,
+            settingsFlow,
             _formState
-        ) {  budgets, categories, expenses, form  ->
+        ) { budgets, categories, expenses, settings, form ->
+
+            val warningThreshold =
+                BudgetAlertThresholds.warningThreshold(
+                    settings.budgetAlertThresholds
+                )
 
             val summaries = budgets.map { budget ->
-
-                val spentAmount = expenses
-                    .filter { expense ->
-                        expense.categoryId == budget.categoryId &&
-                                isDateWithinRange(
-                                    expense.date,
-                                    budget.startDate,
-                                    budget.endDate
-                                )
-                    }
-                    .sumOf { it.amount }
-
-                val remainingAmount =
-                    budget.amount - spentAmount
-
-                val progress =
-                    if (budget.amount > 0) {
-                        (spentAmount / budget.amount)
-                            .coerceIn(0.0, 1.0)
-                            .toFloat()
-                    } else {
-                        0f
-                    }
+                val utilization = BudgetCalculator.utilization(
+                    budget = budget,
+                    expenses = expenses,
+                    warningThreshold = warningThreshold
+                )
 
                 val categoryName =
                     categories
@@ -115,32 +117,36 @@ class BudgetViewModel(
                         ?.name
                         ?: "Unknown"
 
-
                 BudgetSummaryState(
                     budget = budget,
                     categoryName = categoryName,
-                    spentAmount = spentAmount,
-                    remainingAmount = remainingAmount,
-                    progress = progress,
-                    isOverBudget = spentAmount > budget.amount
+                    spentAmount = utilization.spentAmount,
+                    remainingAmount = utilization.remainingAmount,
+                    progress = utilization.progress,
+                    isOverBudget = utilization.isOverBudget,
+                    utilizationPercentage = utilization.utilizationPercentage,
+                    status = utilization.status
                 )
-
             }
 
-            BudgetUiState(
+            val insights = getBudgetInsightsUseCase(
                 budgets = budgets,
-                budgetSummaries = summaries,
+                expenses = expenses,
                 categories = categories,
-                form = form,
-                isLoading = false
+                warningThreshold = warningThreshold
+            )
+
+            BudgetUiState(
+                budgetSummaries = summaries,
+                insights = insights,
+                categories = categories,
+                form = form
             )
 
         }.stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Companion.WhileSubscribed(5_000),
-            initialValue = BudgetUiState(
-                isLoading = true
-            )
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = BudgetUiState()
         )
 
     fun onIntent(intent: BudgetIntent) {
@@ -401,30 +407,4 @@ class BudgetViewModel(
             )
         }
     }
-
-            private fun isDateWithinRange(
-                expenseDate: Long,
-                startDate: Long,
-                endDate: Long
-            ): Boolean {
-
-                val zoneId = ZoneId.systemDefault()
-
-                val expenseLocalDate =
-                    Instant.ofEpochMilli(expenseDate)
-                        .atZone(zoneId)
-                        .toLocalDate()
-
-                val startLocalDate =
-                    Instant.ofEpochMilli(startDate)
-                        .atZone(zoneId)
-                        .toLocalDate()
-
-                val endLocalDate =
-                    Instant.ofEpochMilli(endDate)
-                        .atZone(zoneId)
-                        .toLocalDate()
-
-                return expenseLocalDate in startLocalDate..endLocalDate
-            }
 }
