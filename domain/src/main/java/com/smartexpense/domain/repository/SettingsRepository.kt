@@ -11,4 +11,6 @@ interface SettingsRepository {
     suspend fun setTheme(theme: AppTheme)
 
     suspend fun setNotificationsEnabled(enabled: Boolean)
+
+    suspend fun setBudgetAlertThresholds(thresholds: Set<Int>)
 }

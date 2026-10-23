@@ -58,6 +58,10 @@ class SettingsViewModelTest {
         } returns Unit
 
         coEvery {
+            settingsUseCase.setBudgetAlertThresholds(any())
+        } returns Unit
+
+        coEvery {
             authUseCase.signOut()
         } returns Unit
 
@@ -78,6 +82,7 @@ class SettingsViewModelTest {
 
             assertEquals(AppTheme.SYSTEM, state.theme)
             assertTrue(state.notificationsEnabled)
+            assertEquals(setOf(50, 80, 90, 100), state.budgetAlertThresholds)
             assertFalse(state.isLoading)
             assertEquals(null, state.error)
 
@@ -109,6 +114,58 @@ class SettingsViewModelTest {
 
         coVerify(exactly = 1) {
             settingsUseCase.setNotificationsEnabled(false)
+        }
+    }
+
+    @Test
+    fun budgetAlertThresholdsChangedCallsUseCase() = runTest {
+        viewModel.onIntent(
+            SettingsIntent.BudgetAlertThresholdsChanged(
+                setOf(50, 80, 100)
+            )
+        )
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            settingsUseCase.setBudgetAlertThresholds(setOf(50, 80, 100))
+        }
+    }
+
+    @Test
+    fun budgetAlertThresholdsCanBeClearedCompletely() = runTest {
+        viewModel.onIntent(
+            SettingsIntent.BudgetAlertThresholdsChanged(emptySet())
+        )
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            settingsUseCase.setBudgetAlertThresholds(emptySet())
+        }
+    }
+
+    @Test
+    fun settingsFlowEmitsConfiguredBudgetAlertThresholds() = runTest {
+        every {
+            settingsUseCase.getSettings()
+        } returns flowOf(
+            AppSettings(
+                theme = AppTheme.SYSTEM,
+                notificationsEnabled = true,
+                budgetAlertThresholds = setOf(50, 90)
+            )
+        )
+
+        viewModel = SettingsViewModel(settingsUseCase, authUseCase)
+
+        viewModel.uiState.test {
+            awaitItem()
+            val state = awaitItem()
+
+            assertEquals(setOf(50, 90), state.budgetAlertThresholds)
+
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

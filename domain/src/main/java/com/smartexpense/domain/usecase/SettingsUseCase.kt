@@ -2,6 +2,7 @@ package com.smartexpense.domain.usecase
 
 import com.smartexpense.domain.model.AppSettings
 import com.smartexpense.domain.model.AppTheme
+import com.smartexpense.domain.model.BudgetAlertThresholds
 import com.smartexpense.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -20,5 +21,13 @@ class SettingsUseCase(
         enabled: Boolean
     ) {
         repository.setNotificationsEnabled(enabled)
+    }
+
+    suspend fun setBudgetAlertThresholds(
+        thresholds: Set<Int>
+    ) {
+        repository.setBudgetAlertThresholds(
+            BudgetAlertThresholds.normalize(thresholds)
+        )
     }
 }

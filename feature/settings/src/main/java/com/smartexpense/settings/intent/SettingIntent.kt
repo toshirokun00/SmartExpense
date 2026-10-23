@@ -12,5 +12,9 @@ sealed interface SettingsIntent {
         val enabled: Boolean
     ) : SettingsIntent
 
+    data class BudgetAlertThresholdsChanged(
+        val thresholds: Set<Int>
+    ) : SettingsIntent
+
     data object SignOut : SettingsIntent
 }

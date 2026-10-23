@@ -27,7 +27,8 @@ class SettingsViewModel(
             .map { settings ->
                 SettingsUiState(
                     theme = settings.theme,
-                    notificationsEnabled = settings.notificationsEnabled
+                    notificationsEnabled = settings.notificationsEnabled,
+                    budgetAlertThresholds = settings.budgetAlertThresholds
                 )
             }
             .catch { exception ->
@@ -62,6 +63,13 @@ class SettingsViewModel(
                 viewModelScope.launch {
                     settingsUseCase.setNotificationsEnabled(
                         intent.enabled
+                    )
+                }
+            }
+            is SettingsIntent.BudgetAlertThresholdsChanged -> {
+                viewModelScope.launch {
+                    settingsUseCase.setBudgetAlertThresholds(
+                        intent.thresholds
                     )
                 }
             }

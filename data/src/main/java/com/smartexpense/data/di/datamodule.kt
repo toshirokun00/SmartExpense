@@ -2,6 +2,7 @@ package com.smartexpense.data.di
 
 import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
+import com.smartexpense.data.repositoryimpl.BudgetAlertRepositoryImpl
 import com.smartexpense.data.repositoryimpl.BudgetRepositoryImpl
 import com.smartexpense.data.repositoryimpl.CategoryRepositoryImpl
 import com.smartexpense.data.repositoryimpl.ExpenseRepositoryImpl
@@ -11,6 +12,7 @@ import com.smartexpense.data.sync.ExpenseSyncEnqueuerImpl
 import com.smartexpense.data.sync.ExpenseSyncScheduler
 import com.smartexpense.data.sync.ExpenseSyncWorkerFactory
 import com.smartexpense.data.sync.RemoteDataSync
+import com.smartexpense.domain.repository.BudgetAlertRepository
 import com.smartexpense.domain.repository.BudgetRepository
 import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
@@ -87,6 +89,12 @@ val dataModule = module {
     single<BudgetRepository> {
         BudgetRepositoryImpl(
             budgetDao = get()
+        )
+    }
+
+    single<BudgetAlertRepository> {
+        BudgetAlertRepositoryImpl(
+            budgetAlertDao = get()
         )
     }
 

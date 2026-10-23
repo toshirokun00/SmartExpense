@@ -29,6 +29,8 @@ val databaseModule = module {
         get<AppDatabase>().pendingExpenseDeletionDao()
     }
 
+    single { get<AppDatabase>().budgetAlertDao() }
+
     single { ExpenseDeletionTransaction(database = get()) }
 
 
