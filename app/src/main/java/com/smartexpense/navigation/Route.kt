@@ -42,3 +42,14 @@ data object SplashRoute : Route
 
 @Serializable
 data object TransactionsRoute : Route
+
+@Serializable
+data object RecurringExpensesRoute : Route
+
+@Serializable
+data object AddRecurringExpenseRoute : Route
+
+@Serializable
+data class EditRecurringExpenseRoute(
+    val scheduleId: Long
+) : Route

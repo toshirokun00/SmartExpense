@@ -41,7 +41,8 @@ fun DashboardScreen(
     onNavigateToCategories: () -> Unit,
     onNavigateToBudgets: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToReports : () -> Unit
+    onNavigateToReports : () -> Unit,
+    onNavigateToRecurring: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -199,6 +200,15 @@ fun DashboardScreen(
                     onClick = onNavigateToCategories
                 ) {
                     Text("Manage Categories")
+                }
+            }
+
+            item {
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onNavigateToRecurring
+                ) {
+                    Text("Recurring Expenses")
                 }
             }
         }

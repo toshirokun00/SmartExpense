@@ -20,6 +20,8 @@ import com.smartexpense.feature.expenses.ui.AddExpenseScreen
 import com.smartexpense.feature.expenses.ui.ExpenseDetailScreen
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
 import com.smartexpense.feature.expenses.screen.TransactionScreen
+import com.smartexpense.recurring.screen.RecurringExpenseFormScreen
+import com.smartexpense.recurring.screen.RecurringExpenseListScreen
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -63,6 +65,9 @@ fun AppNavHost() {
                     },
                     onNavigateToReports = {
                         navController.navigate(ReportsRoute)
+                    },
+                    onNavigateToRecurring = {
+                        navController.navigate(RecurringExpensesRoute)
                     }
 
                 )
@@ -149,6 +154,48 @@ fun AppNavHost() {
 
             composable<ReportsRoute> {
                 ReportsScreen()
+            }
+
+            composable<RecurringExpensesRoute> {
+                RecurringExpenseListScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onAddSchedule = {
+                        navController.navigate(AddRecurringExpenseRoute)
+                    },
+                    onEditSchedule = { scheduleId ->
+                        navController.navigate(
+                            EditRecurringExpenseRoute(scheduleId)
+                        )
+                    }
+                )
+            }
+
+            composable<AddRecurringExpenseRoute> {
+                RecurringExpenseFormScreen(
+                    scheduleId = null,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable<EditRecurringExpenseRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<EditRecurringExpenseRoute>()
+
+                RecurringExpenseFormScreen(
+                    scheduleId = route.scheduleId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             composable<AuthRoute> {

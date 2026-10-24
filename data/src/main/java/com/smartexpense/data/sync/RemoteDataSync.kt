@@ -134,7 +134,8 @@ class RemoteDataSync(
                         description = remoteExpense.description,
                         date = date,
                         syncStatus = SyncStatus.SYNCED,
-                        clientId = remoteExpense.clientId
+                        clientId = remoteExpense.clientId,
+                        userId = userId
                     )
                 )
             } catch (exception: CancellationException) {
