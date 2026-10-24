@@ -3,6 +3,7 @@ package com.smartexpense.database.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.smartexpense.database.entity.ExpenseEntity
@@ -20,6 +21,17 @@ interface ExpenseDao {
 
     @Insert
     suspend fun insertExpense(expense: ExpenseEntity)
+
+    /**
+     * Inserts a generated recurring occurrence unless the unique
+     * (recurringScheduleId, occurrenceDate) index already contains it.
+     *
+     * @return the new row id, or -1 when the occurrence already exists.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertExpenseIgnoringDuplicate(
+        expense: ExpenseEntity
+    ): Long
 
     @Update
     suspend fun updateExpense(expense: ExpenseEntity)

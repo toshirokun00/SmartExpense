@@ -15,12 +15,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.smartexpense.domain.usecase.ProcessRecurringExpensesUseCase
 import com.smartexpense.navigation.AppNavHost
 import com.smartexpense.ui.theme.SmartExpenseTheme
 import com.smartexpense.viewmodel.AppThemeViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), KoinComponent {
+
+    private val processRecurringExpenses: ProcessRecurringExpensesUseCase
+        by lazy { get() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -33,6 +43,24 @@ class MainActivity : ComponentActivity() {
 
             SmartExpenseTheme(appTheme = appTheme) {
                 AppNavHost()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // Catch up due recurring occurrences whenever the app comes to the
+        // foreground. The use case serialises calls and processing is
+        // idempotent, so this is safe alongside the periodic worker.
+        lifecycleScope.launch {
+            try {
+                processRecurringExpenses()
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Exception) {
+                // The periodic worker retries; never crash the UI over a
+                // background catch-up failure.
             }
         }
     }

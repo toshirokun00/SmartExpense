@@ -31,6 +31,8 @@ val databaseModule = module {
 
     single { get<AppDatabase>().budgetAlertDao() }
 
+    single { get<AppDatabase>().recurringScheduleDao() }
+
     single { ExpenseDeletionTransaction(database = get()) }
 
 

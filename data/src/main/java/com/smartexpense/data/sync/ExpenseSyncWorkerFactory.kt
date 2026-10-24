@@ -5,8 +5,11 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.smartexpense.domain.repository.ExpenseRepository
+import com.smartexpense.domain.usecase.ProcessRecurringExpensesUseCase
+
 class ExpenseSyncWorkerFactory(
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val processRecurringExpensesUseCase: ProcessRecurringExpensesUseCase
 ) : WorkerFactory() {
 
     override fun createWorker(
@@ -20,6 +23,13 @@ class ExpenseSyncWorkerFactory(
                     appContext = appContext,
                     workerParams = workerParameters,
                     expenseRepository = expenseRepository
+                )
+
+            RecurringExpenseWorker::class.java.name ->
+                RecurringExpenseWorker(
+                    appContext = appContext,
+                    workerParams = workerParameters,
+                    processRecurringExpensesUseCase = processRecurringExpensesUseCase
                 )
 
             else -> null

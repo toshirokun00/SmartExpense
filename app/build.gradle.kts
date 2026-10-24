@@ -75,6 +75,7 @@ dependencies {
     implementation(project(":feature:settings"))
     implementation(project(":feature:reports"))
     implementation(project(":feature:auth"))
+    implementation(project(":feature:recurring"))
 
 
 }

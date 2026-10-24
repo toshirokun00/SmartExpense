@@ -11,11 +11,13 @@ import com.smartexpense.dashoard.di.dashboardModule
 import com.smartexpense.data.di.dataModule
 import com.smartexpense.data.di.supabaseModule
 import com.smartexpense.data.sync.ExpenseSyncWorkerFactory
+import com.smartexpense.data.sync.RecurringExpenseScheduler
 import com.smartexpense.database.di.databaseModule
 import com.smartexpense.di.mainModule
 import com.smartexpense.domain.di.domainModule
 import com.smartexpense.feature.expenses.di.expenseModule
 import com.smartexpense.notification.notificationModule
+import com.smartexpense.recurring.di.recurringModule
 import com.smartexpense.reports.di.expenseReportModule
 import com.smartexpense.settings.di.settingsModule
 import kotlinx.coroutines.CoroutineScope
@@ -52,12 +54,17 @@ class SmartExpenseApplication : Application(), Configuration.Provider, KoinCompo
                 notificationModule,
                 expenseReportModule,
                 supabaseModule,
-                authFeatureModule
+                authFeatureModule,
+                recurringModule
             )
         }
 
         // Observe budgets/expenses so alerts fire when a threshold is crossed.
         get<BudgetAlertCoordinator>().start(applicationScope)
+
+        // Background safety net for recurring expenses. Foreground processing
+        // is also triggered whenever the activity resumes.
+        get<RecurringExpenseScheduler>().schedulePeriodic()
     }
 
     override val workManagerConfiguration: Configuration

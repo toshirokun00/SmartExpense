@@ -106,6 +106,12 @@ class ExpenseRepositoryImpl(
         val pendingExpenses = expenseDao.getUnsyncedExpenses()
 
         for (expense in pendingExpenses) {
+            // Locally generated recurring expenses carry their owner's id.
+            // Never upload one user's pending rows under another account.
+            if (expense.userId != null && expense.userId != userId) {
+                continue
+            }
+
             try {
                 val remoteCategoryId =
                     categoryRepository.getRemoteCategoryId(expense.categoryId)

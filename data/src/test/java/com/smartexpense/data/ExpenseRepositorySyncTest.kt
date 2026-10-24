@@ -263,4 +263,67 @@ class ExpenseRepositorySyncTest {
             )
         }
     }
+
+    @Test
+    fun pendingRecurringExpenseFromAnotherUserIsNotUploaded() = runTest {
+        val ownExpense = ExpenseEntity(
+            id = 1L,
+            amount = 100.0,
+            categoryId = 1L,
+            description = "Own recurring expense",
+            date = 1_760_000_000_000L,
+            syncStatus = SyncStatus.PENDING,
+            clientId = "own-expense",
+            userId = "user-a"
+        )
+
+        val otherUsersExpense = ExpenseEntity(
+            id = 2L,
+            amount = 200.0,
+            categoryId = 1L,
+            description = "Other user's recurring expense",
+            date = 1_760_000_000_000L,
+            syncStatus = SyncStatus.PENDING,
+            clientId = "other-expense",
+            userId = "user-b"
+        )
+
+        coEvery {
+            expenseDao.getUnsyncedExpenses()
+        } returns listOf(ownExpense, otherUsersExpense)
+
+        coEvery {
+            categoryRepository.getRemoteCategoryId(1L)
+        } returns 10L
+
+        val repository = createRepository()
+
+        repository.syncPendingExpensesForUser("user-a")
+
+        coVerify(exactly = 1) {
+            remoteDataSource.insertExpense(
+                match { dto -> dto.clientId == "own-expense" }
+            )
+        }
+
+        coVerify(exactly = 0) {
+            remoteDataSource.insertExpense(
+                match { dto -> dto.clientId == "other-expense" }
+            )
+        }
+
+        coVerify {
+            expenseDao.updateSyncStatus(
+                expenseId = 1L,
+                status = SyncStatus.SYNCED.name
+            )
+        }
+
+        coVerify(exactly = 0) {
+            expenseDao.updateSyncStatus(
+                expenseId = 2L,
+                status = any()
+            )
+        }
+    }
 }
