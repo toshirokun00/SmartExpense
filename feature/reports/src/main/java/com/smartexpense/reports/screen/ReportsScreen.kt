@@ -1,5 +1,12 @@
 package com.smartexpense.reports.screen
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,13 +15,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,19 +41,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smartexpense.core.common.toDateString
+import com.smartexpense.domain.export.ReportExportFormat
+import com.smartexpense.domain.export.ReportExportType
+import com.smartexpense.domain.model.CategorySpending
+import com.smartexpense.domain.model.DailySpending
 import com.smartexpense.reports.component.CategorySpendingChart
 import com.smartexpense.reports.component.DailySpendingChart
 import com.smartexpense.reports.effect.ReportsEffect
+import com.smartexpense.reports.export.ReportShareIntentFactory
+import com.smartexpense.reports.export.displayName
 import com.smartexpense.reports.intent.ReportsIntent
 import com.smartexpense.reports.state.ReportsUiState
 import com.smartexpense.reports.viewmodel.ReportsViewModel
-import com.smartexpense.domain.model.CategorySpending
-import com.smartexpense.domain.model.DailySpending
 import org.koin.androidx.compose.koinViewModel
-import com.smartexpense.core.common.toDateString
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -53,8 +69,23 @@ fun ReportsScreen(
     viewModel: ReportsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val snackbarHostState = remember {
         SnackbarHostState()
+    }
+
+    val saveDocumentLauncher = rememberLauncherForActivityResult(
+        contract = CreateReportDocumentContract()
+    ) { uri ->
+        if (uri == null) {
+            viewModel.onIntent(
+                ReportsIntent.SaveDestinationSelectionCancelled
+            )
+        } else {
+            viewModel.onIntent(
+                ReportsIntent.SaveDestinationSelected(uri.toString())
+            )
+        }
     }
 
     LaunchedEffect(viewModel) {
@@ -62,6 +93,49 @@ fun ReportsScreen(
             when (effect) {
                 is ReportsEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
+                }
+
+                is ReportsEffect.ShowMessage -> {
+                    snackbarHostState.showSnackbar(effect.message)
+                }
+
+                is ReportsEffect.LaunchSaveDocument -> {
+                    try {
+                        saveDocumentLauncher.launch(
+                            ReportDocumentRequest(
+                                fileName = effect.fileName,
+                                mimeType = effect.mimeType
+                            )
+                        )
+                    } catch (exception: Exception) {
+                        viewModel.onIntent(
+                            ReportsIntent.ExportLaunchFailed(
+                                exception.message
+                                    ?: "Could not open the file picker"
+                            )
+                        )
+                    }
+                }
+
+                is ReportsEffect.LaunchShare -> {
+                    try {
+                        val shareIntent = ReportShareIntentFactory.create(
+                            context = context,
+                            fileUri = effect.fileUri,
+                            mimeType = effect.mimeType
+                        )
+
+                        context.startActivity(
+                            Intent.createChooser(shareIntent, effect.title)
+                        )
+                    } catch (exception: Exception) {
+                        viewModel.onIntent(
+                            ReportsIntent.ExportLaunchFailed(
+                                exception.message
+                                    ?: "Could not open the share sheet"
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -117,6 +191,7 @@ private fun ReportsContent(
             ) {
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
+                    enabled = !uiState.isExporting,
                     onClick = {
                         onIntent(ReportsIntent.StartDatePickerOpened)
                     }
@@ -126,6 +201,7 @@ private fun ReportsContent(
 
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
+                    enabled = !uiState.isExporting,
                     onClick = {
                         onIntent(ReportsIntent.EndDatePickerOpened)
                     }
@@ -187,6 +263,15 @@ private fun ReportsContent(
                 )
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ExportCard(
+                uiState = uiState,
+                onIntent = onIntent
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             when {
                 uiState.isLoading -> {
                     Column(
@@ -227,7 +312,9 @@ private fun ReportsContent(
 
                 else -> {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         item {
@@ -296,6 +383,137 @@ private fun ReportsContent(
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExportCard(
+    uiState: ReportsUiState,
+    onIntent: (ReportsIntent) -> Unit
+) {
+    val controlsEnabled = !uiState.isExporting
+    val exportEnabled = controlsEnabled &&
+        !uiState.isLoading &&
+        uiState.endDateExclusive > uiState.startDateInclusive
+
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Export Report",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text = "Choose what to export and the file format.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = uiState.exportType ==
+                        ReportExportType.TRANSACTIONS,
+                    enabled = controlsEnabled,
+                    onClick = {
+                        onIntent(
+                            ReportsIntent.ExportTypeSelected(
+                                ReportExportType.TRANSACTIONS
+                            )
+                        )
+                    },
+                    label = {
+                        Text("Transactions")
+                    }
+                )
+
+                FilterChip(
+                    selected = uiState.exportType == ReportExportType.SUMMARY,
+                    enabled = controlsEnabled,
+                    onClick = {
+                        onIntent(
+                            ReportsIntent.ExportTypeSelected(
+                                ReportExportType.SUMMARY
+                            )
+                        )
+                    },
+                    label = {
+                        Text("Summary")
+                    }
+                )
+
+                listOf(
+                    ReportExportFormat.CSV,
+                    ReportExportFormat.PDF
+                ).forEach { format ->
+                    FilterChip(
+                        selected = uiState.exportFormat == format,
+                        enabled = controlsEnabled,
+                        onClick = {
+                            onIntent(
+                                ReportsIntent.ExportFormatSelected(format)
+                            )
+                        },
+                        label = {
+                            Text(format.displayName)
+                        }
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    enabled = exportEnabled,
+                    onClick = {
+                        onIntent(ReportsIntent.SaveClicked)
+                    }
+                ) {
+                    Text("Save ${uiState.exportFormat.displayName}")
+                }
+
+                Button(
+                    modifier = Modifier.weight(1f),
+                    enabled = exportEnabled,
+                    onClick = {
+                        onIntent(ReportsIntent.ShareClicked)
+                    }
+                ) {
+                    Text("Share ${uiState.exportFormat.displayName}")
+                }
+            }
+
+            if (uiState.isExporting) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+
+                    Text(
+                        text = "Preparing export...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -517,6 +735,43 @@ private fun ReportDatePickerDialog(
                 style = MaterialTheme.typography.titleMedium
             )
             DatePicker(state = pickerState)
+        }
+    }
+}
+
+private data class ReportDocumentRequest(
+    val fileName: String,
+    val mimeType: String
+)
+
+/**
+ * A stable CreateDocument contract whose MIME type is supplied per launch.
+ *
+ * Using a fixed contract instance keeps the launcher registration stable while
+ * still letting CSV and PDF exports request the correct document type.
+ */
+private class CreateReportDocumentContract :
+    ActivityResultContract<ReportDocumentRequest, Uri?>() {
+
+    override fun createIntent(
+        context: Context,
+        input: ReportDocumentRequest
+    ): Intent {
+        return Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = input.mimeType
+            putExtra(Intent.EXTRA_TITLE, input.fileName)
+        }
+    }
+
+    override fun parseResult(
+        resultCode: Int,
+        intent: Intent?
+    ): Uri? {
+        return if (resultCode == Activity.RESULT_OK) {
+            intent?.data
+        } else {
+            null
         }
     }
 }
