@@ -1,22 +1,35 @@
 package com.smartexpense.reports
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.smartexpense.domain.export.ReportExportFormat
+import com.smartexpense.domain.export.ReportExportType
 import com.smartexpense.domain.model.Category
 import com.smartexpense.domain.model.CategorySpending
 import com.smartexpense.domain.model.DailySpending
 import com.smartexpense.domain.model.ExpenseReport
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.ExportReportCsvUseCase
+import com.smartexpense.domain.usecase.ExportReportPdfUseCase
 import com.smartexpense.domain.usecase.GetExpenseReportUseCase
+import com.smartexpense.reports.export.ReportExportFileWriter
 import com.smartexpense.reports.screen.ReportsScreen
 import com.smartexpense.reports.viewmodel.ReportsViewModel
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -36,12 +49,18 @@ class ReportsScreenTest {
 
     private lateinit var getExpenseReportUseCase: GetExpenseReportUseCase
     private lateinit var categoryUseCase: CategoryUseCase
+    private lateinit var exportReportCsvUseCase: ExportReportCsvUseCase
+    private lateinit var exportReportPdfUseCase: ExportReportPdfUseCase
+    private lateinit var reportExportFileWriter: ReportExportFileWriter
     private lateinit var viewModel: ReportsViewModel
 
     @Before
     fun setUp() {
         getExpenseReportUseCase = mockk()
         categoryUseCase = mockk()
+        exportReportCsvUseCase = mockk(relaxed = true)
+        exportReportPdfUseCase = mockk(relaxed = true)
+        reportExportFileWriter = mockk(relaxed = true)
 
         every { categoryUseCase.getCategories() } returns flowOf(
             listOf(
@@ -66,9 +85,16 @@ class ReportsScreenTest {
             )
         )
 
-        viewModel = ReportsViewModel(
+        viewModel = createViewModel()
+    }
+
+    private fun createViewModel(): ReportsViewModel {
+        return ReportsViewModel(
             getExpenseReportUseCase = getExpenseReportUseCase,
-            categoryUseCase = categoryUseCase
+            categoryUseCase = categoryUseCase,
+            exportReportCsvUseCase = exportReportCsvUseCase,
+            exportReportPdfUseCase = exportReportPdfUseCase,
+            reportExportFileWriter = reportExportFileWriter
         )
     }
 
@@ -87,6 +113,54 @@ class ReportsScreenTest {
 
         composeRule.onNodeWithText("Start Date").assertIsDisplayed()
         composeRule.onNodeWithText("End Date").assertIsDisplayed()
+    }
+
+    // --- export controls ---
+
+    @Test
+    fun exportControlsAreDisplayed() {
+        setContent()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Export Report").assertIsDisplayed()
+        composeRule.onNodeWithText("Transactions").assertIsDisplayed()
+        composeRule.onNodeWithText("Summary").assertIsDisplayed()
+        composeRule.onNodeWithText("CSV").assertIsDisplayed()
+        composeRule.onNodeWithText("PDF").assertIsDisplayed()
+        composeRule.onNodeWithText("Save CSV").assertIsDisplayed()
+        composeRule.onNodeWithText("Share CSV").assertIsDisplayed()
+    }
+
+    @Test
+    fun pdfFormatCanBeSelectedAndUpdatesExportActions() {
+        setContent()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("PDF").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("PDF").assertIsSelected()
+        composeRule.onNodeWithText("Save PDF").assertIsDisplayed()
+        composeRule.onNodeWithText("Share PDF").assertIsDisplayed()
+        assertEquals(
+            ReportExportFormat.PDF,
+            viewModel.uiState.value.exportFormat
+        )
+    }
+
+    @Test
+    fun summaryExportTypeCanBeSelected() {
+        setContent()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Summary").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Summary").assertIsSelected()
+        assertEquals(
+            ReportExportType.SUMMARY,
+            viewModel.uiState.value.exportType
+        )
     }
 
     // --- summary card ---
@@ -139,8 +213,8 @@ class ReportsScreenTest {
         setContent()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Food").assertIsDisplayed()
-        composeRule.onNodeWithText("Transport").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Food").onFirst().assertIsDisplayed()
+        composeRule.onAllNodesWithText("Transport").onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -148,8 +222,8 @@ class ReportsScreenTest {
         setContent()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("₱300.00").assertIsDisplayed()
-        composeRule.onNodeWithText("₱200.00").assertIsDisplayed()
+        composeRule.onAllNodesWithText("₱300.00").onFirst().assertIsDisplayed()
+        composeRule.onAllNodesWithText("₱200.00").onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -157,8 +231,8 @@ class ReportsScreenTest {
         setContent()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("60.0%").assertIsDisplayed()
-        composeRule.onNodeWithText("40.0%").assertIsDisplayed()
+        composeRule.onAllNodesWithText("60.0%").onFirst().assertIsDisplayed()
+        composeRule.onAllNodesWithText("40.0%").onFirst().assertIsDisplayed()
     }
 
     // --- daily spending ---
@@ -168,7 +242,13 @@ class ReportsScreenTest {
         setContent()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Daily Spending").assertIsDisplayed()
+        composeRule
+            .onNode(hasScrollAction() and hasScrollToIndexAction())
+            .performScrollToNode(hasText("Daily Spending"))
+
+        composeRule
+            .onNodeWithText("Daily Spending")
+            .assertIsDisplayed()
     }
 
     // --- empty state ---
@@ -179,10 +259,7 @@ class ReportsScreenTest {
             ExpenseReport(categoryBreakdown = emptyList(), dailySpending = emptyList())
         )
 
-        viewModel = ReportsViewModel(
-            getExpenseReportUseCase = getExpenseReportUseCase,
-            categoryUseCase = categoryUseCase
-        )
+        viewModel = createViewModel()
 
         setContent()
         composeRule.waitForIdle()
@@ -198,10 +275,7 @@ class ReportsScreenTest {
             ExpenseReport(categoryBreakdown = emptyList(), dailySpending = emptyList())
         )
 
-        viewModel = ReportsViewModel(
-            getExpenseReportUseCase = getExpenseReportUseCase,
-            categoryUseCase = categoryUseCase
-        )
+        viewModel = createViewModel()
 
         setContent()
         composeRule.waitForIdle()
@@ -221,10 +295,7 @@ class ReportsScreenTest {
             throw IllegalStateException("Failed to load report")
         }
 
-        viewModel = ReportsViewModel(
-            getExpenseReportUseCase = getExpenseReportUseCase,
-            categoryUseCase = categoryUseCase
-        )
+        viewModel = createViewModel()
 
         setContent()
         composeRule.waitForIdle()
@@ -240,10 +311,7 @@ class ReportsScreenTest {
             throw IllegalStateException("Network error")
         }
 
-        viewModel = ReportsViewModel(
-            getExpenseReportUseCase = getExpenseReportUseCase,
-            categoryUseCase = categoryUseCase
-        )
+        viewModel = createViewModel()
 
         setContent()
         composeRule.waitForIdle()
@@ -262,10 +330,7 @@ class ReportsScreenTest {
             flow { throw IllegalStateException("Network error") }
         }
 
-        viewModel = ReportsViewModel(
-            getExpenseReportUseCase = getExpenseReportUseCase,
-            categoryUseCase = categoryUseCase
-        )
+        viewModel = createViewModel()
 
         setContent()
         composeRule.waitForIdle()
@@ -290,6 +355,9 @@ class ReportsScreenTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Select start date").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.waitForIdle()
     }
 
     @Test
@@ -301,6 +369,9 @@ class ReportsScreenTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Select end date").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.waitForIdle()
     }
 
     @Test

@@ -5,10 +5,13 @@ import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.EvaluateBudgetAlertsUseCase
+import com.smartexpense.domain.usecase.ExportReportCsvUseCase
+import com.smartexpense.domain.usecase.ExportReportPdfUseCase
 import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseReportUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.GetExpensesInRangeUseCase
 import com.smartexpense.domain.usecase.ProcessRecurringExpensesUseCase
 import com.smartexpense.domain.usecase.RecurringExpenseUseCase
 import com.smartexpense.domain.usecase.SearchExpensesUseCase
@@ -43,6 +46,22 @@ val domainModule = module {
     factory { SettingsUseCase(get()) }
 
     factory { GetExpenseReportUseCase(expenseRepository = get()) }
+
+    factory { GetExpensesInRangeUseCase(expenseRepository = get()) }
+
+    factory {
+        ExportReportCsvUseCase(
+            getExpenseReportUseCase = get(),
+            getExpensesInRangeUseCase = get()
+        )
+    }
+
+    factory {
+        ExportReportPdfUseCase(
+            getExpenseReportUseCase = get(),
+            getExpensesInRangeUseCase = get()
+        )
+    }
 
     factory { SearchExpensesUseCase(get()) }
 
