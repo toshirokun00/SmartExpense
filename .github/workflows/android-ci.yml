@@ -29,6 +29,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platform-tools
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -41,3 +44,9 @@ jobs:
 
       - name: Run unit tests
         run: ./gradlew test
+
+      - name: Run Android Lint
+        run: ./gradlew lint
+
+
+

@@ -52,6 +52,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.junit)
+    testImplementation(project(":core:test"))
 
     implementation(project(":domain"))
     implementation(project(":core:common"))
