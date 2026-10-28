@@ -6,17 +6,22 @@ import com.smartexpense.domain.model.Budget
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.test.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
 
 class DashboardViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var getExpenseUseCase: GetExpenseUseCase
 
