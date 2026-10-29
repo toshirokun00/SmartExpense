@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+
 jobs:
   build-and-test:
     name: Build and Unit Tests

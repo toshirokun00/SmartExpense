@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+
 jobs:
   release-apk:
     name: Build Signed Release APK
@@ -24,6 +28,13 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Validate required configuration
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY repository secrets must be set."
+            exit 1
+          fi
 
       - name: Restore signing keystore
         env:

@@ -14,9 +14,22 @@ val localProperties = Properties().apply {
     }
 }
 
-val supabaseUrl: String? = localProperties.getProperty("SUPABASE_URL", "")
-val supabasePublishableKey: String? =
-    localProperties.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
+// Prefer local.properties for local development, but fall back to environment
+// variables so CI (where local.properties is not checked in) can supply them.
+fun configValue(name: String): String =
+    localProperties.getProperty(name)
+        ?: providers.environmentVariable(name).orNull
+        ?: ""
+
+val supabaseUrl: String = configValue("SUPABASE_URL")
+val supabasePublishableKey: String = configValue("SUPABASE_PUBLISHABLE_KEY")
+
+if (supabaseUrl.isBlank() || supabasePublishableKey.isBlank()) {
+    logger.warn(
+        "SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY are not set. " +
+            "The app will build but crash at startup when the Supabase client is created."
+    )
+}
 
 
 android {
