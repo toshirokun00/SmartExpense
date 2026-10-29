@@ -1,6 +1,17 @@
 # SmartExpense
 A personal finance app where users can track expenses, manage budgets, receive reminders, view spending analytics, and optionally sync data with a backend.
 
+## Supabase configuration
+
+The app needs two values at build time:
+
+| Name | Description |
+| --- | --- |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Supabase publishable (client) key |
+
+Locally they are read from `local.properties` (gitignored). In CI they are read from environment variables, so add both as repository secrets under **Settings → Secrets and variables → Actions**. The release workflow validates that they are present and fails before building if either is missing; without them the app compiles but crashes at startup with `SUPABASE_URL is not configured`.
+
 ## CSV and PDF report exports
 
 The Reports screen can export the selected date range as either transaction details or a report summary, in CSV or PDF format. Files are generated from the local Room data and can be saved through the Android Storage Access Framework or shared through the Android Sharesheet. The selected format controls the save picker MIME type and the share MIME type (`text/csv` or `application/pdf`).
