@@ -2,6 +2,7 @@ package com.smartexpense.database.di
 
 import androidx.room.Room
 import com.smartexpense.database.AppDatabase
+import com.smartexpense.database.BudgetDeletionTransaction
 import com.smartexpense.database.ExpenseDeletionTransaction
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -29,11 +30,15 @@ val databaseModule = module {
         get<AppDatabase>().pendingExpenseDeletionDao()
     }
 
+    single { get<AppDatabase>().pendingBudgetDeletionDao() }
+
     single { get<AppDatabase>().budgetAlertDao() }
 
     single { get<AppDatabase>().recurringScheduleDao() }
 
     single { ExpenseDeletionTransaction(database = get()) }
+
+    single { BudgetDeletionTransaction(database = get()) }
 
 
 }

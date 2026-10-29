@@ -12,6 +12,14 @@ class ExpenseSyncScheduler(
 ) {
 
     fun enqueue() {
+        enqueue(ExistingWorkPolicy.KEEP)
+    }
+
+    fun enqueueAfterCurrent() {
+        enqueue(ExistingWorkPolicy.APPEND_OR_REPLACE)
+    }
+
+    private fun enqueue(policy: ExistingWorkPolicy) {
         val workManager = WorkManager.getInstance(context)
 
         val constraints = Constraints.Builder()
@@ -24,7 +32,7 @@ class ExpenseSyncScheduler(
 
         workManager.enqueueUniqueWork(
             UNIQUE_WORK_NAME,
-            ExistingWorkPolicy.KEEP,
+            policy,
             request
         )
     }

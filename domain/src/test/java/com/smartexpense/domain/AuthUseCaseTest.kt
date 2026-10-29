@@ -1,5 +1,6 @@
 package com.smartexpense.domain
 
+import com.smartexpense.domain.repository.AccountDataManager
 import com.smartexpense.domain.repository.AuthRepository
 import com.smartexpense.domain.usecase.AuthUseCase
 import io.mockk.coEvery
@@ -15,12 +16,53 @@ import org.junit.Test
 class AuthUseCaseTest {
 
     private lateinit var authRepository: AuthRepository
+    private lateinit var accountDataManager: AccountDataManager
     private lateinit var authUseCase: AuthUseCase
 
     @Before
     fun setUp() {
-        authRepository = mockk()
-        authUseCase = AuthUseCase(authRepository)
+        authRepository = mockk(relaxed = true)
+        accountDataManager = mockk(relaxed = true)
+        authUseCase = AuthUseCase(authRepository, accountDataManager)
+    }
+
+    @Test
+    fun signInPreparesLocalAccountForAuthenticatedUser() = runTest {
+        coEvery {
+            authRepository.getCurrentUserId()
+        } returns "user-123"
+
+        authUseCase.signIn("user@example.com", "password123")
+
+        coVerify(exactly = 1) {
+            accountDataManager.onUserAuthenticated("user-123")
+        }
+    }
+
+    @Test
+    fun signUpPreparesLocalAccountForAuthenticatedUser() = runTest {
+        coEvery {
+            authRepository.getCurrentUserId()
+        } returns "user-456"
+
+        authUseCase.signUp("user@example.com", "password123")
+
+        coVerify(exactly = 1) {
+            accountDataManager.onUserAuthenticated("user-456")
+        }
+    }
+
+    @Test
+    fun signUpWithoutConfirmedUserDoesNotPrepareLocalAccount() = runTest {
+        coEvery {
+            authRepository.getCurrentUserId()
+        } returns null
+
+        authUseCase.signUp("user@example.com", "password123")
+
+        coVerify(exactly = 0) {
+            accountDataManager.onUserAuthenticated(any())
+        }
     }
 
     @Test

@@ -38,6 +38,7 @@ class CoroutineCancellationSyncTest {
     private val remoteDataSource = mockk<SupabaseExpenseRemoteDataSource>(relaxed = true)
     private val supabaseClient = mockk<SupabaseClient>(relaxed = true)
     private val categoryRepository = mockk<CategoryRepository>(relaxed = true)
+    private val budgetRepository = mockk<com.smartexpense.domain.repository.BudgetRepository>(relaxed = true)
     private val pendingDeletionDao = mockk<PendingExpenseDeletionDao>(relaxed = true)
     private val deletionTransaction = mockk<ExpenseDeletionTransaction>(relaxed = true)
     private val expenseSyncEnqueuer = mockk<ExpenseSyncEnqueuer>(relaxed = true)
@@ -52,6 +53,7 @@ class CoroutineCancellationSyncTest {
             supabaseExpenseRemoteDataSource = remoteDataSource,
             supabaseClient = supabaseClient,
             categoryRepository = categoryRepository,
+            budgetRepository = budgetRepository,
             expenseSyncEnqueuer = expenseSyncEnqueuer,
             pendingExpenseDeletionDao = pendingDeletionDao,
             deletionTransaction = deletionTransaction,

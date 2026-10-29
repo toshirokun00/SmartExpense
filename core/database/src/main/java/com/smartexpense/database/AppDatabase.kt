@@ -7,12 +7,14 @@ import com.smartexpense.database.dao.BudgetAlertDao
 import com.smartexpense.database.dao.BudgetDao
 import com.smartexpense.database.dao.CategoryDao
 import com.smartexpense.database.dao.ExpenseDao
+import com.smartexpense.database.dao.PendingBudgetDeletionDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
 import com.smartexpense.database.dao.RecurringScheduleDao
 import com.smartexpense.database.entity.BudgetAlertRecordEntity
 import com.smartexpense.database.entity.BudgetEntity
 import com.smartexpense.database.entity.CategoryEntity
 import com.smartexpense.database.entity.ExpenseEntity
+import com.smartexpense.database.entity.PendingBudgetDeletionEntity
 import com.smartexpense.database.entity.PendingExpenseDeletionEntity
 import com.smartexpense.database.entity.RecurringScheduleEntity
 
@@ -22,6 +24,7 @@ import com.smartexpense.database.entity.RecurringScheduleEntity
         CategoryEntity::class,
         BudgetEntity::class,
         PendingExpenseDeletionEntity::class,
+        PendingBudgetDeletionEntity::class,
         BudgetAlertRecordEntity::class,
         RecurringScheduleEntity::class
     ],
@@ -39,6 +42,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun budgetDao(): BudgetDao
 
     abstract fun pendingExpenseDeletionDao(): PendingExpenseDeletionDao
+
+    abstract fun pendingBudgetDeletionDao(): PendingBudgetDeletionDao
 
     abstract fun budgetAlertDao(): BudgetAlertDao
 

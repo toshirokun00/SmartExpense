@@ -11,4 +11,8 @@ class ExpenseSyncEnqueuerImpl(
     override fun enqueue() {
         scheduler.enqueue()
     }
+
+    override fun enqueueAfterCurrent() {
+        scheduler.enqueueAfterCurrent()
+    }
 }
