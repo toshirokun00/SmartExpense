@@ -12,6 +12,7 @@ import com.smartexpense.database.dao.PendingExpenseDeletionDao
 import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.SearchCriteria
+import com.smartexpense.domain.repository.BudgetRepository
 import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
 import io.github.jan.supabase.SupabaseClient
@@ -25,6 +26,7 @@ class ExpenseRepositoryImpl(
     private val supabaseExpenseRemoteDataSource: SupabaseExpenseRemoteDataSource,
     private val supabaseClient: SupabaseClient,
     private val categoryRepository: CategoryRepository,
+    private val budgetRepository: BudgetRepository,
     private val expenseSyncEnqueuer: ExpenseSyncEnqueuer,
     private val pendingExpenseDeletionDao: PendingExpenseDeletionDao,
     private val deletionTransaction: ExpenseDeletionTransaction,
@@ -84,7 +86,6 @@ class ExpenseRepositoryImpl(
         // Pull the user's remote data into Room first so a fresh install (or a
         // new device) restores what they previously saved to Supabase.
         remoteDataSync.pullRemoteData(userId)
-
         categoryRepository.syncCategories()
 
         var hasFailures = false
@@ -147,9 +148,18 @@ class ExpenseRepositoryImpl(
             }
         }
 
+        try {
+            budgetRepository.syncBudgets(userId)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            // Budget failures must not block expense uploads; retry on the next run.
+            hasFailures = true
+        }
+
         if (hasFailures) {
             throw IllegalStateException(
-                "Some expenses failed to synchronize"
+                "Some records failed to synchronize"
             )
         }
     }

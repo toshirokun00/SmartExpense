@@ -22,4 +22,6 @@ interface BudgetRepository {
     suspend fun deleteBudget(
         budget: Budget
     )
+
+    suspend fun syncBudgets(userId: String)
 }

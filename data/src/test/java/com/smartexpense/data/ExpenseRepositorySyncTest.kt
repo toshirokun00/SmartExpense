@@ -27,6 +27,8 @@ class ExpenseRepositorySyncTest {
     private val supabaseClient = mockk<SupabaseClient>(relaxed = true)
     private val categoryRepository =
         mockk<CategoryRepository>(relaxed = true)
+    private val budgetRepository =
+        mockk<com.smartexpense.domain.repository.BudgetRepository>(relaxed = true)
     private val pendingDeletionDao =
         mockk<PendingExpenseDeletionDao>(relaxed = true)
     private val deletionTransaction =
@@ -187,6 +189,7 @@ class ExpenseRepositorySyncTest {
         supabaseExpenseRemoteDataSource = remoteDataSource,
         supabaseClient = supabaseClient,
         categoryRepository = categoryRepository,
+        budgetRepository = budgetRepository,
         expenseSyncEnqueuer = expenseSyncEnqueuer,
         pendingExpenseDeletionDao = pendingDeletionDao,
         deletionTransaction = deletionTransaction,

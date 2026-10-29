@@ -11,6 +11,6 @@ class ScheduleSyncUseCase(
 ) {
 
     operator fun invoke() {
-        syncEnqueuer.enqueue()
+        syncEnqueuer.enqueueAfterCurrent()
     }
 }

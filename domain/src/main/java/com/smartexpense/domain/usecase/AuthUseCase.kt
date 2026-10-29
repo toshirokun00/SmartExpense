@@ -1,9 +1,11 @@
 package com.smartexpense.domain.usecase
 
+import com.smartexpense.domain.repository.AccountDataManager
 import com.smartexpense.domain.repository.AuthRepository
 
 class AuthUseCase(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val accountDataManager: AccountDataManager
 ) {
 
     suspend fun signIn(
@@ -21,6 +23,8 @@ class AuthUseCase(
             email = email.trim(),
             password = password
         )
+
+        prepareLocalAccount()
     }
 
     suspend fun signUp(
@@ -38,6 +42,8 @@ class AuthUseCase(
             email = email.trim(),
             password = password
         )
+
+        prepareLocalAccount()
     }
 
     suspend fun signOut() {
@@ -46,5 +52,14 @@ class AuthUseCase(
 
     suspend fun getCurrentUserId(): String? {
         return authRepository.getCurrentUserId()
+    }
+
+    /**
+     * Sign-up may only return a user once the email is confirmed, so there is
+     * nothing to prepare in that case.
+     */
+    private suspend fun prepareLocalAccount() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        accountDataManager.onUserAuthenticated(userId)
     }
 }

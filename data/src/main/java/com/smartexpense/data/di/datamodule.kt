@@ -1,8 +1,10 @@
 package com.smartexpense.data.di
 
 import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
+import com.smartexpense.data.remote.SupabaseBudgetRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
 import com.smartexpense.data.recurring.RecurringExpenseProcessor
+import com.smartexpense.data.repositoryimpl.AccountDataManagerImpl
 import com.smartexpense.data.repositoryimpl.BudgetAlertRepositoryImpl
 import com.smartexpense.data.repositoryimpl.BudgetRepositoryImpl
 import com.smartexpense.data.repositoryimpl.CategoryRepositoryImpl
@@ -15,6 +17,7 @@ import com.smartexpense.data.sync.ExpenseSyncScheduler
 import com.smartexpense.data.sync.ExpenseSyncWorkerFactory
 import com.smartexpense.data.sync.RecurringExpenseScheduler
 import com.smartexpense.data.sync.RemoteDataSync
+import com.smartexpense.domain.repository.AccountDataManager
 import com.smartexpense.domain.repository.BudgetAlertRepository
 import com.smartexpense.domain.repository.BudgetRepository
 import com.smartexpense.domain.repository.CategoryRepository
@@ -28,6 +31,13 @@ import org.koin.dsl.module
 val dataModule = module {
     single {
         ExpenseSyncScheduler(androidContext())
+    }
+
+    single<AccountDataManager> {
+        AccountDataManagerImpl(
+            context = androidContext(),
+            database = get()
+        )
     }
 
     single<ExpenseSyncEnqueuer> {
@@ -66,6 +76,12 @@ val dataModule = module {
     }
 
     single {
+        SupabaseBudgetRemoteDataSource(
+            supabaseClient = get()
+        )
+    }
+
+    single {
         SupabaseCategoryRemoteDataSource(
             supabaseClient = get()
         )
@@ -75,9 +91,12 @@ val dataModule = module {
         RemoteDataSync(
             categoryDao = get(),
             expenseDao = get(),
+            budgetDao = get(),
             pendingExpenseDeletionDao = get(),
+            pendingBudgetDeletionDao = get(),
             categoryRemoteDataSource = get(),
-            expenseRemoteDataSource = get()
+            expenseRemoteDataSource = get(),
+            budgetRemoteDataSource = get()
         )
     }
 
@@ -87,6 +106,7 @@ val dataModule = module {
             supabaseExpenseRemoteDataSource = get(),
             supabaseClient = get(),
             categoryRepository = get(),
+            budgetRepository = get(),
             expenseSyncEnqueuer = get(),
             pendingExpenseDeletionDao = get(),
             deletionTransaction = get(),
@@ -105,7 +125,12 @@ val dataModule = module {
 
     single<BudgetRepository> {
         BudgetRepositoryImpl(
-            budgetDao = get()
+            budgetDao = get(),
+            supabaseBudgetRemoteDataSource = get(),
+            categoryRepository = get(),
+            expenseSyncEnqueuer = get(),
+            pendingBudgetDeletionDao = get(),
+            deletionTransaction = get()
         )
     }
 

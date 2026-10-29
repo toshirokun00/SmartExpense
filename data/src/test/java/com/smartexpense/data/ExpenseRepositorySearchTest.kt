@@ -28,6 +28,7 @@ class ExpenseRepositorySearchTest {
             supabaseExpenseRemoteDataSource = mockk(relaxed = true),
             supabaseClient = mockk(relaxed = true),
             categoryRepository = mockk(relaxed = true),
+            budgetRepository = mockk(relaxed = true),
             expenseSyncEnqueuer = mockk(relaxed = true),
             pendingExpenseDeletionDao = mockk(relaxed = true),
             deletionTransaction = mockk(relaxed = true),

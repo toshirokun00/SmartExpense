@@ -52,6 +52,7 @@ class ExpenseRepositoryImplTest {
             supabaseExpenseRemoteDataSource = supabaseExpenseRemoteDataSource,
             supabaseClient = supabaseClient,
             categoryRepository = categoryRepository,
+            budgetRepository = mockk(relaxed = true),
             expenseSyncEnqueuer = expenseSyncEnqueuer,
             pendingExpenseDeletionDao = pendingExpenseDeletionDao,
             deletionTransaction = deletionTransaction,
