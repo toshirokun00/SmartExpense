@@ -13,6 +13,7 @@ import com.smartexpense.database.entity.BudgetEntity
 import com.smartexpense.database.entity.CategoryEntity
 import com.smartexpense.database.entity.ExpenseEntity
 import com.smartexpense.database.entity.SyncStatus
+import com.smartexpense.domain.money.Money
 import java.time.OffsetDateTime
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -77,10 +78,15 @@ class RemoteDataSync(
             try {
                 expenseDao.insertExpense(
                     ExpenseEntity(
-                        amount = remote.amount,
+                        amountMinor = Money.toMinorUnits(remote.amount),
                         categoryId = localCategoryId,
                         description = remote.description,
                         date = date,
+                        merchant = remote.merchant.orEmpty(),
+                        paymentMethod = remote.paymentMethod ?: "CASH",
+                        expenseType = remote.expenseType ?: "EXPENSE",
+                        tags = remote.tags.orEmpty(),
+                        notes = remote.notes.orEmpty(),
                         syncStatus = SyncStatus.SYNCED,
                         clientId = remote.clientId,
                         userId = userId

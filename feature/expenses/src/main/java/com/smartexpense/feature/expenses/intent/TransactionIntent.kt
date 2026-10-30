@@ -20,6 +20,8 @@ sealed interface TransactionIntent {
 
     data class SortChanged(val sortOrder: SortOrder) : TransactionIntent
 
+    data class RetrySync(val id: Long) : TransactionIntent
+
     object ClearFilters : TransactionIntent
 
     // Temporary filter state intents (uncommitted until applied)

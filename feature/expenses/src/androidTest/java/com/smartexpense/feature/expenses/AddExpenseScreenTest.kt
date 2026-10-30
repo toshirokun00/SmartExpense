@@ -13,6 +13,7 @@ import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
@@ -46,6 +47,7 @@ class AddExpenseScreenTest {
     private lateinit var validateAmountUseCase: ValidateAmountUseCase
     private lateinit var categoryUseCase: CategoryUseCase
     private lateinit var settingsUseCase: SettingsUseCase
+    private lateinit var scheduleSyncUseCase: ScheduleSyncUseCase
     private lateinit var notificationManager: ExpenseNotificationManager
     private lateinit var viewModel: ExpenseViewModel
 
@@ -61,6 +63,7 @@ class AddExpenseScreenTest {
         validateAmountUseCase = mockk()
         categoryUseCase = mockk()
         settingsUseCase = mockk(relaxed = true)
+        scheduleSyncUseCase = mockk(relaxed = true)
         notificationManager = mockk(relaxed = true)
 
         every { categoryUseCase.getCategories() } returns flowOf(
@@ -79,6 +82,7 @@ class AddExpenseScreenTest {
             validateExpenseAmountUseCase = validateAmountUseCase,
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase,
             expenseNotificationManager = notificationManager
         )
     }

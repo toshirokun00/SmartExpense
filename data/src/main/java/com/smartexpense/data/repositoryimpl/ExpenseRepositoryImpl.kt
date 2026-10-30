@@ -12,6 +12,7 @@ import com.smartexpense.database.dao.PendingExpenseDeletionDao
 import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.SearchCriteria
+import com.smartexpense.domain.money.Money
 import com.smartexpense.domain.repository.BudgetRepository
 import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
@@ -52,10 +53,11 @@ class ExpenseRepositoryImpl(
 
         expenseDao.updateExpense(
             existingEntity.copy(
-                amount = expense.amount,
+                amountMinor = expense.amountMinor,
                 categoryId = expense.categoryId,
                 description = expense.description,
                 date = expense.date,
+                merchant = expense.merchant,
                 syncStatus = SyncStatus.PENDING
             )
         )
@@ -123,9 +125,14 @@ class ExpenseRepositoryImpl(
                 val dto = SupabaseExpenseDto(
                     clientId = expense.clientId,
                     userId = userId,
-                    amount = expense.amount,
+                    amount = Money.toDouble(expense.amountMinor),
                     categoryId = remoteCategoryId,
                     description = expense.description,
+                    merchant = expense.merchant,
+                    paymentMethod = expense.paymentMethod,
+                    expenseType = expense.expenseType,
+                    tags = expense.tags,
+                    notes = expense.notes,
                     expenseDate = java.time.Instant
                         .ofEpochMilli(expense.date)
                         .toString()
@@ -173,8 +180,8 @@ class ExpenseRepositoryImpl(
             query = query,
             categoryIds = categoryIdList,
             categoryIdCount = categoryIdList.size,
-            minAmount = normalized.minAmount,
-            maxAmount = normalized.maxAmount,
+            minAmountMinor = normalized.minAmount?.let { Money.toMinorUnits(it) },
+            maxAmountMinor = normalized.maxAmount?.let { Money.toMinorUnits(it) },
             startTime = normalized.startTime,
             endTime = normalized.endTime,
             sortOrder = normalized.sortOrder.name

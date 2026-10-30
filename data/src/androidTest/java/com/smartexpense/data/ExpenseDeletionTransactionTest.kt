@@ -54,7 +54,7 @@ class ExpenseDeletionTransactionTest {
             database.expenseDao().insertExpense(
                 ExpenseEntity(
                     id = expenseId,
-                    amount = 150.0,
+                    amountMinor = 15000,
                     categoryId = 1L,
                     description = "Test expense",
                     date = 1_760_000_000_000L,
@@ -88,7 +88,7 @@ class ExpenseDeletionTransactionTest {
             database.expenseDao().insertExpense(
                 ExpenseEntity(
                     id = expenseId,
-                    amount = 150.0,
+                    amountMinor = 15000,
                     categoryId = 1L,
                     description = "Test expense",
                     date = 1_760_000_000_000L,

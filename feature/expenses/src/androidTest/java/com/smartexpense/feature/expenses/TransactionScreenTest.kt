@@ -16,6 +16,7 @@ import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.SearchCriteria
 import com.smartexpense.domain.model.SortOrder
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SearchExpensesUseCase
 import com.smartexpense.feature.expenses.screen.TransactionScreen
 import com.smartexpense.feature.expenses.viewmodel.TransactionViewModel
@@ -36,12 +37,14 @@ class TransactionScreenTest {
 
     private lateinit var searchExpensesUseCase: SearchExpensesUseCase
     private lateinit var categoryUseCase: CategoryUseCase
+    private lateinit var scheduleSyncUseCase: ScheduleSyncUseCase
     private lateinit var viewModel: TransactionViewModel
 
     @Before
     fun setup() {
         searchExpensesUseCase = mockk(relaxed = true)
         categoryUseCase = mockk(relaxed = true)
+        scheduleSyncUseCase = mockk(relaxed = true)
 
         every { categoryUseCase.getCategories() } returns flowOf(
             listOf(
@@ -53,7 +56,8 @@ class TransactionScreenTest {
 
         viewModel = TransactionViewModel(
             searchExpensesUseCase = searchExpensesUseCase,
-            categoryUseCase = categoryUseCase
+            categoryUseCase = categoryUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase
         )
     }
 

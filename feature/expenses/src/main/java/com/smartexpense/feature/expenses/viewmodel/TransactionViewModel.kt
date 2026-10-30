@@ -7,6 +7,7 @@ import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.SearchCriteria
 import com.smartexpense.domain.model.SortOrder
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SearchExpensesUseCase
 import com.smartexpense.feature.expenses.effect.TransactionEffect
 import com.smartexpense.feature.expenses.intent.TransactionIntent
@@ -28,7 +29,8 @@ import kotlinx.coroutines.launch
 
 class TransactionViewModel(
     private val searchExpensesUseCase: SearchExpensesUseCase,
-    private val categoryUseCase: CategoryUseCase
+    private val categoryUseCase: CategoryUseCase,
+    private val scheduleSyncUseCase: ScheduleSyncUseCase
 ) : ViewModel() {
 
     private val _criteria = MutableStateFlow(SearchCriteria())
@@ -145,6 +147,13 @@ class TransactionViewModel(
                     it.copy(sortOrder = intent.sortOrder)
                 }
                 search(_criteria.value)
+            }
+
+            is TransactionIntent.RetrySync -> {
+                scheduleSyncUseCase()
+                viewModelScope.launch {
+                    _effect.emit(TransactionEffect.SyncRetryRequested)
+                }
             }
 
             TransactionIntent.ClearFilters -> {

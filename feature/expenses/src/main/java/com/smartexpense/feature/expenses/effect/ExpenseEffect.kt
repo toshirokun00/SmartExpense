@@ -10,5 +10,7 @@ sealed interface ExpenseEffect {
 
     data class ShowError(val message : String) : ExpenseEffect
 
+    data object SyncRetryRequested : ExpenseEffect
+
     data object NavigateToAddExpense: ExpenseEffect
 }

@@ -76,6 +76,25 @@ with check (auth.uid() = user_id);
 
 The column types mirror the existing `categories` and `expenses` tables: `uuid` client/user IDs, `numeric` amounts, and `timestamptz` dates. `category_id` refers to the `categories.id` row for the same user. The unique `client_id` constraint is required because uploads use it as the upsert conflict target.
 
+## Money representation plan
+### Input boundary vs persistence
+To avoid rounding errors while capturing an expense, local persistence and data mapping now utilize integer minor units (centavos):
+
+- **Persistence format**: Stored as a 64-bit integer `amountMinor` (long) rather than a floating-point Double, preventing progressive loss of centavo precision.
+- **Derived Double**: For features relying on floating-point arithmetic—budgets, reports, and dashboards—a derived `Double` amount is computed from `amountMinor`. The authoritative value variable is always centavos.
+- **Input boundary**: New domain instances should be created using helpers to fix precision directly at the input boundaries.
+
+## Expense Supabase migration
+### Merchant sync requirement
+Syncing the `merchant`/payee field with a remote Supabase backup backend requires a database migration to add a `merchant` column. Local expense insertions from the app will fail metadata checks until this column is present in `public.expenses`.
+
+Run this SQL script in the Supabase SQL editor:
+
+```sql
+alter table public.expenses
+  add column if not exists merchant text not null default '';
+```
+
 ## CSV and PDF report exports
 
 The Reports screen can export the selected date range as either transaction details or a report summary, in CSV or PDF format. Files are generated from the local Room data and can be saved through the Android Storage Access Framework or shared through the Android Sharesheet. The selected format controls the save picker MIME type and the share MIME type (`text/csv` or `application/pdf`).

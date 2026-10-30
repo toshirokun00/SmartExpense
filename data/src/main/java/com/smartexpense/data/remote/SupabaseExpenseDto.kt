@@ -1,6 +1,5 @@
 package com.smartexpense.data.remote
 
-
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -18,6 +17,18 @@ data class SupabaseExpenseDto(
     val categoryId: Long,
 
     val description: String,
+
+    val merchant: String = "",
+
+    @SerialName("payment_method")
+    val paymentMethod: String = "CASH",
+
+    @SerialName("expense_type")
+    val expenseType: String = "EXPENSE",
+
+    val tags: String = "",
+
+    val notes: String = "",
 
     @SerialName("expense_date")
     val expenseDate: String
@@ -39,6 +50,19 @@ data class SupabaseExpenseResponseDto(
     val categoryId: Long,
 
     val description: String,
+
+    // Nullable so rows created before the merchant column existed still decode.
+    val merchant: String? = null,
+
+    @SerialName("payment_method")
+    val paymentMethod: String? = null,
+
+    @SerialName("expense_type")
+    val expenseType: String? = null,
+
+    val tags: String? = null,
+
+    val notes: String? = null,
 
     @SerialName("expense_date")
     val expenseDate: String

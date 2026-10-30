@@ -16,6 +16,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
+import com.smartexpense.domain.model.ExpenseSyncStatus
 import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -143,16 +146,45 @@ fun ExpenseScreen(
                             ) {
                                 Text(text = expense.amount.toPesoAmount())
                                 Text(text = expense.description)
+                                Text(
+                                    text = expense.date.toDateString(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                        }
 
-                        TextButton(
-                            onClick = {
-                                viewModel.onIntent(ExpenseIntent.RequestDeleteExpense(id = expense.id))
+                            Column(
+                                horizontalAlignment = Alignment.End
+                            ) {
+                                if (expense.syncStatus != ExpenseSyncStatus.SYNCED) {
+                                    Text(
+                                        text = expense.syncStatus.label(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                if (expense.syncStatus == ExpenseSyncStatus.FAILED) {
+                                    TextButton(
+                                        onClick = {
+                                            viewModel.onIntent(
+                                                ExpenseIntent.RetrySync(expense.id)
+                                            )
+                                        }
+                                    ) {
+                                        Text("Retry")
+                                    }
+                                }
+
+                                TextButton(
+                                    onClick = {
+                                        viewModel.onIntent(ExpenseIntent.RequestDeleteExpense(id = expense.id))
+                                    }
+
+                                ) {
+                                    Text(text = "Delete")
+                                }
                             }
-
-                        ) {
-                            Text(text = "Delete")
                         }
 
                     }

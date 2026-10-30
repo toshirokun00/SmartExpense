@@ -43,7 +43,7 @@ class ExpenseRepositoryPersistenceTest {
     fun expensePersistsAfterDatabaseReopens() = runTest {
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 250.0,
+            amountMinor = 25000,
             categoryId = 1L,
             description = "Persistent expense",
             date = 1_760_000_000_000L,
@@ -60,7 +60,7 @@ class ExpenseRepositoryPersistenceTest {
             database.expenseDao().getExpenseById(1L)
 
         assertNotNull(persistedExpense)
-        assertEquals(250.0, persistedExpense!!.amount, 0.001)
+        assertEquals(25000L, persistedExpense!!.amountMinor)
         assertEquals(
             "Persistent expense",
             persistedExpense.description
@@ -106,7 +106,7 @@ class ExpenseRepositoryPersistenceTest {
     fun deletedExpenseRemainsAbsentAfterDatabaseReopens() = runTest {
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 100.0,
+            amountMinor = 10000,
             categoryId = 1L,
             description = "Expense to delete",
             date = 1_760_000_000_000L,

@@ -56,25 +56,25 @@ interface ExpenseDao {
 
     @Query("""
         SELECT * FROM expenses
-        WHERE (:query IS NULL OR :query = '' OR LOWER(description) LIKE LOWER('%' || :query || '%'))
+        WHERE (:query IS NULL OR :query = '' OR LOWER(description) LIKE LOWER('%' || :query || '%') OR LOWER(merchant) LIKE LOWER('%' || :query || '%'))
           AND (:categoryIdCount = 0 OR categoryId IN (:categoryIds))
-          AND (:minAmount IS NULL OR amount >= :minAmount)
-          AND (:maxAmount IS NULL OR amount <= :maxAmount)
+          AND (:minAmountMinor IS NULL OR amountMinor >= :minAmountMinor)
+          AND (:maxAmountMinor IS NULL OR amountMinor <= :maxAmountMinor)
           AND (:startTime IS NULL OR date >= :startTime)
           AND (:endTime IS NULL OR date < :endTime)
         ORDER BY
           CASE WHEN :sortOrder = 'NEWEST' THEN date END DESC,
           CASE WHEN :sortOrder = 'OLDEST' THEN date END ASC,
-          CASE WHEN :sortOrder = 'HIGHEST_AMOUNT' THEN amount END DESC,
-          CASE WHEN :sortOrder = 'LOWEST_AMOUNT' THEN amount END ASC,
+          CASE WHEN :sortOrder = 'HIGHEST_AMOUNT' THEN amountMinor END DESC,
+          CASE WHEN :sortOrder = 'LOWEST_AMOUNT' THEN amountMinor END ASC,
           id ASC
     """)
     fun searchExpenses(
         query: String?,
         categoryIds: List<Long>,
         categoryIdCount: Int,
-        minAmount: Double?,
-        maxAmount: Double?,
+        minAmountMinor: Long?,
+        maxAmountMinor: Long?,
         startTime: Long?,
         endTime: Long?,
         sortOrder: String

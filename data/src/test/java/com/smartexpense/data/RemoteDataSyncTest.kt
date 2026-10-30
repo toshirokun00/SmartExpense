@@ -162,7 +162,7 @@ class RemoteDataSyncTest {
                     match {
                         it.clientId == "exp-1" &&
                             it.categoryId == 5L &&
-                            it.amount == 50.0 &&
+                            it.amountMinor == 5000L &&
                             it.description == "Lunch" &&
                             it.syncStatus == SyncStatus.SYNCED
                     }

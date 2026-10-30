@@ -41,7 +41,7 @@ class ExpenseRepositoryOfflineFirstTest {
     @Test
     fun expenseIsAvailableLocallyWhenRemoteSyncHasNotOccurred() = runTest {
         val expense = ExpenseEntity(
-            amount = 250.0,
+            amountMinor = 25000,
             categoryId = 1L,
             description = "Offline expense",
             date = 1_760_000_000_000L,
@@ -57,7 +57,7 @@ class ExpenseRepositoryOfflineFirstTest {
 
         assertEquals(1, localExpenses.size)
         assertEquals("Offline expense", localExpenses.first().description)
-        assertEquals(250.0, localExpenses.first().amount, 0.001)
+        assertEquals(25000L, localExpenses.first().amountMinor)
         assertEquals(
             SyncStatus.PENDING,
             localExpenses.first().syncStatus
@@ -67,7 +67,7 @@ class ExpenseRepositoryOfflineFirstTest {
     @Test
     fun pendingExpenseRemainsAvailableForSync() = runTest {
         val expense = ExpenseEntity(
-            amount = 125.50,
+            amountMinor = 12550,
             categoryId = 1L,
             description = "Pending sync",
             date = 1_760_000_000_000L,
@@ -90,7 +90,7 @@ class ExpenseRepositoryOfflineFirstTest {
     @Test
     fun syncedExpenseIsNotReturnedAsUnsynced() = runTest {
         val expense = ExpenseEntity(
-            amount = 300.0,
+            amountMinor = 30000,
             categoryId = 1L,
             description = "Synced expense",
             date = 1_760_000_000_000L,

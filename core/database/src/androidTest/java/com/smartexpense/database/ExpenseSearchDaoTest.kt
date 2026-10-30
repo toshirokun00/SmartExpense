@@ -22,6 +22,9 @@ class ExpenseSearchDaoTest {
         const val AMOUNT_DELTA = 0.001
     }
 
+    private val ExpenseEntity.amount: Double
+        get() = amountMinor / 100.0
+
     private lateinit var database: AppDatabase
     private lateinit var expenseDao: ExpenseDao
 
@@ -45,15 +48,17 @@ class ExpenseSearchDaoTest {
         amount: Double,
         categoryId: Long,
         description: String,
-        date: Long
+        date: Long,
+        merchant: String = ""
     ) = runBlocking {
         expenseDao.insertExpense(
             ExpenseEntity(
                 id = id,
-                amount = amount,
+                amountMinor = kotlin.math.round(amount * 100).toLong(),
                 categoryId = categoryId,
                 description = description,
                 date = date,
+                merchant = merchant,
                 syncStatus = com.smartexpense.database.entity.SyncStatus.SYNCED,
                 clientId = "test-client-$id"
             )
@@ -70,8 +75,8 @@ class ExpenseSearchDaoTest {
             query = "COFFEE",
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -79,6 +84,45 @@ class ExpenseSearchDaoTest {
 
         assertEquals(2, results.size)
         assertTrue(results.all { it.description.lowercase().contains("coffee") })
+    }
+
+    @Test
+    fun searchByMerchantIsCaseInsensitive() = runBlocking {
+        insertExpense(
+            amount = 10.0,
+            categoryId = 1L,
+            description = "Latte",
+            date = 1_760_000_000_000L,
+            merchant = "Cafe Uno"
+        )
+        insertExpense(
+            amount = 20.0,
+            categoryId = 1L,
+            description = "Beans",
+            date = 1_760_000_000_000L,
+            merchant = "Coffee Bean Co"
+        )
+        insertExpense(
+            amount = 30.0,
+            categoryId = 1L,
+            description = "Sandwich",
+            date = 1_760_000_000_000L,
+            merchant = "Deli"
+        )
+
+        val results = expenseDao.searchExpenses(
+            query = "coffee",
+            categoryIds = emptyList(),
+            categoryIdCount = 0,
+            minAmountMinor = null,
+            maxAmountMinor = null,
+            startTime = null,
+            endTime = null,
+            sortOrder = "NEWEST"
+        ).first()
+
+        assertEquals(1, results.size)
+        assertEquals("Coffee Bean Co", results.first().merchant)
     }
 
     @Test
@@ -90,8 +134,8 @@ class ExpenseSearchDaoTest {
             query = "",
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -108,8 +152,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -127,8 +171,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = listOf(1L),
             categoryIdCount = 1,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -148,8 +192,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = listOf(1L, 3L),
             categoryIdCount = 2,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -169,8 +213,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = 50.0,
-            maxAmount = null,
+            minAmountMinor = 5000L,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -190,8 +234,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = 50.0,
+            minAmountMinor = null,
+            maxAmountMinor = 5000L,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -211,8 +255,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = 20.0,
-            maxAmount = 80.0,
+            minAmountMinor = 2000L,
+            maxAmountMinor = 8000L,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -234,8 +278,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = oct1,
             endTime = null,
             sortOrder = "NEWEST"
@@ -257,8 +301,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = oct2,
             sortOrder = "NEWEST"
@@ -280,8 +324,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -304,8 +348,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "OLDEST"
@@ -326,8 +370,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "HIGHEST_AMOUNT"
@@ -349,8 +393,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "LOWEST_AMOUNT"
@@ -373,8 +417,8 @@ class ExpenseSearchDaoTest {
             query = "coffee",
             categoryIds = listOf(1L),
             categoryIdCount = 1,
-            minAmount = 20.0,
-            maxAmount = null,
+            minAmountMinor = 2000L,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "HIGHEST_AMOUNT"
@@ -394,8 +438,8 @@ class ExpenseSearchDaoTest {
             query = "Bar",
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -415,8 +459,8 @@ class ExpenseSearchDaoTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"

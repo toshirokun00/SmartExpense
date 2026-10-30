@@ -33,10 +33,15 @@ import java.util.UUID
 data class ExpenseEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
-    val amount: Double,
+    val amountMinor: Long,
     val categoryId: Long,
     val description: String,
     val date: Long,
+    val merchant: String = "",
+    val paymentMethod: String = "CASH",
+    val expenseType: String = "EXPENSE",
+    val tags: String = "",
+    val notes: String = "",
     val syncStatus: SyncStatus = SyncStatus.PENDING,
     val clientId: String = UUID.randomUUID().toString(),
     val userId: String? = null,

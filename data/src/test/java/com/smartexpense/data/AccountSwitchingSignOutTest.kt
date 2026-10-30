@@ -92,7 +92,7 @@ class AccountSwitchingSignOutTest {
     fun pendingExpenseRemainsInDaoWhenSyncIsNotTriggered() = runTest {
         val pendingExpense = ExpenseEntity(
             id = 1L,
-            amount = 200.0,
+            amountMinor = 20000,
             categoryId = 1L,
             description = "Pre sign-out expense",
             date = 1_760_000_000_000L,
@@ -119,7 +119,7 @@ class AccountSwitchingSignOutTest {
 
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 50.0,
+            amountMinor = 5000,
             categoryId = 1L,
             description = "User B expense",
             date = 1_760_000_000_000L,
@@ -149,7 +149,7 @@ class AccountSwitchingSignOutTest {
 
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 50.0,
+            amountMinor = 5000,
             categoryId = 1L,
             description = "User A expense",
             date = 1_760_000_000_000L,
