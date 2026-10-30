@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.smartexpense.domain.model.SearchCriteria
 import com.smartexpense.domain.model.SortOrder
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SearchExpensesUseCase
 import com.smartexpense.feature.expenses.effect.TransactionEffect
 import com.smartexpense.feature.expenses.intent.TransactionIntent
@@ -14,6 +15,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -34,19 +36,22 @@ class TransactionViewModelTest {
 
     private lateinit var searchExpensesUseCase: SearchExpensesUseCase
     private lateinit var categoryUseCase: CategoryUseCase
+    private lateinit var scheduleSyncUseCase: ScheduleSyncUseCase
     private lateinit var viewModel: TransactionViewModel
 
     @Before
     fun setup() {
         searchExpensesUseCase = mockk()
         categoryUseCase = mockk()
+        scheduleSyncUseCase = mockk(relaxed = true)
 
         every { categoryUseCase.getCategories() } returns flowOf(emptyList())
         coEvery { searchExpensesUseCase(any()) } returns flowOf(emptyList())
 
         viewModel = TransactionViewModel(
             searchExpensesUseCase = searchExpensesUseCase,
-            categoryUseCase = categoryUseCase
+            categoryUseCase = categoryUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase
         )
     }
 
@@ -288,5 +293,13 @@ class TransactionViewModelTest {
             assertTrue(effect is TransactionEffect.ShowError)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun retrySyncRequestsBackgroundSync() = runTest {
+        viewModel.onIntent(TransactionIntent.RetrySync(1L))
+        advanceUntilIdle()
+
+        verify { scheduleSyncUseCase() }
     }
 }

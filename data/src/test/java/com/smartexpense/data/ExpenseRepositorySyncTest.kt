@@ -103,7 +103,7 @@ class ExpenseRepositorySyncTest {
     fun successfulExpenseSyncMarksExpenseAsSynced() = runTest {
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 150.0,
+            amountMinor = 15000,
             categoryId = 1L,
             description = "Lunch",
             date = 1_760_000_000_000L,
@@ -141,7 +141,7 @@ class ExpenseRepositorySyncTest {
     fun failedExpenseSyncCanBeRetriedSuccessfully() = runTest {
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 150.0,
+            amountMinor = 15000,
             categoryId = 1L,
             description = "Lunch",
             date = 1_760_000_000_000L,
@@ -200,7 +200,7 @@ class ExpenseRepositorySyncTest {
     fun failedExpenseIsRetriedAndMarkedAsSynced() = runTest {
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 100.0,
+            amountMinor = 10000,
             categoryId = 1L,
             description = "Retry expense",
             date = 1_760_000_000_000L,
@@ -235,7 +235,7 @@ class ExpenseRepositorySyncTest {
     fun failedExpenseRemainsFailedWhenRetryFails() = runTest {
         val expense = ExpenseEntity(
             id = 1L,
-            amount = 100.0,
+            amountMinor = 10000,
             categoryId = 1L,
             description = "Retry expense",
             date = 1_760_000_000_000L,
@@ -271,7 +271,7 @@ class ExpenseRepositorySyncTest {
     fun pendingRecurringExpenseFromAnotherUserIsNotUploaded() = runTest {
         val ownExpense = ExpenseEntity(
             id = 1L,
-            amount = 100.0,
+            amountMinor = 10000,
             categoryId = 1L,
             description = "Own recurring expense",
             date = 1_760_000_000_000L,
@@ -282,7 +282,7 @@ class ExpenseRepositorySyncTest {
 
         val otherUsersExpense = ExpenseEntity(
             id = 2L,
-            amount = 200.0,
+            amountMinor = 20000,
             categoryId = 1L,
             description = "Other user's recurring expense",
             date = 1_760_000_000_000L,

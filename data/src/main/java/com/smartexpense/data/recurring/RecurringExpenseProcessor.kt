@@ -7,6 +7,7 @@ import com.smartexpense.database.entity.ExpenseEntity
 import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.recurring.RecurrenceCalculator
 import com.smartexpense.domain.recurring.RecurringDateUtils
+import com.smartexpense.domain.money.Money
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -70,7 +71,7 @@ class RecurringExpenseProcessor(
 
             val insertedId = expenseDao.insertExpenseIgnoringDuplicate(
                 ExpenseEntity(
-                    amount = domain.amount,
+                    amountMinor = Money.toMinorUnits(domain.amount),
                     categoryId = domain.categoryId,
                     description = domain.description,
                     date = occurrenceMillis,

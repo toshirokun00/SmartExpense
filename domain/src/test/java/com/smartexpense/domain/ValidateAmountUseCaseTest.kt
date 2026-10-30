@@ -57,4 +57,17 @@ class ValidateAmountUseCaseTest {
 
     }
 
+    @Test
+    fun formattedAmountWithCommasReturnsDoubleValue() {
+        val result = useCase("1,234,567.89")
+
+        Assert.assertEquals(1234567.89, result ?: error("Expected a valid amount"), 0.001)
+    }
+
+    @Test
+    fun formattedAmountWithCommasWithoutDecimalsReturnsDoubleValue() {
+        val result = useCase("5,000")
+
+        Assert.assertEquals(5000.0, result ?: error("Expected a valid amount"), 0.001)
+    }
 }

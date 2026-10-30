@@ -234,7 +234,7 @@ class CoroutineCancellationSyncTest {
         id: Long = 1L
     ) = ExpenseEntity(
         id = id,
-        amount = 100.0,
+        amountMinor = 10000,
         categoryId = 1L,
         description = "Test",
         date = 1_760_000_000_000L,

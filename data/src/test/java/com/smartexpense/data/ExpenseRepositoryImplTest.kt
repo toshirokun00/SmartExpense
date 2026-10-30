@@ -66,7 +66,7 @@ class ExpenseRepositoryImplTest {
         val entities = listOf(
             ExpenseEntity(
                 id = 1L,
-                amount = 100.50,
+                amountMinor = 10050,
                 categoryId = 1L,
                 description = "Lunch",
                 date = 1000L
@@ -102,7 +102,7 @@ class ExpenseRepositoryImplTest {
 
         val entity = ExpenseEntity(
             id = 1L,
-            amount = 100.50,
+            amountMinor = 10050,
             categoryId = 1L,
             description = "Lunch",
             date = 1000L
@@ -145,7 +145,7 @@ class ExpenseRepositoryImplTest {
             expenseDao.insertExpense(
                 match { entity ->
                     entity.id == 1L &&
-                            entity.amount == 100.50 &&
+                            entity.amountMinor == 10050L &&
                             entity.categoryId == 1L &&
                             entity.description == "Lunch" &&
                             entity.date == 1000L &&
@@ -160,7 +160,7 @@ class ExpenseRepositoryImplTest {
     fun updateExpenseCallsDaoWithMappedEntity() = runTest {
         val existingEntity = ExpenseEntity(
             id = 1L,
-            amount = 80.00,
+            amountMinor = 8000,
             categoryId = 1L,
             description = "Breakfast",
             date = 900L,
@@ -184,7 +184,7 @@ class ExpenseRepositoryImplTest {
             expenseDao.updateExpense(
                 match { entity ->
                     entity.id == 1L &&
-                            entity.amount == 100.50 &&
+                            entity.amountMinor == 10050L &&
                             entity.categoryId == 1L &&
                             entity.description == "Lunch" &&
                             entity.date == 1000L &&
@@ -199,7 +199,7 @@ class ExpenseRepositoryImplTest {
     fun deleteExpenseCallsDeletionTransaction() = runTest {
         val expenseEntity = ExpenseEntity(
             id = 1L,
-            amount = 100.50,
+            amountMinor = 10050,
             categoryId = 1L,
             description = "Lunch",
             date = 1000L,

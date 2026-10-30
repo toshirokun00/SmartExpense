@@ -3,6 +3,7 @@ package com.smartexpense.data
 import com.smartexpense.data.repositoryimpl.ExpenseRepositoryImpl
 import com.smartexpense.database.dao.ExpenseDao
 import com.smartexpense.database.entity.ExpenseEntity
+import com.smartexpense.domain.model.ExpenseSyncStatus
 import com.smartexpense.domain.model.SearchCriteria
 import com.smartexpense.domain.model.SortOrder
 import io.mockk.coEvery
@@ -48,7 +49,7 @@ class ExpenseRepositorySearchTest {
         val entities = listOf(
             ExpenseEntity(
                 id = 1L,
-                amount = 25.0,
+                amountMinor = 2500,
                 categoryId = 1L,
                 description = "Lunch",
                 date = 1_760_000_000_000L,
@@ -61,8 +62,8 @@ class ExpenseRepositorySearchTest {
             query = "lunch",
             categoryIds = listOf(1L),
             categoryIdCount = 1,
-            minAmount = 10.0,
-            maxAmount = 50.0,
+            minAmountMinor = 1000,
+            maxAmountMinor = 5000,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"
@@ -77,7 +78,8 @@ class ExpenseRepositorySearchTest {
                     amount = 25.0,
                     categoryId = 1L,
                     description = "Lunch",
-                    date = 1_760_000_000_000L
+                    date = 1_760_000_000_000L,
+                    syncStatus = ExpenseSyncStatus.SYNCED
                 )
             ),
             result
@@ -101,8 +103,8 @@ class ExpenseRepositorySearchTest {
             query = "Lunch",
             categoryIds = listOf(1L, 2L),
             categoryIdCount = 2,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "HIGHEST_AMOUNT"
@@ -114,8 +116,8 @@ class ExpenseRepositorySearchTest {
             query = "Lunch",
             categoryIds = listOf(1L, 2L),
             categoryIdCount = 2,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "HIGHEST_AMOUNT"
@@ -128,7 +130,7 @@ class ExpenseRepositorySearchTest {
         val entities = listOf(
             ExpenseEntity(
                 id = 1L,
-                amount = 10.0,
+                amountMinor = 1000,
                 categoryId = 1L,
                 description = "Item",
                 date = 1_760_000_000_000L,
@@ -141,8 +143,8 @@ class ExpenseRepositorySearchTest {
             query = null,
             categoryIds = emptyList(),
             categoryIdCount = 0,
-            minAmount = null,
-            maxAmount = null,
+            minAmountMinor = null,
+            maxAmountMinor = null,
             startTime = null,
             endTime = null,
             sortOrder = "NEWEST"

@@ -2,12 +2,15 @@ package com.smartexpense.feature.expenses.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartexpense.core.common.util.MoneyInputUtil
 import com.smartexpense.domain.model.Expense
+import com.smartexpense.domain.money.Money
 import com.smartexpense.domain.usecase.AddExpenseUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
@@ -40,6 +43,7 @@ class ExpenseViewModel(
     private val validateExpenseAmountUseCase: ValidateAmountUseCase,
     private val categoryUseCase: CategoryUseCase,
     private val settingsUseCase: SettingsUseCase,
+    private val scheduleSyncUseCase: ScheduleSyncUseCase,
     private val expenseNotificationManager: ExpenseNotificationManager
 ) : ViewModel() {
 
@@ -82,7 +86,7 @@ class ExpenseViewModel(
                 expenses,
                 categories,
                 formState,
-                totalAmount = expenses.sumOf { it.amount },
+                totalAmount = Money.toDouble(expenses.sumOf { it.amountMinor }),
                 isLoading = false
             )
         }
@@ -105,8 +109,12 @@ class ExpenseViewModel(
             }
 
             is ExpenseIntent.AmountChanged -> {
+                val formatted = MoneyInputUtil.formatAmountInput(
+                    input = intent.amount,
+                    previousInput = _formState.value.amount
+                )
                 _formState.value = _formState.value.copy(
-                    amount = intent.amount
+                    amount = formatted
                 )
             }
 
@@ -114,6 +122,18 @@ class ExpenseViewModel(
                 _formState.value = _formState.value.copy(
                     description = intent.description
                 )
+            }
+
+            is ExpenseIntent.MerchantChanged -> {
+                _formState.update {
+                    it.copy(merchant = intent.merchant)
+                }
+            }
+
+            is ExpenseIntent.DateChanged -> {
+                _formState.update {
+                    it.copy(date = intent.date)
+                }
             }
 
             is ExpenseIntent.LoadExpense -> {
@@ -134,6 +154,10 @@ class ExpenseViewModel(
                 requestDeleteExpense(intent.id)
             }
 
+            is ExpenseIntent.RetrySync -> {
+                retrySync(intent.id)
+            }
+
             is ExpenseIntent.CategoryChanged -> {
 
                 _formState.update {
@@ -147,72 +171,72 @@ class ExpenseViewModel(
     }
 
     fun addExpense() {
+        if (_formState.value.isSaving) return
         val state = _formState.value
 
         val amount = validateExpenseAmountUseCase(state.amount)
-
         if (amount == null) {
             viewModelScope.launch {
-                _effect.emit(
-                    ExpenseEffect.ShowError(
-                        message = "Please enter valid amount"
-                    )
-                )
+                _effect.emit(ExpenseEffect.ShowError("Please enter valid amount"))
             }
             return
         }
         val categoryId = state.categoryId
-
         if (categoryId == null) {
             viewModelScope.launch {
-                _effect.emit(
-                    ExpenseEffect.ShowError("Please select a category")
-                )
+                _effect.emit(ExpenseEffect.ShowError("Please select a category"))
             }
             return
         }
-        val expense: Expense = Expense(
+
+        val expense = Expense(
             amount = amount,
             categoryId = categoryId,
             description = state.description,
-            date = System.currentTimeMillis()
+            date = state.date,
+            merchant = state.merchant
         )
         viewModelScope.launch {
+            _formState.update { it.copy(isSaving = true) }
             try {
+                // This persists locally; remote sync happens asynchronously and
+                // must not prevent successful local capture while offline.
                 addExpenseUseCase(expense)
+                _effect.emit(ExpenseEffect.ExpenseAdded)
+                _formState.value = ExpenseFormState()
+
                 try {
-
-                    val settings = settingsUseCase
-                        .getSettings()
-                        .first()
-
-
+                    val settings = settingsUseCase.getSettings().first()
                     if (settings.notificationsEnabled) {
                         expenseNotificationManager.showExpenseAddedNotification(
-                            description = expense.description.ifBlank {
-                                "New expense"
+                            description = expense.merchant.ifBlank {
+                                expense.description.ifBlank { "New expense" }
                             },
-                            amount = "₱${String.format(java.util.Locale.US, "%.2f", amount)}"
+                            amount = "₱${Money.format(expense.amountMinor)}"
                         )
                     }
-                }catch (exception : CancellationException) {
+                } catch (exception: CancellationException) {
                     throw exception
+                } catch (_: Exception) {
+                    // Notification failure must not turn a successful save into
+                    // an expense save error.
                 }
-            }catch (exception : Exception) {
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
                 _effect.emit(
                     ExpenseEffect.ShowError(
-                        message = exception.message ?: "Failed to add expense"
+                        message = exception.message ?: "Failed to save expense"
                     )
                 )
+            } finally {
+                _formState.update { it.copy(isSaving = false) }
             }
-
-            _effect.emit(ExpenseEffect.ExpenseAdded)
-
-            _formState.value = ExpenseFormState()
         }
     }
 
     fun updateExpense(intent: ExpenseIntent.UpdateExpense) {
+        if (_formState.value.isSaving) return
         val state = _formState.value
         val amount = validateExpenseAmountUseCase(state.amount)
 
@@ -236,40 +260,77 @@ class ExpenseViewModel(
             return
         }
         viewModelScope.launch {
-            val existingExpense = getExpenseByIdUseCase(intent.id)
-            if (existingExpense == null) {
+            _formState.update { it.copy(isSaving = true) }
+            try {
+                val existingExpense = getExpenseByIdUseCase(intent.id)
+                if (existingExpense == null) {
+                    _effect.emit(
+                        ExpenseEffect.ShowError(
+                            message = "Expense not found"
+                        )
+                    )
+                    return@launch
+                }
+
+                val updatedExpense = existingExpense.copy(
+                    amount = amount,
+                    description = state.description,
+                    merchant = state.merchant,
+                    categoryId = categoryId,
+                    date = state.date
+                )
+                updateExpenseUseCase(updatedExpense)
+
+                _effect.emit(
+                    ExpenseEffect.ExpenseUpdated
+                )
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
                 _effect.emit(
                     ExpenseEffect.ShowError(
-                        message = "Expense not found"
+                        message = exception.message ?: "Failed to update expense"
                     )
                 )
-                return@launch
+            } finally {
+                _formState.update { it.copy(isSaving = false) }
             }
-
-            val updatedExpense = existingExpense.copy(
-                amount = amount,
-                description = state.description,
-                categoryId = state.categoryId
-            )
-            updateExpenseUseCase(updatedExpense)
-
-            _effect.emit(
-                ExpenseEffect.ExpenseUpdated
-            )
         }
     }
 
     private fun loadExpense(id: Long) {
         viewModelScope.launch {
-            val expense = getExpenseByIdUseCase(id)
+            try {
+                val expense = getExpenseByIdUseCase(id)
 
-            if (expense != null) {
-                _formState.value = _formState.value.copy(
-                    amount = expense.amount.toString(),
-                    description = expense.description,
-                    categoryId = expense.categoryId
+                if (expense != null) {
+                    _formState.value = _formState.value.copy(
+                        amount = MoneyInputUtil.formatAmountInput(Money.format(expense.amountMinor)),
+                        description = expense.description,
+                        merchant = expense.merchant,
+                        categoryId = expense.categoryId,
+                        date = expense.date,
+                        syncStatus = expense.syncStatus
+                    )
+                }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                _effect.emit(
+                    ExpenseEffect.ShowError(
+                        exception.message ?: "Failed to load expense"
+                    )
                 )
             }
+        }
+    }
+
+    private fun retrySync(id: Long) {
+        // The worker already picks up FAILED rows, so a manual retry only needs
+        // to ask for another sync run.
+        scheduleSyncUseCase()
+        viewModelScope.launch {
+            _effect.emit(ExpenseEffect.SyncRetryRequested)
         }
     }
 
@@ -299,18 +360,26 @@ class ExpenseViewModel(
         } ?: return
 
         viewModelScope.launch {
-            deleteExpenseUseCase(expense)
+            try {
+                deleteExpenseUseCase(expense)
 
-            _effect.emit(ExpenseEffect.ExpenseDeleted)
+                _effect.emit(ExpenseEffect.ExpenseDeleted)
 
-            _screenState.update {
-                it.copy(
-                    showDeleteConfirmation = false,
-                    expenseToDeleteId = null
+                _screenState.update {
+                    it.copy(
+                        showDeleteConfirmation = false,
+                        expenseToDeleteId = null
+                    )
+                }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                _effect.emit(
+                    ExpenseEffect.ShowError(
+                        exception.message ?: "Failed to delete expense"
+                    )
                 )
             }
-
-
         }
     }
 

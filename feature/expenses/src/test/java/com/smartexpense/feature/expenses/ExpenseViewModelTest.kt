@@ -4,11 +4,13 @@ import app.cash.turbine.test
 import com.smartexpense.domain.model.AppSettings
 import com.smartexpense.domain.model.AppTheme
 import com.smartexpense.domain.model.Expense
+import com.smartexpense.domain.model.ExpenseSyncStatus
 import com.smartexpense.domain.usecase.AddExpenseUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
@@ -54,6 +56,8 @@ class ExpenseViewModelTest {
 
     private lateinit var settingsUseCase: SettingsUseCase
 
+    private lateinit var scheduleSyncUseCase: ScheduleSyncUseCase
+
     private lateinit var expenseNotificationManager: ExpenseNotificationManager
 
     private lateinit var viewModel: ExpenseViewModel
@@ -69,6 +73,7 @@ class ExpenseViewModelTest {
         categoryUseCase = mockk()
         expenseNotificationManager = mockk()
         settingsUseCase = mockk()
+        scheduleSyncUseCase = mockk(relaxed = true)
 
         every {
             expenseNotificationManager.showExpenseAddedNotification(
@@ -103,6 +108,7 @@ class ExpenseViewModelTest {
             validateExpenseAmountUseCase = validateExpenseAmountUseCase,
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase,
             expenseNotificationManager = expenseNotificationManager
         )
     }
@@ -124,6 +130,27 @@ class ExpenseViewModelTest {
             )
             val state = awaitItem()
             assertEquals("100.50", state.form.amount)
+        }
+    }
+
+    @Test
+    fun amountChangedFormatsAmountWithCommasWhileTyping() = runTest {
+        viewModel.uiState.test {
+            awaitItem()
+
+            viewModel.onIntent(ExpenseIntent.AmountChanged("1234"))
+            assertEquals("1,234", awaitItem().form.amount)
+
+            viewModel.onIntent(ExpenseIntent.AmountChanged("12345"))
+            assertEquals("12,345", awaitItem().form.amount)
+
+            viewModel.onIntent(ExpenseIntent.AmountChanged("12,345.5"))
+            assertEquals("12,345.5", awaitItem().form.amount)
+
+            viewModel.onIntent(ExpenseIntent.AmountChanged("12,345.50"))
+            assertEquals("12,345.50", awaitItem().form.amount)
+
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -244,6 +271,7 @@ class ExpenseViewModelTest {
             validateExpenseAmountUseCase = validateExpenseAmountUseCase,
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase,
             expenseNotificationManager = expenseNotificationManager
         )
 
@@ -299,6 +327,7 @@ class ExpenseViewModelTest {
             validateExpenseAmountUseCase = validateExpenseAmountUseCase,
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase,
             expenseNotificationManager = expenseNotificationManager
         )
 
@@ -346,6 +375,7 @@ class ExpenseViewModelTest {
             validateExpenseAmountUseCase = validateExpenseAmountUseCase,
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase,
             expenseNotificationManager = expenseNotificationManager
         )
 
@@ -380,5 +410,88 @@ class ExpenseViewModelTest {
                 amount = any()
             )
         }
+    }
+
+    @Test
+    fun addExpenseFailureKeepsFormAndReportsOnlyTheError() = runTest {
+        every { validateExpenseAmountUseCase("100") } returns 100.0
+        coEvery { addExpenseUseCase(any()) } throws IllegalStateException("Save failed")
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            viewModel.onIntent(ExpenseIntent.AmountChanged("100"))
+            viewModel.onIntent(ExpenseIntent.DescriptionChanged("Lunch"))
+            viewModel.onIntent(ExpenseIntent.MerchantChanged("Cafe Uno"))
+            viewModel.onIntent(ExpenseIntent.CategoryChanged(1L))
+
+            viewModel.effect.test {
+                viewModel.onIntent(ExpenseIntent.AddExpenses)
+                advanceUntilIdle()
+
+                assertTrue(awaitItem() is ExpenseEffect.ShowError)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            val state = viewModel.uiState.value
+            assertEquals("100", state.form.amount)
+            assertEquals("Lunch", state.form.description)
+            assertEquals("Cafe Uno", state.form.merchant)
+            assertFalse(state.form.isSaving)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun merchantAndDateChangesUpdateFormState() = runTest {
+        viewModel.uiState.test {
+            awaitItem()
+
+            viewModel.onIntent(ExpenseIntent.MerchantChanged("Cafe Uno"))
+            assertEquals("Cafe Uno", awaitItem().form.merchant)
+
+            viewModel.onIntent(ExpenseIntent.DateChanged(1_700_000_000_000L))
+            assertEquals(1_700_000_000_000L, awaitItem().form.date)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun loadExpensePopulatesDateMerchantAndSyncStatus() = runTest {
+        val expense = Expense(
+            id = 1L,
+            amount = 123.45,
+            categoryId = 2L,
+            description = "Coffee",
+            date = 1_700_000_000_000L,
+            merchant = "Cafe Uno",
+            syncStatus = ExpenseSyncStatus.FAILED
+        )
+        coEvery { getExpenseByIdUseCase(1L) } returns expense
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            viewModel.onIntent(ExpenseIntent.LoadExpense(1L))
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("123.45", state.form.amount)
+            assertEquals("Cafe Uno", state.form.merchant)
+            assertEquals(1_700_000_000_000L, state.form.date)
+            assertEquals(ExpenseSyncStatus.FAILED, state.form.syncStatus)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun retrySyncRequestsBackgroundSync() = runTest {
+        viewModel.onIntent(ExpenseIntent.RetrySync(1L))
+        advanceUntilIdle()
+
+        verify { scheduleSyncUseCase() }
     }
 }

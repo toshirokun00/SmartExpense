@@ -17,12 +17,14 @@ val expenseModule = module {
             validateExpenseAmountUseCase = get(),
             categoryUseCase = get(),
             settingsUseCase = get(),
+            scheduleSyncUseCase = get(),
             expenseNotificationManager = get())
     }
 
     viewModel {
         TransactionViewModel(
             searchExpensesUseCase = get(),
-            categoryUseCase = get())
+            categoryUseCase = get(),
+            scheduleSyncUseCase = get())
     }
 }

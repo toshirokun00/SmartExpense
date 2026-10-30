@@ -86,6 +86,12 @@ fun AddExpenseScreen(
                         message = "Expense deleted successfully!"
                     )
                 }
+
+                ExpenseEffect.SyncRetryRequested -> {
+                    snackBarHostState.showSnackbar(
+                        message = "Sync retry requested"
+                    )
+                }
             }
         }
     }
@@ -118,15 +124,12 @@ fun AddExpenseScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(
+            MoneyAmountField(
                 value = uiState.form.amount,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 onValueChange = {
                     viewModel.onIntent(ExpenseIntent.AmountChanged(it))
                 },
-                label = {
-                    Text("Amount")
-                }
+                modifier = Modifier.fillMaxWidth()
             )
 
             ExposedDropdownMenuBox(
@@ -189,6 +192,25 @@ fun AddExpenseScreen(
                 },
                 label = {
                     Text("Description")
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = uiState.form.merchant,
+                onValueChange = {
+                    viewModel.onIntent(ExpenseIntent.MerchantChanged(it))
+                },
+                label = {
+                    Text("Merchant / Payee")
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            ExpenseDateField(
+                dateMillis = uiState.form.date,
+                onDateSelected = {
+                    viewModel.onIntent(ExpenseIntent.DateChanged(it))
                 }
             )
 
@@ -200,8 +222,10 @@ fun AddExpenseScreen(
 
                     keyboardController?.hide()
                 },
+                enabled = !uiState.form.isSaving,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Add Expense")
+                Text(text = if (uiState.form.isSaving) "Saving..." else "Add Expense")
             }
 
         }

@@ -49,10 +49,12 @@ import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
 import com.smartexpense.domain.model.Category
 import com.smartexpense.domain.model.Expense
+import com.smartexpense.domain.model.ExpenseSyncStatus
 import com.smartexpense.domain.model.SortOrder
 import com.smartexpense.feature.expenses.effect.TransactionEffect
 import com.smartexpense.feature.expenses.intent.TransactionIntent
 import com.smartexpense.feature.expenses.state.TransactionUiState
+import com.smartexpense.feature.expenses.ui.label
 import com.smartexpense.feature.expenses.viewmodel.TransactionViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -72,6 +74,10 @@ fun TransactionScreen(
             when (effect) {
                 is TransactionEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
+                }
+
+                TransactionEffect.SyncRetryRequested -> {
+                    snackbarHostState.showSnackbar("Sync retry requested")
                 }
             }
         }
@@ -595,9 +601,21 @@ fun TransactionScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Text(
-                                        text = expense.description.ifBlank { "Transaction" },
+                                        text = expense.merchant.ifBlank {
+                                            expense.description.ifBlank { "Transaction" }
+                                        },
                                         style = MaterialTheme.typography.titleMedium
                                     )
+                                    if (
+                                        expense.merchant.isNotBlank() &&
+                                        expense.description.isNotBlank()
+                                    ) {
+                                        Text(
+                                            text = expense.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                     Text(
                                         text = categoryName(expense.categoryId, uiState.categories),
                                         style = MaterialTheme.typography.bodySmall,
@@ -608,12 +626,35 @@ fun TransactionScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    if (expense.syncStatus != ExpenseSyncStatus.SYNCED) {
+                                        Text(
+                                            text = expense.syncStatus.label(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
 
-                                Text(
-                                    text = expense.amount.toPesoAmount(),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.End
+                                ) {
+                                    Text(
+                                        text = expense.amount.toPesoAmount(),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+
+                                    if (expense.syncStatus == ExpenseSyncStatus.FAILED) {
+                                        TextButton(
+                                            onClick = {
+                                                viewModel.onIntent(
+                                                    TransactionIntent.RetrySync(expense.id)
+                                                )
+                                            }
+                                        ) {
+                                            Text("Retry")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

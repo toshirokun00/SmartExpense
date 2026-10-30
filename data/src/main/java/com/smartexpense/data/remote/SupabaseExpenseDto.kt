@@ -19,6 +19,8 @@ data class SupabaseExpenseDto(
 
     val description: String,
 
+    val merchant: String = "",
+
     @SerialName("expense_date")
     val expenseDate: String
 )
@@ -39,6 +41,9 @@ data class SupabaseExpenseResponseDto(
     val categoryId: Long,
 
     val description: String,
+
+    // Nullable so rows created before the merchant column existed still decode.
+    val merchant: String? = null,
 
     @SerialName("expense_date")
     val expenseDate: String

@@ -45,7 +45,7 @@ class ExpenseRepositorySyncPersistenceTest {
         database.expenseDao().insertExpense(
             ExpenseEntity(
                 id = 1L,
-                amount = 200.0,
+                amountMinor = 20000,
                 categoryId = 1L,
                 description = "Pending upload",
                 date = 1_760_000_000_000L,
@@ -119,7 +119,7 @@ class ExpenseRepositorySyncPersistenceTest {
         val expenses = (1L..20L).map { id ->
             ExpenseEntity(
                 id = id,
-                amount = id * 10.0,
+                amountMinor = id * 1000,
                 categoryId = 1L,
                 description = "Expense $id",
                 date = 1_760_000_000_000L + id,
