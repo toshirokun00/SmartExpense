@@ -4,18 +4,34 @@ name: Android CD
 on:
   workflow_dispatch:
 
+  workflow_run:
+    workflows: ["Android CI"]
+    types:
+      - completed
+    branches:
+      - main
+
 permissions:
   contents: read
+  actions: read
 
 
 jobs:
   release-apk:
     name: Build Signed Release APK
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/checkout@v4
+
+      - name: Checkout main branch after successful CI
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up JDK
         uses: actions/setup-java@v4
