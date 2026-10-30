@@ -130,6 +130,30 @@ class ExpenseViewModel(
                 }
             }
 
+            is ExpenseIntent.PaymentMethodChanged -> {
+                _formState.update {
+                    it.copy(paymentMethod = intent.paymentMethod)
+                }
+            }
+
+            is ExpenseIntent.ExpenseTypeChanged -> {
+                _formState.update {
+                    it.copy(expenseType = intent.expenseType)
+                }
+            }
+
+            is ExpenseIntent.TagsChanged -> {
+                _formState.update {
+                    it.copy(tags = intent.tags)
+                }
+            }
+
+            is ExpenseIntent.NotesChanged -> {
+                _formState.update {
+                    it.copy(notes = intent.notes)
+                }
+            }
+
             is ExpenseIntent.DateChanged -> {
                 _formState.update {
                     it.copy(date = intent.date)
@@ -189,12 +213,17 @@ class ExpenseViewModel(
             return
         }
 
+        val tagsList = state.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         val expense = Expense(
             amount = amount,
             categoryId = categoryId,
             description = state.description,
             date = state.date,
-            merchant = state.merchant
+            merchant = state.merchant,
+            paymentMethod = state.paymentMethod,
+            expenseType = state.expenseType,
+            tags = tagsList,
+            notes = state.notes
         )
         viewModelScope.launch {
             _formState.update { it.copy(isSaving = true) }
@@ -272,10 +301,15 @@ class ExpenseViewModel(
                     return@launch
                 }
 
+                val tagsList = state.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 val updatedExpense = existingExpense.copy(
                     amount = amount,
                     description = state.description,
                     merchant = state.merchant,
+                    paymentMethod = state.paymentMethod,
+                    expenseType = state.expenseType,
+                    tags = tagsList,
+                    notes = state.notes,
                     categoryId = categoryId,
                     date = state.date
                 )
@@ -308,6 +342,10 @@ class ExpenseViewModel(
                         amount = MoneyInputUtil.formatAmountInput(Money.format(expense.amountMinor)),
                         description = expense.description,
                         merchant = expense.merchant,
+                        paymentMethod = expense.paymentMethod,
+                        expenseType = expense.expenseType,
+                        tags = expense.tags.joinToString(", "),
+                        notes = expense.notes,
                         categoryId = expense.categoryId,
                         date = expense.date,
                         syncStatus = expense.syncStatus

@@ -6,7 +6,28 @@ import java.math.BigDecimal
 enum class ExpenseSyncStatus {
     PENDING,
     SYNCED,
-    FAILED
+    FAILED;
+
+    fun label(): String = when (this) {
+        PENDING -> "Pending"
+        SYNCED -> "Synced"
+        FAILED -> "Failed"
+    }
+}
+
+enum class ExpenseType(val displayName: String) {
+    EXPENSE("Expense"),
+    INCOME("Income"),
+    REFUND("Refund")
+}
+
+enum class PaymentMethod(val displayName: String) {
+    CASH("Cash"),
+    CREDIT_CARD("Credit Card"),
+    DEBIT_CARD("Debit Card"),
+    BANK_TRANSFER("Bank Transfer"),
+    E_WALLET("E-Wallet"),
+    OTHER("Other")
 }
 
 /**
@@ -23,6 +44,10 @@ data class Expense(
     val description: String,
     val date: Long,
     val merchant: String = "",
+    val paymentMethod: PaymentMethod = PaymentMethod.CASH,
+    val expenseType: ExpenseType = ExpenseType.EXPENSE,
+    val tags: List<String> = emptyList(),
+    val notes: String = "",
     val syncStatus: ExpenseSyncStatus = ExpenseSyncStatus.PENDING
 ) {
     val amountMinor: Long
@@ -39,6 +64,10 @@ data class Expense(
             description: String,
             date: Long,
             merchant: String = "",
+            paymentMethod: PaymentMethod = PaymentMethod.CASH,
+            expenseType: ExpenseType = ExpenseType.EXPENSE,
+            tags: List<String> = emptyList(),
+            notes: String = "",
             syncStatus: ExpenseSyncStatus = ExpenseSyncStatus.PENDING
         ) = Expense(
             id = id,
@@ -47,6 +76,10 @@ data class Expense(
             description = description,
             date = date,
             merchant = merchant,
+            paymentMethod = paymentMethod,
+            expenseType = expenseType,
+            tags = tags,
+            notes = notes,
             syncStatus = syncStatus
         )
     }

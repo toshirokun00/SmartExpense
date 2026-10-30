@@ -4,6 +4,8 @@ import com.smartexpense.database.entity.ExpenseEntity
 import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.ExpenseSyncStatus
+import com.smartexpense.domain.model.ExpenseType
+import com.smartexpense.domain.model.PaymentMethod
 
 fun ExpenseEntity.toDomain(): Expense = Expense.fromMinorUnits(
     id = id,
@@ -12,6 +14,10 @@ fun ExpenseEntity.toDomain(): Expense = Expense.fromMinorUnits(
     description = description,
     date = date,
     merchant = merchant,
+    paymentMethod = runCatching { PaymentMethod.valueOf(paymentMethod) }.getOrDefault(PaymentMethod.CASH),
+    expenseType = runCatching { ExpenseType.valueOf(expenseType) }.getOrDefault(ExpenseType.EXPENSE),
+    tags = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+    notes = notes,
     syncStatus = syncStatus.toDomain()
 )
 
@@ -22,6 +28,10 @@ fun Expense.toEntity(): ExpenseEntity = ExpenseEntity(
     description = description,
     date = date,
     merchant = merchant,
+    paymentMethod = paymentMethod.name,
+    expenseType = expenseType.name,
+    tags = tags.joinToString(","),
+    notes = notes,
     syncStatus = syncStatus.toEntity()
 )
 

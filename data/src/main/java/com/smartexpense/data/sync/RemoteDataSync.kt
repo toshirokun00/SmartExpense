@@ -83,6 +83,10 @@ class RemoteDataSync(
                         description = remote.description,
                         date = date,
                         merchant = remote.merchant.orEmpty(),
+                        paymentMethod = remote.paymentMethod ?: "CASH",
+                        expenseType = remote.expenseType ?: "EXPENSE",
+                        tags = remote.tags.orEmpty(),
+                        notes = remote.notes.orEmpty(),
                         syncStatus = SyncStatus.SYNCED,
                         clientId = remote.clientId,
                         userId = userId

@@ -5,7 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -29,9 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smartexpense.domain.model.ExpenseType
+import com.smartexpense.domain.model.PaymentMethod
 import com.smartexpense.feature.expenses.effect.ExpenseEffect
 import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
@@ -49,9 +51,9 @@ fun AddExpenseScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var categoryExpanded by remember {
-        mutableStateOf(false)
-    }
+    var categoryExpanded by remember { mutableStateOf(false) }
+    var paymentMethodExpanded by remember { mutableStateOf(false) }
+    var expenseTypeExpanded by remember { mutableStateOf(false) }
 
      val selectedCategory = uiState.categories.find {
          it.id == uiState.form.categoryId
@@ -121,6 +123,7 @@ fun AddExpenseScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innnerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -131,6 +134,36 @@ fun AddExpenseScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            ExposedDropdownMenuBox(
+                expanded = expenseTypeExpanded,
+                onExpandedChange = { expenseTypeExpanded = !expenseTypeExpanded }
+            ) {
+                OutlinedTextField(
+                    value = uiState.form.expenseType.displayName,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Expense Type") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expenseTypeExpanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expenseTypeExpanded,
+                    onDismissRequest = { expenseTypeExpanded = false }
+                ) {
+                    ExpenseType.entries.forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(type.displayName) },
+                            onClick = {
+                                viewModel.onIntent(ExpenseIntent.ExpenseTypeChanged(type))
+                                expenseTypeExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
             ExposedDropdownMenuBox(
                 expanded = categoryExpanded,
@@ -185,6 +218,36 @@ fun AddExpenseScreen(
                 }
             }
 
+            ExposedDropdownMenuBox(
+                expanded = paymentMethodExpanded,
+                onExpandedChange = { paymentMethodExpanded = !paymentMethodExpanded }
+            ) {
+                OutlinedTextField(
+                    value = uiState.form.paymentMethod.displayName,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Payment Method") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = paymentMethodExpanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = paymentMethodExpanded,
+                    onDismissRequest = { paymentMethodExpanded = false }
+                ) {
+                    PaymentMethod.entries.forEach { method ->
+                        DropdownMenuItem(
+                            text = { Text(method.displayName) },
+                            onClick = {
+                                viewModel.onIntent(ExpenseIntent.PaymentMethodChanged(method))
+                                paymentMethodExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = uiState.form.description,
                 onValueChange = {
@@ -203,6 +266,28 @@ fun AddExpenseScreen(
                 },
                 label = {
                     Text("Merchant / Payee")
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = uiState.form.tags,
+                onValueChange = {
+                    viewModel.onIntent(ExpenseIntent.TagsChanged(it))
+                },
+                label = {
+                    Text("Tags (comma separated, e.g. work, trip)")
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = uiState.form.notes,
+                onValueChange = {
+                    viewModel.onIntent(ExpenseIntent.NotesChanged(it))
+                },
+                label = {
+                    Text("Notes")
                 },
                 modifier = Modifier.fillMaxWidth()
             )

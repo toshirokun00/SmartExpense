@@ -129,6 +129,10 @@ class ExpenseRepositoryImpl(
                     categoryId = remoteCategoryId,
                     description = expense.description,
                     merchant = expense.merchant,
+                    paymentMethod = expense.paymentMethod,
+                    expenseType = expense.expenseType,
+                    tags = expense.tags,
+                    notes = expense.notes,
                     expenseDate = java.time.Instant
                         .ofEpochMilli(expense.date)
                         .toString()

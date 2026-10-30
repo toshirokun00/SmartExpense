@@ -29,20 +29,22 @@ class SupabaseExpenseRemoteDataSource(
         userId: String
     ): List<SupabaseExpenseResponseDto> {
         return try {
-            selectExpenses(userId = userId, includeMerchant = true)
+            selectExpenses(userId = userId, includeMerchant = true, includeExtended = true)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
-            // Projects that have not run the merchant migration yet will reject
-            // a projection that references the missing column. Fall back to the
-            // legacy columns so syncing keeps working.
-            selectExpenses(userId = userId, includeMerchant = false)
+            try {
+                selectExpenses(userId = userId, includeMerchant = true, includeExtended = false)
+            } catch (ex: Exception) {
+                selectExpenses(userId = userId, includeMerchant = false, includeExtended = false)
+            }
         }
     }
 
     private suspend fun selectExpenses(
         userId: String,
-        includeMerchant: Boolean
+        includeMerchant: Boolean,
+        includeExtended: Boolean
     ): List<SupabaseExpenseResponseDto> {
         val columns = buildList {
             add("id")
@@ -52,6 +54,12 @@ class SupabaseExpenseRemoteDataSource(
             add("category_id")
             add("description")
             if (includeMerchant) add("merchant")
+            if (includeExtended) {
+                add("payment_method")
+                add("expense_type")
+                add("tags")
+                add("notes")
+            }
             add("expense_date")
         }
 

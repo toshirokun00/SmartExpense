@@ -54,7 +54,6 @@ import com.smartexpense.domain.model.SortOrder
 import com.smartexpense.feature.expenses.effect.TransactionEffect
 import com.smartexpense.feature.expenses.intent.TransactionIntent
 import com.smartexpense.feature.expenses.state.TransactionUiState
-import com.smartexpense.feature.expenses.ui.label
 import com.smartexpense.feature.expenses.viewmodel.TransactionViewModel
 import org.koin.androidx.compose.koinViewModel
 
