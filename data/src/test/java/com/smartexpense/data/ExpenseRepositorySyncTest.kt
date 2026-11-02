@@ -193,7 +193,8 @@ class ExpenseRepositorySyncTest {
         expenseSyncEnqueuer = expenseSyncEnqueuer,
         pendingExpenseDeletionDao = pendingDeletionDao,
         deletionTransaction = deletionTransaction,
-        remoteDataSync = remoteDataSync
+        remoteDataSync = remoteDataSync,
+        supabaseStorageRemoteDataSource = mockk(relaxed = true)
     )
 
     @Test

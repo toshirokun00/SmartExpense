@@ -3,6 +3,7 @@ package com.smartexpense.data.di
 import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBudgetRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
+import com.smartexpense.data.remote.SupabaseStorageRemoteDataSource
 import com.smartexpense.data.recurring.RecurringExpenseProcessor
 import com.smartexpense.data.repositoryimpl.AccountDataManagerImpl
 import com.smartexpense.data.repositoryimpl.BudgetAlertRepositoryImpl
@@ -76,6 +77,13 @@ val dataModule = module {
     }
 
     single {
+        SupabaseStorageRemoteDataSource(
+            supabaseClient = get(),
+            context = androidContext()
+        )
+    }
+
+    single {
         SupabaseBudgetRemoteDataSource(
             supabaseClient = get()
         )
@@ -104,6 +112,7 @@ val dataModule = module {
         ExpenseRepositoryImpl(
             expenseDao = get(),
             supabaseExpenseRemoteDataSource = get(),
+            supabaseStorageRemoteDataSource = get(),
             supabaseClient = get(),
             categoryRepository = get(),
             budgetRepository = get(),

@@ -1,5 +1,7 @@
 package com.smartexpense.feature.expenses.ui
 
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,6 +55,10 @@ fun ExpenseDetailScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackBarHostState = remember { SnackbarHostState() }
+    val photoPickerHelper = remember { PhotoPickerHelper() }
+    val pickerLauncher = photoPickerHelper.rememberImagePickerLauncher { uri ->
+        viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged(uri?.toString()))
+    }
 
     var categoryExpanded by remember { mutableStateOf(false) }
     var paymentMethodExpanded by remember { mutableStateOf(false) }
@@ -286,6 +292,16 @@ fun ExpenseDetailScreen(
                 dateMillis = uiState.form.date,
                 onDateSelected = {
                     viewModel.onIntent(ExpenseIntent.DateChanged(it))
+                }
+            )
+
+            ReceiptPhotoSection(
+                photoUri = uiState.form.receiptPhotoUri,
+                onPickPhoto = {
+                    pickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                onRemovePhoto = {
+                    viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged(null))
                 }
             )
 

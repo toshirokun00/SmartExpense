@@ -30,6 +30,9 @@ data class SupabaseExpenseDto(
 
     val notes: String = "",
 
+    @SerialName("receipt_photo_uri")
+    val receiptPhotoUri: String? = null,
+
     @SerialName("expense_date")
     val expenseDate: String
 )
@@ -63,6 +66,9 @@ data class SupabaseExpenseResponseDto(
     val tags: String? = null,
 
     val notes: String? = null,
+
+    @SerialName("receipt_photo_uri")
+    val receiptPhotoUri: String? = null,
 
     @SerialName("expense_date")
     val expenseDate: String

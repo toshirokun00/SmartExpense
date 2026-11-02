@@ -87,6 +87,7 @@ class RemoteDataSync(
                         expenseType = remote.expenseType ?: "EXPENSE",
                         tags = remote.tags.orEmpty(),
                         notes = remote.notes.orEmpty(),
+                        receiptPhotoUri = remote.receiptPhotoUri,
                         syncStatus = SyncStatus.SYNCED,
                         clientId = remote.clientId,
                         userId = userId

@@ -18,6 +18,7 @@ import com.smartexpense.domain.usecase.SearchExpensesUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
+import com.smartexpense.domain.usecase.UploadReceiptPhotoUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import org.koin.dsl.module
 import java.time.Clock
@@ -66,6 +67,8 @@ val domainModule = module {
     factory { SearchExpensesUseCase(get()) }
 
     factory { ScheduleSyncUseCase(syncEnqueuer = get()) }
+
+    factory { UploadReceiptPhotoUseCase(expenseRepository = get()) }
 
     factory { RecurringExpenseUseCase(repository = get()) }
 

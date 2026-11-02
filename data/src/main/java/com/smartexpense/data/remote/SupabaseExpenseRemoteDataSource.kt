@@ -59,6 +59,7 @@ class SupabaseExpenseRemoteDataSource(
                 add("expense_type")
                 add("tags")
                 add("notes")
+                add("receipt_photo_uri")
             }
             add("expense_date")
         }

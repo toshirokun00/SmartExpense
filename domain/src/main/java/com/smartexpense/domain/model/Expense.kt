@@ -48,6 +48,7 @@ data class Expense(
     val expenseType: ExpenseType = ExpenseType.EXPENSE,
     val tags: List<String> = emptyList(),
     val notes: String = "",
+    val receiptPhotoUri: String? = null,
     val syncStatus: ExpenseSyncStatus = ExpenseSyncStatus.PENDING
 ) {
     val amountMinor: Long
@@ -68,6 +69,7 @@ data class Expense(
             expenseType: ExpenseType = ExpenseType.EXPENSE,
             tags: List<String> = emptyList(),
             notes: String = "",
+            receiptPhotoUri: String? = null,
             syncStatus: ExpenseSyncStatus = ExpenseSyncStatus.PENDING
         ) = Expense(
             id = id,
@@ -80,6 +82,7 @@ data class Expense(
             expenseType = expenseType,
             tags = tags,
             notes = notes,
+            receiptPhotoUri = receiptPhotoUri,
             syncStatus = syncStatus
         )
     }

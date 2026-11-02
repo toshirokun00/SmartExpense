@@ -14,6 +14,7 @@ data class ExpenseFormState(
     val expenseType: ExpenseType = ExpenseType.EXPENSE,
     val tags: String = "",
     val notes: String = "",
+    val receiptPhotoUri: String? = null,
     val syncStatus: ExpenseSyncStatus = ExpenseSyncStatus.PENDING,
     val isSaving: Boolean = false
 )

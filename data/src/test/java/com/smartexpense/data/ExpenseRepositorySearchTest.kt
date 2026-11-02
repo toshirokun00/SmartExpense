@@ -33,7 +33,8 @@ class ExpenseRepositorySearchTest {
             expenseSyncEnqueuer = mockk(relaxed = true),
             pendingExpenseDeletionDao = mockk(relaxed = true),
             deletionTransaction = mockk(relaxed = true),
-            remoteDataSync = mockk(relaxed = true)
+            remoteDataSync = mockk(relaxed = true),
+            supabaseStorageRemoteDataSource = mockk(relaxed = true)
         )
     }
 
