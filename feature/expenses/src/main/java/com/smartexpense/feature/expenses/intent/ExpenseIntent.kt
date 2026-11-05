@@ -32,6 +32,8 @@ sealed interface ExpenseIntent {
 
     data class NotesChanged(val notes: String) : ExpenseIntent
 
+    data class ReceiptPhotoChanged(val receiptPhotoUri: String?) : ExpenseIntent
+
     data class DateChanged(val date: Long) : ExpenseIntent
 
     data class CategoryChanged(val categoryId: Long) : ExpenseIntent

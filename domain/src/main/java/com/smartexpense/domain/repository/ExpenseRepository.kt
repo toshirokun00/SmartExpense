@@ -18,5 +18,7 @@ interface ExpenseRepository {
 
     suspend fun syncPendingExpenses()
 
+    suspend fun uploadReceiptPhoto(localUri: String): String?
+
     fun searchExpenses(criteria: SearchCriteria): Flow<List<Expense>>
 }

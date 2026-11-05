@@ -18,6 +18,7 @@ fun ExpenseEntity.toDomain(): Expense = Expense.fromMinorUnits(
     expenseType = runCatching { ExpenseType.valueOf(expenseType) }.getOrDefault(ExpenseType.EXPENSE),
     tags = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }.filter { it.isNotEmpty() },
     notes = notes,
+    receiptPhotoUri = receiptPhotoUri,
     syncStatus = syncStatus.toDomain()
 )
 
@@ -32,6 +33,7 @@ fun Expense.toEntity(): ExpenseEntity = ExpenseEntity(
     expenseType = expenseType.name,
     tags = tags.joinToString(","),
     notes = notes,
+    receiptPhotoUri = receiptPhotoUri,
     syncStatus = syncStatus.toEntity()
 )
 

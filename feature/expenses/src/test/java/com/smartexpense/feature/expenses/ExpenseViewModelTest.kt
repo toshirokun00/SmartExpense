@@ -12,6 +12,7 @@ import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
+import com.smartexpense.domain.usecase.UploadReceiptPhotoUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import com.smartexpense.feature.expenses.effect.ExpenseEffect
@@ -109,6 +110,7 @@ class ExpenseViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             scheduleSyncUseCase = scheduleSyncUseCase,
+            uploadReceiptPhotoUseCase = mockk(relaxed = true),
             expenseNotificationManager = expenseNotificationManager
         )
     }
@@ -272,6 +274,7 @@ class ExpenseViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             scheduleSyncUseCase = scheduleSyncUseCase,
+            uploadReceiptPhotoUseCase = mockk(relaxed = true),
             expenseNotificationManager = expenseNotificationManager
         )
 
@@ -328,6 +331,7 @@ class ExpenseViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             scheduleSyncUseCase = scheduleSyncUseCase,
+            uploadReceiptPhotoUseCase = mockk(relaxed = true),
             expenseNotificationManager = expenseNotificationManager
         )
 
@@ -376,6 +380,7 @@ class ExpenseViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             scheduleSyncUseCase = scheduleSyncUseCase,
+            uploadReceiptPhotoUseCase = mockk(relaxed = true),
             expenseNotificationManager = expenseNotificationManager
         )
 
@@ -488,10 +493,69 @@ class ExpenseViewModelTest {
     }
 
     @Test
+    fun receiptPhotoChangedUpdatesFormState() = runTest {
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged("receipt_123.jpg"))
+            val state = awaitItem()
+            assertEquals("receipt_123.jpg", state.form.receiptPhotoUri)
+        }
+    }
+
+    @Test
+    fun receiptPhotoChangedToNullUpdatesFormState() = runTest {
+        viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged("receipt_123.jpg"))
+        viewModel.uiState.test {
+            awaitItem() // initial
+            awaitItem() // after first change
+            viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged(null))
+            val state = awaitItem()
+            assertNull(state.form.receiptPhotoUri)
+        }
+    }
+
+    @Test
     fun retrySyncRequestsBackgroundSync() = runTest {
         viewModel.onIntent(ExpenseIntent.RetrySync(1L))
         advanceUntilIdle()
 
         verify { scheduleSyncUseCase() }
+    }
+
+    @Test
+    fun cameraCaptureUpdatesReceiptPhotoUri() = runTest {
+        val capturedUri = "camera_photo_1234567890"
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged(capturedUri))
+            val state = awaitItem()
+            assertEquals(capturedUri, state.form.receiptPhotoUri)
+        }
+    }
+
+    @Test
+    fun gallerySelectionUpdatesReceiptPhotoUri() = runTest {
+        val galleryUri = "content://media/external/images/media/42"
+        val uploadMock = mockk<UploadReceiptPhotoUseCase>()
+        coEvery { uploadMock(any()) } returns galleryUri
+        viewModel = ExpenseViewModel(
+            getExpenseUseCase = getExpensesUseCase,
+            getExpenseByIdUseCase = getExpenseByIdUseCase,
+            addExpenseUseCase = addExpenseUseCase,
+            updateExpenseUseCase = updateExpenseUseCase,
+            deleteExpenseUseCase = deleteExpenseUseCase,
+            validateExpenseAmountUseCase = validateExpenseAmountUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            scheduleSyncUseCase = scheduleSyncUseCase,
+            uploadReceiptPhotoUseCase = uploadMock,
+            expenseNotificationManager = expenseNotificationManager
+        )
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged(galleryUri))
+            val state = awaitItem()
+            assertEquals(galleryUri, state.form.receiptPhotoUri)
+        }
     }
 }

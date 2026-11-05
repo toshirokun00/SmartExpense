@@ -12,6 +12,7 @@ import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
+import com.smartexpense.domain.usecase.UploadReceiptPhotoUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import com.smartexpense.feature.expenses.effect.ExpenseEffect
@@ -20,7 +21,9 @@ import com.smartexpense.feature.expenses.state.ExpenseFormState
 import com.smartexpense.feature.expenses.state.ExpenseScreenState
 import com.smartexpense.feature.expenses.state.ExpenseUiState
 import com.smartexpense.notification.ExpenseNotificationManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,6 +47,7 @@ class ExpenseViewModel(
     private val categoryUseCase: CategoryUseCase,
     private val settingsUseCase: SettingsUseCase,
     private val scheduleSyncUseCase: ScheduleSyncUseCase,
+    private val uploadReceiptPhotoUseCase: UploadReceiptPhotoUseCase,
     private val expenseNotificationManager: ExpenseNotificationManager
 ) : ViewModel() {
 
@@ -154,6 +158,14 @@ class ExpenseViewModel(
                 }
             }
 
+            is ExpenseIntent.ReceiptPhotoChanged -> {
+                // Store local URI instantly for immediate preview.
+                // Upload to Supabase happens only when user clicks Save.
+                _formState.update {
+                    it.copy(receiptPhotoUri = intent.receiptPhotoUri)
+                }
+            }
+
             is ExpenseIntent.DateChanged -> {
                 _formState.update {
                     it.copy(date = intent.date)
@@ -214,20 +226,49 @@ class ExpenseViewModel(
         }
 
         val tagsList = state.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-        val expense = Expense(
-            amount = amount,
-            categoryId = categoryId,
-            description = state.description,
-            date = state.date,
-            merchant = state.merchant,
-            paymentMethod = state.paymentMethod,
-            expenseType = state.expenseType,
-            tags = tagsList,
-            notes = state.notes
-        )
+
         viewModelScope.launch {
             _formState.update { it.copy(isSaving = true) }
             try {
+                // Upload receipt photo to Supabase only when saving (not on gallery pick)
+                val finalReceiptPhotoUri = state.receiptPhotoUri?.let { uri ->
+                    if (uri.startsWith("content://") || uri.startsWith("file://")) {
+                        val uploadedUrl = try {
+                            withContext(Dispatchers.IO) {
+                                uploadReceiptPhotoUseCase(uri)
+                            }
+                        } catch (e: Exception) {
+                            _effect.emit(
+                                ExpenseEffect.ShowError(
+                                    message = "Failed to upload receipt photo: ${e.message}"
+                                )
+                            )
+                            null
+                        }
+                        uploadedUrl
+                    } else {
+                        uri
+                    }
+                }
+
+                // If a local file was selected but upload failed, abort the save
+                if (state.receiptPhotoUri != null && finalReceiptPhotoUri == null) {
+                    _formState.update { it.copy(isSaving = false) }
+                    return@launch
+                }
+
+                val expense = Expense(
+                    amount = amount,
+                    categoryId = categoryId,
+                    description = state.description,
+                    date = state.date,
+                    merchant = state.merchant,
+                    paymentMethod = state.paymentMethod,
+                    expenseType = state.expenseType,
+                    tags = tagsList,
+                    notes = state.notes,
+                    receiptPhotoUri = finalReceiptPhotoUri
+                )
                 // This persists locally; remote sync happens asynchronously and
                 // must not prevent successful local capture while offline.
                 addExpenseUseCase(expense)
@@ -301,6 +342,33 @@ class ExpenseViewModel(
                     return@launch
                 }
 
+                // Upload receipt photo to Supabase only when saving (not on gallery pick)
+                val finalReceiptPhotoUri = state.receiptPhotoUri?.let { uri ->
+                    if (uri.startsWith("content://") || uri.startsWith("file://")) {
+                        val uploadedUrl = try {
+                            withContext(Dispatchers.IO) {
+                                uploadReceiptPhotoUseCase(uri)
+                            }
+                        } catch (e: Exception) {
+                            _effect.emit(
+                                ExpenseEffect.ShowError(
+                                    message = "Failed to upload receipt photo: ${e.message}"
+                                )
+                            )
+                            null
+                        }
+                        uploadedUrl
+                    } else {
+                        uri
+                    }
+                }
+
+                // If a local file was selected but upload failed, abort the save
+                if (state.receiptPhotoUri != null && finalReceiptPhotoUri == null) {
+                    _formState.update { it.copy(isSaving = false) }
+                    return@launch
+                }
+
                 val tagsList = state.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 val updatedExpense = existingExpense.copy(
                     amount = amount,
@@ -310,6 +378,7 @@ class ExpenseViewModel(
                     expenseType = state.expenseType,
                     tags = tagsList,
                     notes = state.notes,
+                    receiptPhotoUri = finalReceiptPhotoUri,
                     categoryId = categoryId,
                     date = state.date
                 )
@@ -346,6 +415,7 @@ class ExpenseViewModel(
                         expenseType = expense.expenseType,
                         tags = expense.tags.joinToString(", "),
                         notes = expense.notes,
+                        receiptPhotoUri = expense.receiptPhotoUri,
                         categoryId = expense.categoryId,
                         date = expense.date,
                         syncStatus = expense.syncStatus

@@ -42,6 +42,7 @@ data class ExpenseEntity(
     val expenseType: String = "EXPENSE",
     val tags: String = "",
     val notes: String = "",
+    val receiptPhotoUri: String? = null,
     val syncStatus: SyncStatus = SyncStatus.PENDING,
     val clientId: String = UUID.randomUUID().toString(),
     val userId: String? = null,

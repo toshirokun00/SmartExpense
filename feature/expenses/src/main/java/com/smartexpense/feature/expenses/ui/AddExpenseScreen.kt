@@ -1,5 +1,8 @@
 package com.smartexpense.feature.expenses.ui
 
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,8 +57,12 @@ fun AddExpenseScreen(
     var categoryExpanded by remember { mutableStateOf(false) }
     var paymentMethodExpanded by remember { mutableStateOf(false) }
     var expenseTypeExpanded by remember { mutableStateOf(false) }
+    val photoPickerHelper = remember { PhotoPickerHelper() }
+    val pickerLauncher = photoPickerHelper.rememberImagePickerLauncher { uri ->
+        viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged(uri?.toString()))
+    }
 
-     val selectedCategory = uiState.categories.find {
+    val selectedCategory = uiState.categories.find {
          it.id == uiState.form.categoryId
      }
 
@@ -299,6 +306,15 @@ fun AddExpenseScreen(
                 }
             )
 
+            ReceiptPhotoSection(
+                photoUri = uiState.form.receiptPhotoUri,
+                onPickPhoto = {
+                    pickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                onRemovePhoto = {
+                    viewModel.onIntent(ExpenseIntent.ReceiptPhotoChanged(null))
+                }
+            )
 
             Button(
                 onClick = {

@@ -15,6 +15,7 @@ import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
+import com.smartexpense.domain.usecase.UploadReceiptPhotoUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
@@ -48,6 +49,7 @@ class AddExpenseScreenTest {
     private lateinit var categoryUseCase: CategoryUseCase
     private lateinit var settingsUseCase: SettingsUseCase
     private lateinit var scheduleSyncUseCase: ScheduleSyncUseCase
+    private lateinit var uploadReceiptPhotoUseCase: UploadReceiptPhotoUseCase
     private lateinit var notificationManager: ExpenseNotificationManager
     private lateinit var viewModel: ExpenseViewModel
 
@@ -64,6 +66,7 @@ class AddExpenseScreenTest {
         categoryUseCase = mockk()
         settingsUseCase = mockk(relaxed = true)
         scheduleSyncUseCase = mockk(relaxed = true)
+        uploadReceiptPhotoUseCase = mockk(relaxed = true)
         notificationManager = mockk(relaxed = true)
 
         every { categoryUseCase.getCategories() } returns flowOf(
@@ -83,6 +86,7 @@ class AddExpenseScreenTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             scheduleSyncUseCase = scheduleSyncUseCase,
+            uploadReceiptPhotoUseCase = uploadReceiptPhotoUseCase,
             expenseNotificationManager = notificationManager
         )
     }
@@ -248,6 +252,23 @@ class AddExpenseScreenTest {
         composeRule.onNodeWithContentDescription("back").performClick()
 
         assert(backClicked) { "Expected back navigation but it did not occur" }
+    }
+
+    @Test
+    fun receiptPhotoPickerSectionIsDisplayed() {
+        setContent()
+        composeRule.onNodeWithText("Add receipt photo").assertIsDisplayed()
+        composeRule.onNodeWithText("Tap to pick or capture a photo").assertIsDisplayed()
+    }
+
+    @Test
+    fun receiptPhotoSelectionUpdatesForm() {
+        setContent()
+        coEvery { uploadReceiptPhotoUseCase(any()) } returns "https://example.com/receipt.jpg"
+        // Simulate picker result by sending intent to viewModel directly
+        viewModel.onIntent(com.smartexpense.feature.expenses.intent.ExpenseIntent.ReceiptPhotoChanged("content://test/photo"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Add receipt photo").assertDoesNotExist()
     }
 
     // --- helpers ---

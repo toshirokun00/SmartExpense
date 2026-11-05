@@ -2,6 +2,7 @@ package com.smartexpense.data.repositoryimpl
 
 import com.smartexpense.data.remote.SupabaseExpenseDto
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
+import com.smartexpense.data.remote.SupabaseStorageRemoteDataSource
 import com.smartexpense.data.repositoryimpl.mapper.toDomain
 import com.smartexpense.data.repositoryimpl.mapper.toEntity
 import com.smartexpense.data.sync.ExpenseSyncEnqueuer
@@ -18,13 +19,17 @@ import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
+import android.net.Uri
 
 class ExpenseRepositoryImpl(
     private val expenseDao: ExpenseDao,
     private val supabaseExpenseRemoteDataSource: SupabaseExpenseRemoteDataSource,
+    private val supabaseStorageRemoteDataSource: SupabaseStorageRemoteDataSource,
     private val supabaseClient: SupabaseClient,
     private val categoryRepository: CategoryRepository,
     private val budgetRepository: BudgetRepository,
@@ -58,6 +63,7 @@ class ExpenseRepositoryImpl(
                 description = expense.description,
                 date = expense.date,
                 merchant = expense.merchant,
+                receiptPhotoUri = expense.receiptPhotoUri,
                 syncStatus = SyncStatus.PENDING
             )
         )
@@ -75,6 +81,13 @@ class ExpenseRepositoryImpl(
         )
 
         expenseSyncEnqueuer.enqueue()
+    }
+
+    override suspend fun uploadReceiptPhoto(localUri: String): String? {
+        val uri = Uri.parse(localUri)
+        return withContext(Dispatchers.IO) {
+            supabaseStorageRemoteDataSource.uploadReceiptPhoto(uri)
+        }
     }
 
     override suspend fun syncPendingExpenses() {
@@ -133,6 +146,7 @@ class ExpenseRepositoryImpl(
                     expenseType = expense.expenseType,
                     tags = expense.tags,
                     notes = expense.notes,
+                    receiptPhotoUri = expense.receiptPhotoUri,
                     expenseDate = java.time.Instant
                         .ofEpochMilli(expense.date)
                         .toString()

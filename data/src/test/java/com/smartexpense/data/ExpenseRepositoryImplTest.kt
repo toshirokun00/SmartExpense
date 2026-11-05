@@ -56,7 +56,8 @@ class ExpenseRepositoryImplTest {
             expenseSyncEnqueuer = expenseSyncEnqueuer,
             pendingExpenseDeletionDao = pendingExpenseDeletionDao,
             deletionTransaction = deletionTransaction,
-            remoteDataSync = remoteDataSync
+            remoteDataSync = remoteDataSync,
+            supabaseStorageRemoteDataSource = mockk(relaxed = true)
         )
     }
 

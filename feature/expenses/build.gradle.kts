@@ -41,6 +41,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
 
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
@@ -64,5 +66,6 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:notification"))
     implementation(project(":domain"))
+    implementation(project(":data"))
 
 }
