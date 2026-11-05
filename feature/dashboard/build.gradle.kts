@@ -42,6 +42,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
+    // Needed for animateItemPlacement used by the modern dashboard list.
+    implementation("androidx.compose.foundation:foundation")
+
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
 

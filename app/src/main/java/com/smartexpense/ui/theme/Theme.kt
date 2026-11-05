@@ -5,28 +5,60 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import com.smartexpense.domain.model.AppTheme
 
+// ---------------------------------------------------------------------------
+// Color scheme built on the modern extended palette defined in Color.kt.
+// This is the single source of truth for theme colors; screens must not
+// redefine hardcoded palettes that duplicate these values.
+// ---------------------------------------------------------------------------
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = ModernPrimary,
+    onPrimary = ModernOnPrimary,
+    primaryContainer = ModernPrimaryContainer,
+    onPrimaryContainer = Color(0xFF312E81),
+
+    secondary = ModernSecondary,
+    onSecondary = ModernOnPrimary,
+    secondaryContainer = ModernSecondaryContainer,
+
+    tertiary = ModernTertiary,
+    onTertiary = Color(0xFF000000),
+
+    background = Color(0xFF141022),
+    surface = Color(0xFF1F1A33),
+    onSurface = SurfaceLight,
+    onSurfaceVariant = Color(0xFFC7BED9),
+
+    outline = Color(0xFF4A4166),
+
+    error = Error,
+    errorContainer = Color(0xFF4A1824)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = ModernPrimary,
+    onPrimary = ModernOnPrimary,
+    primaryContainer = ModernPrimaryContainer,
+    onPrimaryContainer = Color(0xFF312E81),
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary = ModernSecondary,
+    onSecondary = ModernOnPrimary,
+    secondaryContainer = ModernSecondaryContainer,
+
+    tertiary = ModernTertiary,
+    onTertiary = Color(0xFF000000),
+
+    background = SurfaceLight,
+    surface = SurfaceCard,
+    onSurface = OnSurface,
+    onSurfaceVariant = OnSurfaceVariant,
+
+    outline = OutlineLight,
+
+    error = Error,
+    errorContainer = ErrorContainer
 )
 
 @Composable

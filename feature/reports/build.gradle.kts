@@ -69,4 +69,5 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:test"))
     implementation(project(":domain"))
+    implementation(project(":core:designsystems"))
 }

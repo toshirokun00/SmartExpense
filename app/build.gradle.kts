@@ -82,6 +82,9 @@ dependencies {
     implementation(libs.insert.koin.compose)
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation("androidx.compose.foundation:foundation")
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.work.runtime.ktx)
 

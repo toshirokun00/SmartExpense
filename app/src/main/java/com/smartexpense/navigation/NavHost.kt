@@ -15,7 +15,6 @@ import com.smartexpense.StartupViewModel
 import com.smartexpene.categories.screen.CategoryScreen
 import com.smartexpense.auth.screen.AuthScreen
 import com.smartexpense.auth.screen.EmailConfirmationScreen
-import com.smartexpense.dashoard.screen.DashboardScreen
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
 import com.smartexpense.feature.expenses.ui.ExpenseDetailScreen
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
@@ -47,29 +46,8 @@ fun AppNavHost() {
             }
 
             composable<DashboardRoute> {
-                DashboardScreen(
-                    onNavigateToExpenses = {
-                        navController.navigate(ExpensesRoute)
-                    },
-                    onNavigateToTransactions = {
-                        navController.navigate(TransactionsRoute)
-                    },
-                    onNavigateToCategories = {
-                        navController.navigate(CategoryRoute)
-                    },
-                    onNavigateToBudgets = {
-                        navController.navigate(BudgetRoute)
-                    },
-                    onNavigateToSettings = {
-                        navController.navigate(SettingsRoute)
-                    },
-                    onNavigateToReports = {
-                        navController.navigate(ReportsRoute)
-                    },
-                    onNavigateToRecurring = {
-                        navController.navigate(RecurringExpensesRoute)
-                    }
-
+                MainScreen(
+                    navController = navController
                 )
             }
             composable<ExpensesRoute> {

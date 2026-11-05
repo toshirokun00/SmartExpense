@@ -60,5 +60,6 @@ dependencies {
     implementation(project(":core:notification"))
     implementation(project(":core:test"))
     implementation(project(":domain"))
+    implementation(project(":core:designsystems"))
 
 }
