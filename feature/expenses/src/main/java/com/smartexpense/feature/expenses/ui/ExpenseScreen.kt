@@ -40,7 +40,6 @@ fun ExpenseScreen(
     viewModel: ExpenseViewModel = koinViewModel(),
     onAddExpenseClick: () -> Unit,
     onExpenseClick: (Long) -> Unit,
-    onNavigateBack: () -> Unit,
     onAddExpenseCategoryClick: () -> Unit
 ) {
 
@@ -88,8 +87,7 @@ fun ExpenseScreen(
         ModernHeader(
             title = "Expenses",
             subtitle = "Track and manage your spending",
-            icon = Icons.AutoMirrored.Filled.ReceiptLong,
-            onBackClick = onNavigateBack
+            icon = Icons.AutoMirrored.Filled.ReceiptLong
         )
 
         // Modern summary stats
@@ -179,7 +177,8 @@ fun ExpenseScreen(
                         },
                         onClick = {
                             onExpenseClick(expense.id)
-                        }
+                        },
+                        borderless = true
                     )
                 }
             }

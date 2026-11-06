@@ -1,6 +1,7 @@
 package com.smartexpense.domain.di
 
 import com.smartexpense.domain.usecase.AddExpenseUseCase
+import com.smartexpense.domain.usecase.ProfileUseCase
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
@@ -73,4 +74,12 @@ val domainModule = module {
     factory { RecurringExpenseUseCase(repository = get()) }
 
     single { ProcessRecurringExpensesUseCase(repository = get()) }
+
+    factory {
+        ProfileUseCase(
+            profileRepository = get(),
+            authRepository = get(),
+            profileRemoteRepository = get()
+        )
+    }
 }

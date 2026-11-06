@@ -17,6 +17,7 @@ import com.smartexpense.budget.screen.BudgetScreen
 import com.smartexpense.dashoard.screen.DashboardScreen
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
 import com.smartexpense.reports.screen.ReportsScreen
+import com.smartexpense.profile.screen.ProfileScreen
 import com.smartexpense.settings.screen.SettingsScreen
 import org.koin.androidx.compose.koinViewModel
 
@@ -74,7 +75,7 @@ fun MainScreen(navController: NavHostController) {
                             navController.navigate(CategoryRoute)
                         },
                         onNavigateToBudgets = { onTabSelected(AppTab.Budget) },
-                        onNavigateToSettings = { onTabSelected(AppTab.Settings) },
+                        onNavigateToSettings = { onTabSelected(AppTab.Profile) },
                         onNavigateToReports = { onTabSelected(AppTab.Reports) },
                         onNavigateToRecurring = {
                             navController.navigate(RecurringExpensesRoute)
@@ -89,7 +90,6 @@ fun MainScreen(navController: NavHostController) {
                         onExpenseClick = { expenseId ->
                             navController.navigate(ExpenseDetailRoute(expenseId))
                         },
-                        onNavigateBack = { onTabSelected(AppTab.Home) },
                         onAddExpenseCategoryClick = {
                             navController.navigate(CategoryRoute)
                         }
@@ -100,13 +100,16 @@ fun MainScreen(navController: NavHostController) {
                     )
 
                     AppTab.Budget -> BudgetScreen(
-                        viewModel = koinViewModel(),
-                        onNavigateBack = { onTabSelected(AppTab.Home) }
+                        viewModel = koinViewModel()
                     )
 
-                    AppTab.Settings -> SettingsScreen(
-                        viewModel = koinViewModel(),
-                        onNavigateBack = { onTabSelected(AppTab.Home) },
+                    AppTab.Profile -> ProfileScreen(
+                        onNavigateToSettings = {
+                            navController.navigate(SettingsRoute)
+                        },
+                        onNavigateToAbout = {
+                            navController.navigate(ProfileAboutRoute)
+                        },
                         onNavigateToSignIn = {
                             navController.navigate(AuthRoute) {
                                 popUpTo(navController.graph.id) {

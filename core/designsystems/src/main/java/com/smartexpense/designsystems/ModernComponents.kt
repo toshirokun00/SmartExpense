@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -71,10 +72,32 @@ fun ModernHeader(
         Brush.linearGradient(colors = ModernGradientColors)
     }
 
-    Box(
+    val colorScheme = MaterialTheme.colorScheme
+    // In dark mode a flat `surface` header matches the Dashboard's "Overview"
+    // app bar; the vibrant gradient is kept for the light theme.
+    val isDarkTheme = colorScheme.background.luminance() < 0.5f
+    val headerBackground = if (isDarkTheme) {
+        Modifier.background(colorScheme.surface)
+    } else {
+        Modifier.background(gradient)
+    }
+    val titleColor = if (isDarkTheme) colorScheme.onSurface else Color.White
+    val subtitleColor = if (isDarkTheme) {
+        colorScheme.onSurfaceVariant
+    } else {
+        Color.White.copy(alpha = 0.8f)
+    }
+    val iconContainerColor = if (isDarkTheme) {
+        colorScheme.surfaceVariant
+    } else {
+        Color.White.copy(alpha = 0.2f)
+    }
+    val iconTint = if (isDarkTheme) colorScheme.onSurface else Color.White
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(gradient)
+            .then(headerBackground)
             .padding(horizontal = 24.dp, vertical = 28.dp)
     ) {
         Row(
@@ -83,7 +106,7 @@ fun ModernHeader(
         ) {
             if (onBackClick != null) {
                 Surface(
-                    color = Color.White.copy(alpha = 0.2f),
+                    color = iconContainerColor,
                     shape = CircleShape,
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -94,7 +117,7 @@ fun ModernHeader(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White,
+                            tint = iconTint,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -108,19 +131,19 @@ fun ModernHeader(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
+                    color = titleColor,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = subtitleColor
                 )
             }
 
             Surface(
-                color = Color.White.copy(alpha = 0.2f),
+                color = iconContainerColor,
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp)
             ) {
@@ -128,7 +151,7 @@ fun ModernHeader(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = iconTint,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -221,25 +244,38 @@ fun ModernListItemCard(
     title: String,
     subtitle: String?,
     trailing: @Composable (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    borderless: Boolean = false
 ) {
+    val shape = if (borderless) RoundedCornerShape(20.dp) else ModernCardShape
+
     Card(
         modifier = if (onClick != null) {
             modifier
-                .clip(ModernCardShape)
+                .clip(shape)
                 .clickable(onClick = onClick)
         } else {
             modifier
         },
-        shape = ModernCardShape,
+        shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (borderless) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-        )
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (borderless) 0.dp else 2.dp
+        ),
+        border = if (borderless) {
+            null
+        } else {
+            BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+            )
+        }
     ) {
         Row(
             modifier = Modifier

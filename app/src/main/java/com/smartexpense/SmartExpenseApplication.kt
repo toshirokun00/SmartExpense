@@ -19,6 +19,7 @@ import com.smartexpense.feature.expenses.di.expenseModule
 import com.smartexpense.notification.notificationModule
 import com.smartexpense.recurring.di.recurringModule
 import com.smartexpense.reports.di.expenseReportModule
+import com.smartexpense.profile.di.profileModule
 import com.smartexpense.settings.di.settingsModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +56,8 @@ class SmartExpenseApplication : Application(), Configuration.Provider, KoinCompo
                 expenseReportModule,
                 supabaseModule,
                 authFeatureModule,
-                recurringModule
+                recurringModule,
+                profileModule
             )
         }
 

@@ -106,7 +106,7 @@ fun AuthScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "SmartExpense",
+                    text = "Spendora",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -184,6 +184,7 @@ fun AuthScreen(
                     value = state.email,
                     onValueChange = { viewModel.onIntent(AuthIntent.EmailChanged(it)) },
                     label = "Email address",
+                    placeholder = "Enter your email",
                     icon = Icons.Default.Email,
                     singleLine = true,
                     enabled = !state.isLoading,
@@ -194,6 +195,12 @@ fun AuthScreen(
                     value = state.password,
                     onValueChange = { viewModel.onIntent(AuthIntent.PasswordChanged(it)) },
                     label = "Password",
+                    placeholder = "Enter your password",
+                    supportingText = if (state.isSignUp) {
+                        "Use at least 8 characters"
+                    } else {
+                        null
+                    },
                     icon = Icons.Default.Lock,
                     singleLine = true,
                     enabled = !state.isLoading,
@@ -217,6 +224,7 @@ fun AuthScreen(
                             viewModel.onIntent(AuthIntent.ConfirmPasswordChanged(it))
                         },
                         label = "Confirm password",
+                        placeholder = "Re-enter your password",
                         icon = Icons.Default.Lock,
                         singleLine = true,
                         enabled = !state.isLoading,
@@ -456,6 +464,8 @@ private fun AuthTextField(
     singleLine: Boolean,
     enabled: Boolean,
     keyboardType: KeyboardType,
+    placeholder: String? = null,
+    supportingText: String? = null,
     isPassword: Boolean = false,
     isPasswordVisible: Boolean = false,
     onTogglePasswordVisibility: (() -> Unit)? = null
@@ -470,6 +480,22 @@ private fun AuthTextField(
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        placeholder = placeholder?.let { hint ->
+            {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        },
+        supportingText = supportingText?.let { hint ->
+            {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        },
         visualTransformation = when {
             isPassword && !isPasswordVisible -> PasswordVisualTransformation()
             else -> VisualTransformation.None

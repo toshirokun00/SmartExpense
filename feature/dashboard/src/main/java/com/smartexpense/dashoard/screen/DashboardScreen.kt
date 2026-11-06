@@ -77,7 +77,10 @@ fun DashboardScreen(
                     containerColor = colorScheme.surface
                 )
             )
-        }
+        },
+        // MainScreen already handles system bar insets. Applying them here
+        // again added extra padding at the bottom of the list.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(
@@ -95,7 +98,9 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 item {
-                    DashboardHeader()
+                    DashboardHeader(
+                        username = uiState.username
+                    )
                 }
 
                 item {
@@ -154,7 +159,9 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DashboardHeader() {
+private fun DashboardHeader(
+    username: String?
+) {
     val hour = remember { java.time.LocalTime.now().hour }
     val greeting = when {
         hour in 5..11 -> "Good morning"
@@ -162,17 +169,13 @@ private fun DashboardHeader() {
         else -> "Good evening"
     }
 
+    val displayName = username?.takeIf { it.isNotBlank() }
+
     Column {
         Text(
-            text = greeting,
+            text = "$greeting${if (displayName != null) ", $displayName" else ""}!",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "Welcome back!",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -186,10 +189,12 @@ private fun HeroBalanceCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     
-    // Gradient colors for the hero card
+    // Gradient colors for the hero card. Keep these deep brand tones in both
+    // light and dark themes: the card uses white text, so it must not follow
+    // the lighter dark-mode `primary`.
     val gradient = Brush.linearGradient(
         colors = listOf(
-            colorScheme.primary,
+            Color(0xFF6366F1), // Indigo
             Color(0xFF8B5CF6), // Purple
             Color(0xFFD946EF)  // Pinkish
         )
@@ -469,10 +474,9 @@ private fun RecentExpenseItem(expense: Expense) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface
+            containerColor = colorScheme.surfaceVariant.copy(alpha = 0.35f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.5f))
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier

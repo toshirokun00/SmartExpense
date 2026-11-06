@@ -6,15 +6,14 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -140,7 +139,10 @@ private fun ReportsContent(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
-        }
+        },
+        // MainScreen already handles system bar insets. Applying them here
+        // again pushed the header too far down from the top.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -209,7 +211,8 @@ private fun ReportsContent(
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
-                            }
+                            },
+                            borderless = true
                         )
                     }
                 }
@@ -241,7 +244,8 @@ private fun ReportsContent(
                             avatarIcon = Icons.Default.Receipt,
                             avatarColor = MaterialTheme.colorScheme.secondary,
                             title = daily.date.toDateString(),
-                            subtitle = formatCurrency(daily.totalAmount)
+                            subtitle = formatCurrency(daily.totalAmount),
+                            borderless = true
                         )
                     }
                 }
@@ -307,6 +311,7 @@ private fun ReportsContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExportCard(
     uiState: ReportsUiState,
@@ -317,6 +322,16 @@ private fun ExportCard(
         !uiState.isLoading &&
         uiState.endDateExclusive > uiState.startDateInclusive
 
+    var showTypeDropdown by remember { mutableStateOf(false) }
+    var showFormatDropdown by remember { mutableStateOf(false) }
+
+    val currentTypeLabel = when (uiState.exportType) {
+        ReportExportType.TRANSACTIONS -> "Transactions"
+        ReportExportType.SUMMARY -> "Summary"
+    }
+
+    val currentFormatLabel = uiState.exportFormat.displayName
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -326,7 +341,7 @@ private fun ExportCard(
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -354,68 +369,169 @@ private fun ExportCard(
                 )
             }
 
-            Text(
-                text = "Choose what to export and the file format.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // ── Type dropdown ─────────────────────────────────────────────
+            ExposedDropdownMenuBox(
+                expanded = showTypeDropdown,
+                onExpandedChange = {
+                    if (controlsEnabled) showTypeDropdown = !showTypeDropdown
+                }
             ) {
-                FilterChip(
-                    selected = uiState.exportType ==
-                        ReportExportType.TRANSACTIONS,
+                OutlinedTextField(
+                    value = currentTypeLabel,
+                    onValueChange = {},
+                    readOnly = true,
                     enabled = controlsEnabled,
-                    onClick = {
-                        onIntent(
-                            ReportsIntent.ExportTypeSelected(
-                                ReportExportType.TRANSACTIONS
-                            )
-                        )
-                    },
                     label = {
-                        Text("Transactions")
+                        Text("Report type")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = showTypeDropdown
+                        )
                     }
                 )
 
-                FilterChip(
-                    selected = uiState.exportType == ReportExportType.SUMMARY,
-                    enabled = controlsEnabled,
-                    onClick = {
-                        onIntent(
-                            ReportsIntent.ExportTypeSelected(
-                                ReportExportType.SUMMARY
-                            )
-                        )
-                    },
-                    label = {
-                        Text("Summary")
+                ExposedDropdownMenu(
+                    expanded = showTypeDropdown,
+                    onDismissRequest = {
+                        showTypeDropdown = false
                     }
-                )
-
-                listOf(
-                    ReportExportFormat.CSV,
-                    ReportExportFormat.PDF
-                ).forEach { format ->
-                    FilterChip(
-                        selected = uiState.exportFormat == format,
-                        enabled = controlsEnabled,
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Receipt,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text("Transactions", fontWeight = FontWeight.Medium)
+                                if (uiState.exportType == ReportExportType.TRANSACTIONS) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        },
                         onClick = {
                             onIntent(
-                                ReportsIntent.ExportFormatSelected(format)
+                                ReportsIntent.ExportTypeSelected(
+                                    ReportExportType.TRANSACTIONS
+                                )
                             )
+                            showTypeDropdown = false
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BarChart,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text("Summary", fontWeight = FontWeight.Medium)
+                                if (uiState.exportType == ReportExportType.SUMMARY) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         },
-                        label = {
-                            Text(format.displayName)
+                        onClick = {
+                            onIntent(
+                                ReportsIntent.ExportTypeSelected(
+                                    ReportExportType.SUMMARY
+                                )
+                            )
+                            showTypeDropdown = false
                         }
                     )
                 }
             }
 
+            // ── Format dropdown ───────────────────────────────────────────
+            ExposedDropdownMenuBox(
+                expanded = showFormatDropdown,
+                onExpandedChange = {
+                    if (controlsEnabled) showFormatDropdown = !showFormatDropdown
+                }
+            ) {
+                OutlinedTextField(
+                    value = currentFormatLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = controlsEnabled,
+                    label = {
+                        Text("File format")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = showFormatDropdown
+                        )
+                    }
+                )
+
+                ExposedDropdownMenu(
+                    expanded = showFormatDropdown,
+                    onDismissRequest = {
+                        showFormatDropdown = false
+                    }
+                ) {
+                    ReportExportFormat.entries.forEach { format ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        format.displayName,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    if (uiState.exportFormat == format) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                onIntent(
+                                    ReportsIntent.ExportFormatSelected(format)
+                                )
+                                showFormatDropdown = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            // ── Action buttons ────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -427,7 +543,7 @@ private fun ExportCard(
                         onIntent(ReportsIntent.SaveClicked)
                     }
                 ) {
-                    Text("Save ${uiState.exportFormat.displayName}")
+                    Text("Save")
                 }
 
                 Button(
@@ -437,7 +553,7 @@ private fun ExportCard(
                         onIntent(ReportsIntent.ShareClicked)
                     }
                 ) {
-                    Text("Share ${uiState.exportFormat.displayName}")
+                    Text("Share")
                 }
             }
 

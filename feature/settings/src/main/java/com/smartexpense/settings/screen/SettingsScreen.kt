@@ -1,5 +1,6 @@
 package com.smartexpense.settings.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,7 +28,6 @@ import com.smartexpense.designsystems.ModernHeader
 import com.smartexpense.designsystems.ModernSectionHeader
 import com.smartexpense.domain.model.AppTheme
 import com.smartexpense.domain.model.BudgetAlertThresholds
-import com.smartexpense.settings.effect.SettingsEffect
 import com.smartexpense.settings.intent.SettingsIntent
 import com.smartexpense.settings.viewmodel.SettingsViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -36,92 +36,14 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel(),
-    onNavigateBack: () -> Unit,
-    onNavigateToSignIn: () -> Unit,
+    onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var showSignOutDialog by remember {
-        mutableStateOf(false)
-    }
-
-    var errorMessage by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    LaunchedEffect(viewModel) {
-        viewModel.effect.collect { effect ->
-            when (effect) {
-                SettingsEffect.NavigateToSignIn -> {
-                    onNavigateToSignIn()
-                }
-
-                is SettingsEffect.ShowError -> {
-                    errorMessage = effect.message
-                }
-            }
-
-        }
-    }
-
-    if (showSignOutDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showSignOutDialog = false
-            },
-            title = {
-                Text("Sign out?")
-            },
-            text = {
-                Text("Are you sure you want to sign out of SmartExpense?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSignOutDialog = false
-                        viewModel.onIntent(SettingsIntent.SignOut)
-                    }
-                ) {
-                    Text("Sign Out")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showSignOutDialog = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    errorMessage?.let { message ->
-        AlertDialog(
-            onDismissRequest = {
-                errorMessage = null
-            },
-            title = {
-                Text("Sign Out Failed")
-            },
-            text = {
-                Text(message)
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        errorMessage = null
-                    }
-                ) {
-                    Text("OK")
-                }
-            }
-        )
-    }
-
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         ModernHeader(
             title = "Settings",
@@ -288,20 +210,6 @@ fun SettingsScreen(
                             }
                         }
                     }
-                }
-            }
-
-            item {
-                Button(
-                    onClick = {
-                        showSignOutDialog = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Sign Out")
                 }
             }
         }

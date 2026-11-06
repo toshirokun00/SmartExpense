@@ -29,6 +29,9 @@ data object BudgetRoute : Route
 data object SettingsRoute : Route
 
 @Serializable
+data object ProfileAboutRoute : Route
+
+@Serializable
 data object ReportsRoute : Route
 
 @Serializable

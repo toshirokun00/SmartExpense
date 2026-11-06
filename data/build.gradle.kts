@@ -92,6 +92,7 @@ dependencies {
 
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth)

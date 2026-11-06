@@ -11,7 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Payment
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -34,7 +34,7 @@ enum class AppTab {
     Expenses,
     Reports,
     Budget,
-    Settings
+    Profile
 }
 
 private data class BottomTabItem(
@@ -55,7 +55,7 @@ fun ModernBottomNavigation(
             BottomTabItem(AppTab.Expenses, "Expenses", Icons.Default.Payment),
             BottomTabItem(AppTab.Reports, "Reports", Icons.Default.BarChart),
             BottomTabItem(AppTab.Budget, "Budget", Icons.Default.Wallet),
-            BottomTabItem(AppTab.Settings, "Settings", Icons.Default.Settings)
+            BottomTabItem(AppTab.Profile, "Profile", Icons.Default.Person)
         )
     }
 

@@ -243,7 +243,8 @@ fun TransactionScreen(
                                 }
                             }
                         },
-                        onClick = { onExpenseClick(expense.id) }
+                        onClick = { onExpenseClick(expense.id) },
+                        borderless = true
                     )
                 }
                 item {

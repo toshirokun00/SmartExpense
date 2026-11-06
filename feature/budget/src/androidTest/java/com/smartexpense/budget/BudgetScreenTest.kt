@@ -114,7 +114,7 @@ class BudgetScreenTest {
         val viewModel = buildViewModel(spent = 0.0)
 
         composeRule.setContent {
-            BudgetScreen(viewModel = viewModel, onNavigateBack = {})
+            BudgetScreen(viewModel = viewModel)
         }
 
         awaitText("Budget Amount")
@@ -167,7 +167,7 @@ class BudgetScreenTest {
         )
 
         composeRule.setContent {
-            BudgetScreen(viewModel = viewModel, onNavigateBack = {})
+            BudgetScreen(viewModel = viewModel)
         }
 
         composeRule
@@ -192,7 +192,7 @@ class BudgetScreenTest {
         val viewModel = buildViewModel(spent = 850.0)
 
         composeRule.setContent {
-            BudgetScreen(viewModel = viewModel, onNavigateBack = {})
+            BudgetScreen(viewModel = viewModel)
         }
 
         awaitText("85% used")
@@ -217,7 +217,7 @@ class BudgetScreenTest {
         val viewModel = buildViewModel(spent = 1_200.0)
 
         composeRule.setContent {
-            BudgetScreen(viewModel = viewModel, onNavigateBack = {})
+            BudgetScreen(viewModel = viewModel)
         }
 
         awaitText("120% used")

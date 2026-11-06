@@ -31,8 +31,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetScreen(
-    viewModel: BudgetViewModel = koinViewModel(),
-    onNavigateBack: () -> Unit,
+    viewModel: BudgetViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val screenState by viewModel.screenState.collectAsStateWithLifecycle()
@@ -70,7 +69,10 @@ fun BudgetScreen(
         snackbarHost = {
             SnackbarHost(snackbarHostState)
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surface,
+        // MainScreen already handles system bar insets. Applying them here
+        // again pushed the header too far down from the top.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -80,8 +82,7 @@ fun BudgetScreen(
             ModernHeader(
                 title = if (uiState.form.editingBudgetId != null) "Edit Budget" else "Budgets",
                 subtitle = "Set limits and track spending by category",
-                icon = Icons.Default.Wallet,
-                onBackClick = onNavigateBack
+                icon = Icons.Default.Wallet
             )
 
             LazyColumn(

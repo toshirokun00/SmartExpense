@@ -1,11 +1,15 @@
 package com.smartexpense.ui.theme
 
+import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.smartexpense.domain.model.AppTheme
 
 // ---------------------------------------------------------------------------
@@ -14,27 +18,45 @@ import com.smartexpense.domain.model.AppTheme
 // redefine hardcoded palettes that duplicate these values.
 // ---------------------------------------------------------------------------
 private val DarkColorScheme = darkColorScheme(
-    primary = ModernPrimary,
-    onPrimary = ModernOnPrimary,
-    primaryContainer = ModernPrimaryContainer,
-    onPrimaryContainer = Color(0xFF312E81),
+    primary = DarkPrimary,
+    onPrimary = DarkOnPrimary,
+    primaryContainer = DarkPrimaryContainer,
+    onPrimaryContainer = DarkOnPrimaryContainer,
 
-    secondary = ModernSecondary,
-    onSecondary = ModernOnPrimary,
-    secondaryContainer = ModernSecondaryContainer,
+    secondary = DarkSecondary,
+    onSecondary = DarkOnSecondary,
+    secondaryContainer = DarkSecondaryContainer,
+    onSecondaryContainer = DarkOnSecondaryContainer,
 
-    tertiary = ModernTertiary,
-    onTertiary = Color(0xFF000000),
+    tertiary = DarkTertiary,
+    onTertiary = DarkOnTertiary,
+    tertiaryContainer = DarkTertiaryContainer,
+    onTertiaryContainer = DarkOnTertiaryContainer,
 
-    background = Color(0xFF141022),
-    surface = Color(0xFF1F1A33),
-    onSurface = SurfaceLight,
-    onSurfaceVariant = Color(0xFFC7BED9),
+    background = DarkBackground,
+    onBackground = DarkOnSurface,
+    surface = DarkSurface,
+    onSurface = DarkOnSurface,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    surfaceTint = DarkPrimary,
+    surfaceContainerLowest = DarkSurfaceContainerLowest,
+    surfaceContainerLow = DarkSurfaceContainerLow,
+    surfaceContainer = DarkSurfaceContainer,
+    surfaceContainerHigh = DarkSurfaceContainerHigh,
+    surfaceContainerHighest = DarkSurfaceContainerHighest,
 
-    outline = Color(0xFF4A4166),
+    outline = DarkOutline,
+    outlineVariant = DarkOutlineVariant,
 
-    error = Error,
-    errorContainer = Color(0xFF4A1824)
+    inverseSurface = DarkInverseSurface,
+    inverseOnSurface = DarkInverseOnSurface,
+    inversePrimary = DarkInversePrimary,
+
+    error = DarkError,
+    onError = DarkOnError,
+    errorContainer = DarkErrorContainer,
+    onErrorContainer = DarkOnErrorContainer
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -70,6 +92,18 @@ fun SmartExpenseTheme(
         AppTheme.SYSTEM -> isSystemInDarkTheme()
         AppTheme.LIGHT -> false
         AppTheme.DARK -> true
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            val controller = WindowCompat.getInsetsController(window, view)
+            // Keep status/navigation bar icons readable for the *app's* theme,
+            // which can differ from the device setting (LIGHT/DARK override).
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
+        }
     }
 
     MaterialTheme(

@@ -226,16 +226,16 @@ private fun RecurringScheduleCard(
     val statusColor = when (summary.status) {
         RecurringScheduleStatus.ACTIVE -> ModernSuccessColor
         RecurringScheduleStatus.PAUSED -> ModernWarningColor
-        RecurringScheduleStatus.ENDED -> Color.Gray
+        RecurringScheduleStatus.ENDED -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier

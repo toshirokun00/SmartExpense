@@ -4,13 +4,18 @@ import app.cash.turbine.test
 import com.smartexpense.dashoard.viewmodel.DashboardViewModel
 import com.smartexpense.domain.model.Budget
 import com.smartexpense.domain.model.Expense
+import com.smartexpense.domain.model.UserProfile
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.ProfileUseCase
 import com.smartexpense.test.MainDispatcherRule
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -18,20 +23,22 @@ import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var getExpenseUseCase: GetExpenseUseCase
-
     private lateinit var budgetUseCase: BudgetUseCase
+    private lateinit var profileUseCase: ProfileUseCase
     private lateinit var viewModel: DashboardViewModel
 
     @Before
     fun setup() {
         getExpenseUseCase = mockk()
         budgetUseCase = mockk()
+        profileUseCase = mockk()
 
         every {
             getExpenseUseCase()
@@ -41,9 +48,18 @@ class DashboardViewModelTest {
             budgetUseCase.getBudgets()
         } returns flowOf(emptyList())
 
+        coEvery {
+            profileUseCase.hydrateLocalFromRemote()
+        } returns Unit
+
+        coEvery {
+            profileUseCase.observeLocalProfileForCurrentUser()
+        } returns null
+
         viewModel = DashboardViewModel(
             getExpenseUseCase = getExpenseUseCase,
-            budgetUseCase = budgetUseCase
+            budgetUseCase = budgetUseCase,
+            profileUseCase = profileUseCase
         )
     }
 
@@ -79,7 +95,8 @@ class DashboardViewModelTest {
 
         viewModel = DashboardViewModel(
             getExpenseUseCase = getExpenseUseCase,
-            budgetUseCase = budgetUseCase
+            budgetUseCase = budgetUseCase,
+            profileUseCase = profileUseCase
         )
 
         viewModel.uiState.test {
@@ -130,7 +147,8 @@ class DashboardViewModelTest {
 
         viewModel = DashboardViewModel(
             getExpenseUseCase,
-            budgetUseCase
+            budgetUseCase,
+            profileUseCase
         )
 
         viewModel.uiState.test {
@@ -169,7 +187,8 @@ class DashboardViewModelTest {
 
         viewModel = DashboardViewModel(
             getExpenseUseCase,
-            budgetUseCase
+            budgetUseCase,
+            profileUseCase
         )
 
         viewModel.uiState.test {
@@ -212,7 +231,8 @@ class DashboardViewModelTest {
 
         viewModel = DashboardViewModel(
             getExpenseUseCase,
-            budgetUseCase
+            budgetUseCase,
+            profileUseCase
         )
 
         viewModel.uiState.test {
@@ -246,7 +266,8 @@ class DashboardViewModelTest {
 
         viewModel = DashboardViewModel(
             getExpenseUseCase,
-            budgetUseCase
+            budgetUseCase,
+            profileUseCase
         )
 
         viewModel.uiState.test {
@@ -256,6 +277,51 @@ class DashboardViewModelTest {
 
             assertEquals(5, state.recentExpenses.size)
 
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun usernameAppearsInDashboardWhenProfileIsAvailable() = runTest {
+        val profile = UserProfile(
+            userId = "user-1",
+            username = "Malvin",
+            avatarUri = null,
+            email = "malvin@test.com"
+        )
+
+        coEvery { profileUseCase.observeLocalProfileForCurrentUser() } returns profile
+
+        viewModel = DashboardViewModel(
+            getExpenseUseCase,
+            budgetUseCase,
+            profileUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+            advanceUntilIdle()
+            val state = awaitItem()
+            assertEquals("Malvin", state.username)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun usernameIsNullWhenNoProfile() = runTest {
+        coEvery { profileUseCase.observeLocalProfileForCurrentUser() } returns null
+
+        viewModel = DashboardViewModel(
+            getExpenseUseCase,
+            budgetUseCase,
+            profileUseCase
+        )
+
+        viewModel.uiState.test {
+            awaitItem()
+            advanceUntilIdle()
+            val state = awaitItem()
+            assertEquals(null, state.username)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -270,6 +336,5 @@ class DashboardViewModelTest {
             .toInstant()
             .toEpochMilli()
     }
-
 
 }
