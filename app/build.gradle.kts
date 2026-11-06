@@ -50,7 +50,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // Only sign release builds when a keystore is configured. Without
+            // one (local dev / CI) Gradle produces an unsigned APK instead of
+            // failing packaging with a missing storeFile error.
+            signingConfigs.getByName("release")
+                .takeIf { it.storeFile != null }
+                ?.let { signingConfig = it }
         }
     }
     compileOptions {
@@ -82,6 +87,9 @@ dependencies {
     implementation(libs.insert.koin.compose)
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation("androidx.compose.foundation:foundation")
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.work.runtime.ktx)
 
@@ -98,6 +106,7 @@ dependencies {
     implementation(project(":feature:reports"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:recurring"))
+    implementation(project(":feature:profile"))
 
 
 }

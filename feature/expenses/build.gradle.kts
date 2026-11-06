@@ -67,5 +67,6 @@ dependencies {
     implementation(project(":core:notification"))
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation(project(":core:designsystems"))
 
 }

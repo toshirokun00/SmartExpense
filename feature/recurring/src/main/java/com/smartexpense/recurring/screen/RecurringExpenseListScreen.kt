@@ -1,47 +1,32 @@
 package com.smartexpense.recurring.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
+import com.smartexpense.designsystems.*
 import com.smartexpense.domain.model.RecurringScheduleStatus
 import com.smartexpense.recurring.effect.RecurringExpenseEffect
 import com.smartexpense.recurring.intent.RecurringExpenseIntent
@@ -80,116 +65,115 @@ fun RecurringExpenseListScreen(
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState)
-        },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("Recurring Expenses")
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            ModernHeader(
+                title = "Recurring Expenses",
+                subtitle = "Manage your scheduled expenses",
+                icon = Icons.Default.Loop,
+                onBackClick = onNavigateBack,
+                actions = {
+                    Button(
+                        onClick = onAddSchedule,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.25f),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add Schedule")
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddSchedule
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add recurring expense"
-                )
-            }
-        }
-    ) { paddingValues ->
-        val errorMessage = uiState.errorMessage
 
-        when {
-            uiState.isLoading -> {
+            AnimatedVisibility(
+                visible = uiState.isLoading,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                        .fillMaxWidth()
+                        .padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
             }
 
-            errorMessage != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error
+            AnimatedVisibility(
+                visible = uiState.errorMessage != null,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                ModernEmptyState(
+                    icon = Icons.Default.Loop,
+                    title = "Something went wrong",
+                    subtitle = uiState.errorMessage
+                )
+            }
+
+            if (!uiState.isLoading && uiState.errorMessage == null) {
+                if (uiState.schedules.isEmpty()) {
+                    ModernEmptyState(
+                        icon = Icons.Default.Loop,
+                        title = "No recurring expenses yet",
+                        subtitle = "Tap + to create your first scheduled expense.",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(paddingValues)
                     )
-                }
-            }
-
-            uiState.schedules.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No recurring expenses yet.")
-                }
-            }
-
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        items = uiState.schedules,
-                        key = { summary -> summary.schedule.id }
-                    ) { summary ->
-                        RecurringScheduleCard(
-                            summary = summary,
-                            onEdit = {
-                                onEditSchedule(summary.schedule.id)
-                            },
-                            onToggleActive = {
-                                if (summary.schedule.isActive) {
-                                    viewModel.onIntent(
-                                        RecurringExpenseIntent.Pause(
-                                            summary.schedule.id
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        items(
+                            items = uiState.schedules,
+                            key = { summary -> summary.schedule.id }
+                        ) { summary ->
+                            RecurringScheduleCard(
+                                summary = summary,
+                                onEdit = {
+                                    onEditSchedule(summary.schedule.id)
+                                },
+                                onToggleActive = {
+                                    if (summary.schedule.isActive) {
+                                        viewModel.onIntent(
+                                            RecurringExpenseIntent.Pause(
+                                                summary.schedule.id
+                                            )
                                         )
-                                    )
-                                } else {
+                                    } else {
+                                        viewModel.onIntent(
+                                            RecurringExpenseIntent.Resume(
+                                                summary.schedule.id
+                                            )
+                                        )
+                                    }
+                                },
+                                onDelete = {
                                     viewModel.onIntent(
-                                        RecurringExpenseIntent.Resume(
+                                        RecurringExpenseIntent.RequestDelete(
                                             summary.schedule.id
                                         )
                                     )
                                 }
-                            },
-                            onDelete = {
-                                viewModel.onIntent(
-                                    RecurringExpenseIntent.RequestDelete(
-                                        summary.schedule.id
-                                    )
-                                )
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -239,96 +223,118 @@ private fun RecurringScheduleCard(
     onToggleActive: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val statusColor = when (summary.status) {
+        RecurringScheduleStatus.ACTIVE -> ModernSuccessColor
+        RecurringScheduleStatus.PAUSED -> ModernWarningColor
+        RecurringScheduleStatus.ENDED -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = statusColor.copy(alpha = 0.2f)
             ) {
-                Text(
-                    text = summary.schedule.description,
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = summary.schedule.amount.toPesoAmount(),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "${summary.categoryName} • ${summary.frequencyLabel}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = summary.statusLabel(),
-                style = MaterialTheme.typography.bodySmall,
-                color = when (summary.status) {
-                    RecurringScheduleStatus.ACTIVE ->
-                        MaterialTheme.colorScheme.primary
-
-                    RecurringScheduleStatus.PAUSED ->
-                        MaterialTheme.colorScheme.tertiary
-
-                    RecurringScheduleStatus.ENDED ->
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-
-            if (summary.status != RecurringScheduleStatus.ENDED) {
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Next: ${summary.schedule.nextOccurrence.toDateString()}",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(onClick = onEdit) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit recurring expense"
+                        imageVector = Icons.Default.Loop,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = statusColor
                     )
                 }
+            }
 
-                if (summary.status != RecurringScheduleStatus.ENDED) {
-                    IconButton(onClick = onToggleActive) {
-                        Icon(
-                            imageVector = if (summary.schedule.isActive) {
-                                Icons.Default.Pause
-                            } else {
-                                Icons.Default.PlayArrow
-                            },
-                            contentDescription = if (summary.schedule.isActive) {
-                                "Pause recurring expense"
-                            } else {
-                                "Resume recurring expense"
-                            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = summary.schedule.description,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${summary.categoryName} • ${summary.frequencyLabel}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = summary.statusLabel(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = statusColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (summary.status != RecurringScheduleStatus.ENDED) {
+                        Text(
+                            text = "Next: ${summary.schedule.nextOccurrence.toDateString()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+            }
 
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete recurring expense"
-                    )
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier
+            ) {
+                Text(
+                    text = summary.schedule.amount.toPesoAmount(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Row {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit recurring expense",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    if (summary.status != RecurringScheduleStatus.ENDED) {
+                        IconButton(onClick = onToggleActive) {
+                            Icon(
+                                imageVector = if (summary.schedule.isActive) {
+                                    Icons.Default.Pause
+                                } else {
+                                    Icons.Default.PlayArrow
+                                },
+                                contentDescription = if (summary.schedule.isActive) {
+                                    "Pause recurring expense"
+                                } else {
+                                    "Resume recurring expense"
+                                },
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete recurring expense",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

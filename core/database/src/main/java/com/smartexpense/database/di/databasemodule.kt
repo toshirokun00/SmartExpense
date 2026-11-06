@@ -13,7 +13,9 @@ val databaseModule = module {
             androidContext(),
             AppDatabase::class.java,
             "smart_expense.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     single {
@@ -35,6 +37,8 @@ val databaseModule = module {
     single { get<AppDatabase>().budgetAlertDao() }
 
     single { get<AppDatabase>().recurringScheduleDao() }
+
+    single { get<AppDatabase>().userProfileDao() }
 
     single { ExpenseDeletionTransaction(database = get()) }
 

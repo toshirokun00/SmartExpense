@@ -18,6 +18,57 @@ class SupabaseStorageRemoteDataSource(
     private val context: Context
 ) {
 
+    suspend fun uploadAvatarPhoto(
+        sourceUri: Uri,
+        userId: String
+    ): String? {
+        return try {
+            val bytes = context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                ByteArrayOutputStream().apply { input.copyTo(this) }.toByteArray()
+            } ?: return null
+
+            val baseUrl = BuildConfig.SUPABASE_URL.removeSuffix("/")
+            val token = supabaseClient.auth.currentAccessTokenOrNull() ?: return null
+            val fileName = "avatar_$userId.jpg"
+
+            val uploadUrl = URL("$baseUrl/storage/v1/object/avatars/$fileName")
+            val conn = uploadUrl.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "image/jpeg")
+            conn.setRequestProperty("x-upsert", "true")
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 15_000
+            conn.outputStream.use { it.write(bytes) }
+
+            if (conn.responseCode in 200..299) {
+                "$baseUrl/storage/v1/object/public/avatars/$fileName"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun deleteAvatarPhoto(userId: String): Boolean {
+        return try {
+            val baseUrl = BuildConfig.SUPABASE_URL.removeSuffix("/")
+            val token = supabaseClient.auth.currentAccessTokenOrNull() ?: return false
+            val fileName = "avatar_$userId.jpg"
+            val deleteUrl = URL("$baseUrl/storage/v1/object/avatars/$fileName")
+            val conn = deleteUrl.openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 10_000
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun uploadReceiptPhoto(
         sourceUri: Uri,
         fileName: String = "receipt_${System.currentTimeMillis()}.jpg"

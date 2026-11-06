@@ -1,21 +1,26 @@
 package com.smartexpense.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.smartexpense.R
 import com.smartexpense.budget.screen.BudgetScreen
 import com.smartexpense.reports.screen.ReportsScreen
+import com.smartexpense.profile.screen.AboutScreen
 import com.smartexpense.settings.screen.SettingsScreen
 import com.smartexpense.SplashScreen
 import com.smartexpense.StartupViewModel
 import com.smartexpene.categories.screen.CategoryScreen
 import com.smartexpense.auth.screen.AuthScreen
 import com.smartexpense.auth.screen.EmailConfirmationScreen
-import com.smartexpense.dashoard.screen.DashboardScreen
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
 import com.smartexpense.feature.expenses.ui.ExpenseDetailScreen
 import com.smartexpense.feature.expenses.ui.ExpenseScreen
@@ -38,7 +43,13 @@ fun AppNavHost() {
     } else {
         NavHost(
             navController = navController,
-            startDestination = startDestination
+            startDestination = startDestination,
+            // Paint the themed background behind every destination. Some
+            // screens (e.g. Settings) have a transparent root, which would
+            // otherwise reveal the light window background in dark mode.
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
 
             composable<SplashRoute> {
@@ -47,29 +58,8 @@ fun AppNavHost() {
             }
 
             composable<DashboardRoute> {
-                DashboardScreen(
-                    onNavigateToExpenses = {
-                        navController.navigate(ExpensesRoute)
-                    },
-                    onNavigateToTransactions = {
-                        navController.navigate(TransactionsRoute)
-                    },
-                    onNavigateToCategories = {
-                        navController.navigate(CategoryRoute)
-                    },
-                    onNavigateToBudgets = {
-                        navController.navigate(BudgetRoute)
-                    },
-                    onNavigateToSettings = {
-                        navController.navigate(SettingsRoute)
-                    },
-                    onNavigateToReports = {
-                        navController.navigate(ReportsRoute)
-                    },
-                    onNavigateToRecurring = {
-                        navController.navigate(RecurringExpensesRoute)
-                    }
-
+                MainScreen(
+                    navController = navController
                 )
             }
             composable<ExpensesRoute> {
@@ -82,9 +72,6 @@ fun AppNavHost() {
                     },
                     onAddExpenseCategoryClick = {
                         navController.navigate(CategoryRoute)
-                    },
-                    onNavigateBack = {
-                        navController.popBackStack()
                     }
                 )
             }
@@ -129,10 +116,15 @@ fun AppNavHost() {
             }
 
             composable<BudgetRoute> {
-                BudgetScreen(
+                BudgetScreen()
+            }
+
+            composable<ProfileAboutRoute> {
+                AboutScreen(
                     onNavigateBack = {
                         navController.popBackStack()
-                    }
+                    },
+                    logoRes = R.mipmap.app_logo
                 )
             }
 
@@ -140,14 +132,6 @@ fun AppNavHost() {
                 SettingsScreen(
                     onNavigateBack = {
                         navController.popBackStack()
-                    },
-                    onNavigateToSignIn = {
-                        navController.navigate(AuthRoute) {
-                            popUpTo(navController.graph.id) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
                     }
                 )
             }

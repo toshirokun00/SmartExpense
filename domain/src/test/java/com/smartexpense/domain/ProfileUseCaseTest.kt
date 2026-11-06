@@ -1,0 +1,180 @@
+package com.smartexpense.domain
+
+import com.smartexpense.domain.model.UserProfile
+import com.smartexpense.domain.repository.AuthRepository
+import com.smartexpense.domain.repository.ProfileRemoteRepository
+import com.smartexpense.domain.repository.ProfileRepository
+import com.smartexpense.domain.repository.UserDetails
+import com.smartexpense.domain.usecase.ProfileUseCase
+import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.coVerifyOrder
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Before
+import org.junit.Test
+
+class ProfileUseCaseTest {
+
+    private lateinit var profileRepository: ProfileRepository
+    private lateinit var authRepository: AuthRepository
+    private lateinit var profileRemoteRepository: ProfileRemoteRepository
+    private lateinit var useCase: ProfileUseCase
+
+    @Before
+    fun setUp() {
+        profileRepository = mockk()
+        authRepository = mockk()
+        profileRemoteRepository = mockk()
+        useCase = ProfileUseCase(
+            profileRepository = profileRepository,
+            authRepository = authRepository,
+            profileRemoteRepository = profileRemoteRepository
+        )
+    }
+
+    @Test
+    fun `saveProfile persists to local store and remote`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRepository.saveProfile(any(), any(), any()) } just Runs
+        coEvery {
+            profileRemoteRepository.saveProfile(any(), any(), any())
+        } just Runs
+
+        useCase.saveProfile(
+            username = "Malvin",
+            avatarUri = "content://avatar"
+        )
+
+        coVerify(exactly = 1) {
+            profileRepository.saveProfile("user-1", "Malvin", "content://avatar")
+        }
+        coVerify(exactly = 1) {
+            profileRemoteRepository.saveProfile("Malvin", "content://avatar", false)
+        }
+    }
+
+    @Test
+    fun `saveProfile does nothing when no user is signed in`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns null
+
+        useCase.saveProfile(username = "Malvin", avatarUri = null)
+
+        coVerify(exactly = 0) {
+            profileRepository.saveProfile(any(), any(), any())
+        }
+        coVerify(exactly = 0) {
+            profileRemoteRepository.saveProfile(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `hydrateLocalFromRemote copies remote profile into local store`() =
+        runTest {
+            coEvery { authRepository.getCurrentUserId() } returns "user-1"
+            coEvery { profileRemoteRepository.loadProfile() } returns
+                    ProfileRemoteRepository.RemoteProfile(
+                        username = "Malvin",
+                        avatarUri = "https://cdn/avatar.jpg"
+                    )
+            coEvery { profileRepository.saveProfile(any(), any(), any()) } just Runs
+
+            useCase.hydrateLocalFromRemote()
+
+            coVerify(exactly = 1) {
+                profileRepository.saveProfile(
+                    "user-1",
+                    "Malvin",
+                    "https://cdn/avatar.jpg"
+                )
+            }
+            coVerify(exactly = 0) { profileRepository.deleteProfile(any()) }
+        }
+
+    @Test
+    fun `hydrateLocalFromRemote clears stale local profile when remote is empty`() =
+        runTest {
+            coEvery { authRepository.getCurrentUserId() } returns "user-2"
+            coEvery { profileRemoteRepository.loadProfile() } returns null
+            coEvery { profileRepository.deleteProfile(any()) } just Runs
+
+            useCase.hydrateLocalFromRemote()
+
+            coVerify(exactly = 1) { profileRepository.deleteProfile("user-2") }
+            coVerify(exactly = 0) {
+                profileRepository.saveProfile(any(), any(), any())
+            }
+        }
+
+    @Test
+    fun `hydrateLocalFromRemote does nothing when no user is signed in`() =
+        runTest {
+            coEvery { authRepository.getCurrentUserId() } returns null
+
+            useCase.hydrateLocalFromRemote()
+
+            coVerify(exactly = 0) { profileRemoteRepository.loadProfile() }
+            coVerify(exactly = 0) { profileRepository.deleteProfile(any()) }
+        }
+
+    @Test
+    fun `observeLocalProfileForCurrentUser returns local profile`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        every { profileRepository.observeProfile("user-1") } returns flowOf(
+            UserProfile(
+                userId = "user-1",
+                username = "Malvin",
+                avatarUri = "https://cdn/avatar.jpg"
+            )
+        )
+
+        val profile = useCase.observeLocalProfileForCurrentUser()
+
+        assertEquals("Malvin", profile?.username)
+        assertEquals("user-1", profile?.userId)
+    }
+
+    @Test
+    fun `observeLocalProfileForCurrentUser returns null when no user`() =
+        runTest {
+            coEvery { authRepository.getCurrentUserId() } returns null
+
+            assertNull(useCase.observeLocalProfileForCurrentUser())
+
+            verify(exactly = 0) { profileRepository.observeProfile(any()) }
+        }
+
+    @Test
+    fun `getCurrentUserDetails delegates to auth repository`() = runTest {
+        val details = UserDetails(
+            email = "malvin@example.com",
+            memberSince = "January 2024"
+        )
+        coEvery { authRepository.getCurrentUserDetails() } returns details
+
+        assertEquals(details, useCase.getCurrentUserDetails())
+    }
+
+    @Test
+    fun `deleteProfile clears local profile and remote avatar`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRepository.deleteProfile(any()) } just Runs
+        coEvery {
+            profileRemoteRepository.saveProfile(any(), any(), any())
+        } just Runs
+
+        useCase.deleteProfile()
+
+        coVerifyOrder {
+            profileRepository.deleteProfile("user-1")
+            profileRemoteRepository.saveProfile(null, null, true)
+        }
+    }
+}

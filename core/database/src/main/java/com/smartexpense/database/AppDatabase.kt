@@ -10,6 +10,7 @@ import com.smartexpense.database.dao.ExpenseDao
 import com.smartexpense.database.dao.PendingBudgetDeletionDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
 import com.smartexpense.database.dao.RecurringScheduleDao
+import com.smartexpense.database.dao.UserProfileDao
 import com.smartexpense.database.entity.BudgetAlertRecordEntity
 import com.smartexpense.database.entity.BudgetEntity
 import com.smartexpense.database.entity.CategoryEntity
@@ -17,6 +18,7 @@ import com.smartexpense.database.entity.ExpenseEntity
 import com.smartexpense.database.entity.PendingBudgetDeletionEntity
 import com.smartexpense.database.entity.PendingExpenseDeletionEntity
 import com.smartexpense.database.entity.RecurringScheduleEntity
+import com.smartexpense.database.entity.UserProfileEntity
 
 @Database(
     entities = [
@@ -26,7 +28,8 @@ import com.smartexpense.database.entity.RecurringScheduleEntity
         PendingExpenseDeletionEntity::class,
         PendingBudgetDeletionEntity::class,
         BudgetAlertRecordEntity::class,
-        RecurringScheduleEntity::class
+        RecurringScheduleEntity::class,
+        UserProfileEntity::class
     ],
     version = 1,
     exportSchema = true
@@ -48,4 +51,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun budgetAlertDao(): BudgetAlertDao
 
     abstract fun recurringScheduleDao(): RecurringScheduleDao
+
+    abstract fun userProfileDao(): UserProfileDao
 }

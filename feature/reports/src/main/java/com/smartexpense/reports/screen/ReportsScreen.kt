@@ -6,39 +6,17 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartexpense.core.common.toDateString
+import com.smartexpense.designsystems.ModernEmptyState
+import com.smartexpense.designsystems.ModernHeader
+import com.smartexpense.designsystems.ModernListItemCard
+import com.smartexpense.designsystems.ModernSectionHeader
 import com.smartexpense.domain.export.ReportExportFormat
 import com.smartexpense.domain.export.ReportExportType
 import com.smartexpense.domain.model.CategorySpending
@@ -157,238 +139,179 @@ private fun ReportsContent(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
-        }
+        },
+        // MainScreen already handles system bar insets. Applying them here
+        // again pushed the header too far down from the top.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp)
         ) {
-            Text(
-                text = "Expense Reports",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = formatDateRange(
+            ModernHeader(
+                title = "Reports",
+                subtitle = formatDateRange(
                     uiState.startDateInclusive,
                     uiState.endDateExclusive
                 ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                icon = Icons.Default.BarChart
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedButton(
-                    modifier = Modifier.weight(1f),
-                    enabled = !uiState.isExporting,
-                    onClick = {
-                        onIntent(ReportsIntent.StartDatePickerOpened)
-                    }
-                ) {
-                    Text("Start Date")
+                item {
+                    ExportCard(
+                        uiState = uiState,
+                        onIntent = onIntent
+                    )
                 }
 
-                OutlinedButton(
-                    modifier = Modifier.weight(1f),
-                    enabled = !uiState.isExporting,
-                    onClick = {
-                        onIntent(ReportsIntent.EndDatePickerOpened)
+                item {
+                    SummaryCard(uiState = uiState)
+                }
+
+                item {
+                    ModernSectionHeader(title = "Spending by Category")
+                }
+
+                item {
+                    CategorySpendingChart(
+                        categoryBreakdown = uiState.report.categoryBreakdown,
+                        categoryNames = uiState.categoryNames
+                    )
+                }
+
+                if (uiState.report.categoryBreakdown.isEmpty()) {
+                    item {
+                        ModernEmptyState(
+                            icon = Icons.Default.Category,
+                            title = "No category spending",
+                            subtitle = "No category spending for this period."
+                        )
                     }
-                ) {
-                    Text("End Date")
+                } else {
+                    items(
+                        items = uiState.report.categoryBreakdown,
+                        key = { it.categoryId }
+                    ) { category ->
+                        ModernListItemCard(
+                            avatarIcon = Icons.Default.Category,
+                            avatarColor = MaterialTheme.colorScheme.primary,
+                            title = uiState.categoryNames[category.categoryId]
+                                ?: "Unknown Category",
+                            subtitle = "${"%.1f".format(Locale.US, category.percentage)}% of total",
+                            trailing = {
+                                Text(
+                                    text = formatCurrency(category.totalAmount),
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            borderless = true
+                        )
+                    }
+                }
+
+                item {
+                    ModernSectionHeader(title = "Daily Spending")
+                }
+
+                item {
+                    DailySpendingChart(
+                        dailySpending = uiState.report.dailySpending
+                    )
+                }
+
+                if (uiState.report.dailySpending.isEmpty()) {
+                    item {
+                        ModernEmptyState(
+                            icon = Icons.Default.Receipt,
+                            title = "No daily spending",
+                            subtitle = "No daily spending for this period."
+                        )
+                    }
+                } else {
+                    items(
+                        items = uiState.report.dailySpending,
+                        key = { it.date }
+                    ) { daily ->
+                        ModernListItemCard(
+                            avatarIcon = Icons.Default.Receipt,
+                            avatarColor = MaterialTheme.colorScheme.secondary,
+                            title = daily.date.toDateString(),
+                            subtitle = formatCurrency(daily.totalAmount),
+                            borderless = true
+                        )
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+        }
 
-            if (uiState.isStartDatePickerOpen) {
-                ReportDatePickerDialog(
-                    initialDate = uiState.startDateInclusive,
-                    title = "Select start date",
-                    onDismiss = {
-                        onIntent(ReportsIntent.DatePickerDismissed)
-                    },
-                    onDateSelected = { selectedMillis ->
-                        val zone = ZoneId.systemDefault()
-                        val selectedStart = Instant.ofEpochMilli(selectedMillis)
-                            .atZone(zone)
-                            .toLocalDate()
-                            .atStartOfDay(zone)
-                            .toInstant()
-                            .toEpochMilli()
+        if (uiState.isStartDatePickerOpen) {
+            ReportDatePickerDialog(
+                initialDate = uiState.startDateInclusive,
+                title = "Select start date",
+                onDismiss = {
+                    onIntent(ReportsIntent.DatePickerDismissed)
+                },
+                onDateSelected = { selectedMillis ->
+                    val zone = ZoneId.systemDefault()
+                    val selectedStart = Instant.ofEpochMilli(selectedMillis)
+                        .atZone(zone)
+                        .toLocalDate()
+                        .atStartOfDay(zone)
+                        .toInstant()
+                        .toEpochMilli()
 
-                        onIntent(
-                            ReportsIntent.DateRangeChanged(
-                                startDateInclusive = selectedStart,
-                                endDateExclusive = uiState.endDateExclusive
-                            )
+                    onIntent(
+                        ReportsIntent.DateRangeChanged(
+                            startDateInclusive = selectedStart,
+                            endDateExclusive = uiState.endDateExclusive
                         )
-                    }
-                )
-            }
-
-            if (uiState.isEndDatePickerOpen) {
-                ReportDatePickerDialog(
-                    initialDate = uiState.endDateExclusive - 1L,
-                    title = "Select end date",
-                    onDismiss = {
-                        onIntent(ReportsIntent.DatePickerDismissed)
-                    },
-                    onDateSelected = { selectedMillis ->
-                        val zone = ZoneId.systemDefault()
-                        val selectedEndDate = Instant.ofEpochMilli(selectedMillis)
-                            .atZone(zone)
-                            .toLocalDate()
-                            .plusDays(1)
-                            .atStartOfDay(zone)
-                            .toInstant()
-                            .toEpochMilli()
-
-                        onIntent(
-                            ReportsIntent.DateRangeChanged(
-                                startDateInclusive = uiState.startDateInclusive,
-                                endDateExclusive = selectedEndDate
-                            )
-                        )
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ExportCard(
-                uiState = uiState,
-                onIntent = onIntent
+                    )
+                }
             )
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        if (uiState.isEndDatePickerOpen) {
+            ReportDatePickerDialog(
+                initialDate = uiState.endDateExclusive - 1L,
+                title = "Select end date",
+                onDismiss = {
+                    onIntent(ReportsIntent.DatePickerDismissed)
+                },
+                onDateSelected = { selectedMillis ->
+                    val zone = ZoneId.systemDefault()
+                    val selectedEndDate = Instant.ofEpochMilli(selectedMillis)
+                        .atZone(zone)
+                        .toLocalDate()
+                        .plusDays(1)
+                        .atStartOfDay(zone)
+                        .toInstant()
+                        .toEpochMilli()
 
-            when {
-                uiState.isLoading -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text("Loading report...")
-                    }
-                }
-
-                uiState.error != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = uiState.error,
-                            color = MaterialTheme.colorScheme.error
+                    onIntent(
+                        ReportsIntent.DateRangeChanged(
+                            startDateInclusive = uiState.startDateInclusive,
+                            endDateExclusive = selectedEndDate
                         )
-
-                        TextButton(
-                            onClick = {
-                                onIntent(ReportsIntent.Retry)
-                            }
-                        ) {
-                            Text("Retry")
-                        }
-                    }
+                    )
                 }
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        item {
-                            SummaryCard(uiState = uiState)
-                        }
-
-
-                        item {
-                            SectionTitle("Spending by Category")
-                        }
-
-                        item {
-                            CategorySpendingChart(
-                                categoryBreakdown = uiState.report.categoryBreakdown,
-                                categoryNames = uiState.categoryNames
-                            )
-                        }
-
-
-                        if (uiState.report.categoryBreakdown.isEmpty()) {
-                            item {
-                                EmptySectionMessage(
-                                    message = "No category spending for this period."
-                                )
-                            }
-                        } else {
-                            items(
-                                items = uiState.report.categoryBreakdown,
-                                key = { it.categoryId }
-                            ) { category ->
-                                CategorySpendingItem(
-                                    category = category,
-                                    categoryName = uiState.categoryNames[category.categoryId]
-                                        ?: "Unknown Category"
-                                )
-                            }
-                        }
-
-                        item {
-                            SectionTitle("Daily Spending")
-                        }
-
-                        item {
-                            DailySpendingChart(
-                                dailySpending = uiState.report.dailySpending
-                            )
-                        }
-
-
-                        if (uiState.report.dailySpending.isEmpty()) {
-                            item {
-                                EmptySectionMessage(
-                                    message = "No daily spending for this period."
-                                )
-                            }
-                        } else {
-                            items(
-                                items = uiState.report.dailySpending,
-                                key = { it.date }
-                            ) { daily ->
-                                DailySpendingItem(daily = daily)
-                            }
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-                }
-            }
+            )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExportCard(
     uiState: ReportsUiState,
@@ -399,81 +322,216 @@ private fun ExportCard(
         !uiState.isLoading &&
         uiState.endDateExclusive > uiState.startDateInclusive
 
+    var showTypeDropdown by remember { mutableStateOf(false) }
+    var showFormatDropdown by remember { mutableStateOf(false) }
+
+    val currentTypeLabel = when (uiState.exportType) {
+        ReportExportType.TRANSACTIONS -> "Transactions"
+        ReportExportType.SUMMARY -> "Summary"
+    }
+
+    val currentFormatLabel = uiState.exportFormat.displayName
+
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Export Report",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = "Choose what to export and the file format.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FilterChip(
-                    selected = uiState.exportType ==
-                        ReportExportType.TRANSACTIONS,
-                    enabled = controlsEnabled,
-                    onClick = {
-                        onIntent(
-                            ReportsIntent.ExportTypeSelected(
-                                ReportExportType.TRANSACTIONS
-                            )
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.BarChart,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
                         )
-                    },
+                    }
+                }
+                Text(
+                    text = "Export Report",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // ── Type dropdown ─────────────────────────────────────────────
+            ExposedDropdownMenuBox(
+                expanded = showTypeDropdown,
+                onExpandedChange = {
+                    if (controlsEnabled) showTypeDropdown = !showTypeDropdown
+                }
+            ) {
+                OutlinedTextField(
+                    value = currentTypeLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = controlsEnabled,
                     label = {
-                        Text("Transactions")
+                        Text("Report type")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = showTypeDropdown
+                        )
                     }
                 )
 
-                FilterChip(
-                    selected = uiState.exportType == ReportExportType.SUMMARY,
-                    enabled = controlsEnabled,
-                    onClick = {
-                        onIntent(
-                            ReportsIntent.ExportTypeSelected(
-                                ReportExportType.SUMMARY
-                            )
-                        )
-                    },
-                    label = {
-                        Text("Summary")
+                ExposedDropdownMenu(
+                    expanded = showTypeDropdown,
+                    onDismissRequest = {
+                        showTypeDropdown = false
                     }
-                )
-
-                listOf(
-                    ReportExportFormat.CSV,
-                    ReportExportFormat.PDF
-                ).forEach { format ->
-                    FilterChip(
-                        selected = uiState.exportFormat == format,
-                        enabled = controlsEnabled,
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Receipt,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text("Transactions", fontWeight = FontWeight.Medium)
+                                if (uiState.exportType == ReportExportType.TRANSACTIONS) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        },
                         onClick = {
                             onIntent(
-                                ReportsIntent.ExportFormatSelected(format)
+                                ReportsIntent.ExportTypeSelected(
+                                    ReportExportType.TRANSACTIONS
+                                )
                             )
+                            showTypeDropdown = false
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BarChart,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text("Summary", fontWeight = FontWeight.Medium)
+                                if (uiState.exportType == ReportExportType.SUMMARY) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         },
-                        label = {
-                            Text(format.displayName)
+                        onClick = {
+                            onIntent(
+                                ReportsIntent.ExportTypeSelected(
+                                    ReportExportType.SUMMARY
+                                )
+                            )
+                            showTypeDropdown = false
                         }
                     )
                 }
             }
 
+            // ── Format dropdown ───────────────────────────────────────────
+            ExposedDropdownMenuBox(
+                expanded = showFormatDropdown,
+                onExpandedChange = {
+                    if (controlsEnabled) showFormatDropdown = !showFormatDropdown
+                }
+            ) {
+                OutlinedTextField(
+                    value = currentFormatLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = controlsEnabled,
+                    label = {
+                        Text("File format")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = showFormatDropdown
+                        )
+                    }
+                )
+
+                ExposedDropdownMenu(
+                    expanded = showFormatDropdown,
+                    onDismissRequest = {
+                        showFormatDropdown = false
+                    }
+                ) {
+                    ReportExportFormat.entries.forEach { format ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        format.displayName,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    if (uiState.exportFormat == format) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                onIntent(
+                                    ReportsIntent.ExportFormatSelected(format)
+                                )
+                                showFormatDropdown = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            // ── Action buttons ────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -485,7 +543,7 @@ private fun ExportCard(
                         onIntent(ReportsIntent.SaveClicked)
                     }
                 ) {
-                    Text("Save ${uiState.exportFormat.displayName}")
+                    Text("Save")
                 }
 
                 Button(
@@ -495,7 +553,7 @@ private fun ExportCard(
                         onIntent(ReportsIntent.ShareClicked)
                     }
                 ) {
-                    Text("Share ${uiState.exportFormat.displayName}")
+                    Text("Share")
                 }
             }
 
@@ -528,6 +586,7 @@ private fun SummaryCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -594,114 +653,6 @@ private fun SummaryMetric(
 }
 
 @Composable
-private fun SectionTitle(
-    title: String
-) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-    )
-}
-
-@Composable
-private fun CategorySpendingItem(
-    category: CategorySpending,
-    categoryName: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = categoryName,
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = formatCurrency(category.totalAmount),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Text(
-                text = "${"%.1f".format(Locale.US, category.percentage)}%",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun DailySpendingItem(
-    daily: DailySpending
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = daily.date.toDateString(),
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            Text(
-                text = formatCurrency(daily.totalAmount),
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptySectionMessage(
-    message: String
-) {
-    Text(
-        text = message,
-        modifier = Modifier.padding(vertical = 8.dp),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodyMedium
-    )
-}
-
-private fun formatCurrency(amount: Double): String {
-    return NumberFormat.getCurrencyInstance(
-        Locale("en", "PH")
-    ).format(amount)
-}
-
-private fun formatDateRange(
-    startDateInclusive: Long,
-    endDateExclusive: Long
-): String {
-    if (startDateInclusive == 0L || endDateExclusive == 0L) {
-        return "Selected period"
-    }
-
-    val start = startDateInclusive.toDateString()
-    val end = (endDateExclusive - 1L).toDateString()
-
-    return "$start – $end"
-}
-
-@Composable
 private fun ReportDatePickerDialog(
     initialDate: Long,
     title: String,
@@ -744,12 +695,6 @@ private data class ReportDocumentRequest(
     val mimeType: String
 )
 
-/**
- * A stable CreateDocument contract whose MIME type is supplied per launch.
- *
- * Using a fixed contract instance keeps the launcher registration stable while
- * still letting CSV and PDF exports request the correct document type.
- */
 private class CreateReportDocumentContract :
     ActivityResultContract<ReportDocumentRequest, Uri?>() {
 
@@ -774,4 +719,24 @@ private class CreateReportDocumentContract :
             null
         }
     }
+}
+
+private fun formatCurrency(amount: Double): String {
+    return NumberFormat.getCurrencyInstance(
+        Locale("en", "PH")
+    ).format(amount)
+}
+
+private fun formatDateRange(
+    startDateInclusive: Long,
+    endDateExclusive: Long
+): String {
+    if (startDateInclusive == 0L || endDateExclusive == 0L) {
+        return "Selected period"
+    }
+
+    val start = startDateInclusive.toDateString()
+    val end = (endDateExclusive - 1L).toDateString()
+
+    return "$start – $end"
 }

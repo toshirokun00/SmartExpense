@@ -7,20 +7,24 @@ import com.smartexpense.dashoard.intent.DashboardIntent
 import com.smartexpense.dashoard.state.DashboardUiState
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
+import com.smartexpense.domain.usecase.ProfileUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withTimeout
 import java.time.Instant
 import java.time.ZoneId
 
 class DashboardViewModel(
     private val getExpenseUseCase: GetExpenseUseCase,
-    private val budgetUseCase: BudgetUseCase
+    private val budgetUseCase: BudgetUseCase,
+    private val profileUseCase: ProfileUseCase
 ) : ViewModel() {
 
     private val _effect = MutableSharedFlow<DashboardEffect>()
@@ -44,11 +48,34 @@ class DashboardViewModel(
             )
         }
 
+    private val usernameFlow = kotlinx.coroutines.flow.flow {
+        // Hydrate local Room with the remote profile first so a fresh
+        // install picks up the user's previously-set nickname.
+        // Run with a timeout so a network failure doesn't block the UI.
+        try {
+            kotlinx.coroutines.withTimeout(5_000L) {
+                profileUseCase.hydrateLocalFromRemote()
+            }
+        } catch (_: Exception) {
+            // Remote unavailable — fall through to local data.
+        }
+        emit(
+            profileUseCase
+                .observeLocalProfileForCurrentUser()
+                ?.username
+                ?.takeIf { it.isNotBlank() }
+        )
+    }.catch {
+        // Profile not yet available or no user signed in — emit null.
+        emit(null)
+    }
+
     val uiState: StateFlow<DashboardUiState> =
         combine(
             expensesFlow,
-            budgetFlow
-        ) { expenses, budgets ->
+            budgetFlow,
+            usernameFlow
+        ) { expenses, budgets, username ->
 
             val totalExpense = expenses.sumOf { it.amount }
 
@@ -88,7 +115,8 @@ class DashboardViewModel(
                 budgetProgress = budgetProgress,
                 isOverBudget = totalBudgetSpent > totalBudget,
                 recentExpenses = expenses.take(5),
-                isLoading = false
+                isLoading = false,
+                username = username
             )
         }
             .stateIn(
