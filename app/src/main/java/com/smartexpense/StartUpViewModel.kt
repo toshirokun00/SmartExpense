@@ -37,7 +37,6 @@ class StartupViewModel(
                 }
 
                 val destination = if (userId != null) {
-                    // Restore this user's data from Supabase in the background.
                     scheduleSyncUseCase()
                     DashboardRoute
                 } else {
