@@ -28,9 +28,9 @@ fun EmailConfirmationScreen(
             .background(
                 androidx.compose.ui.graphics.Brush.linearGradient(
                     colors = listOf(
-                        Color(0xFF6366F1),
-                        Color(0xFFA855F7),
-                        Color(0xFFD946EF)
+                        Color(0xFF2563EB),
+                        Color(0xFF1D4ED8),
+                        Color(0xFF60A5FA)
                     )
                 )
             )

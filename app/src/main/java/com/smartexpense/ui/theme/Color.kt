@@ -3,94 +3,91 @@ package com.smartexpense.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ---------------------------------------------------------------------------
-// Existing brand palette (kept for backward compatibility)
+// Existing brand palette (kept for backward compatibility) — now blue-only
 // ---------------------------------------------------------------------------
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val Purple80 = Color(0xFFBFDBFE)
+val PurpleGrey80 = Color(0xFFDBEAFE)
+val Pink80 = Color(0xFF93C5FD)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Purple40 = Color(0xFF1D4ED8)
+val PurpleGrey40 = Color(0xFF1E40AF)
+val Pink40 = Color(0xFF2563EB)
 
 // ---------------------------------------------------------------------------
-// Modern extended palette
+// Modern extended palette — blue / white / black only
 // ---------------------------------------------------------------------------
-// Primary brand (indigo-violet)
-val ModernPrimary = Color(0xFF6366F1)
-val ModernPrimaryContainer = Color(0xFFE0E7FF)
+// Primary brand (blue)
+val ModernPrimary = Color(0xFF2563EB)
+val ModernPrimaryContainer = Color(0xFFDBEAFE)
 val ModernOnPrimary = Color(0xFFFFFFFF)
 
-// Secondary accent (electric blue)
-val ModernSecondary = Color(0xFF3B82F6)
-val ModernSecondaryContainer = Color(0xFFDBEAFE)
+// Secondary accent (darker blue)
+val ModernSecondary = Color(0xFF1D4ED8)
+val ModernSecondaryContainer = Color(0xFFBFDBFE)
 
-// Tertiary accent (warm orange)
-val ModernTertiary = Color(0xFFFB923C)
-val ModernTertiaryContainer = Color(0xFFFED7AA)
+// Tertiary accent (light blue)
+val ModernTertiary = Color(0xFF60A5FA)
+val ModernTertiaryContainer = Color(0xFFEFF6FF)
 
 // Surfaces
-val SurfaceLight = Color(0xFFFAF9FE)     // near-white tinted background
+val SurfaceLight = Color(0xFFFFFFFF)
 val SurfaceCard = Color(0xFFFFFFFF)
-val SurfaceElevated = Color(0xFFF3F0FB)  // subtle lifted surface
-val OnSurface = Color(0xFF1F1A33)        // deep ink for headings
-val OnSurfaceVariant = Color(0xFF6B6280) // muted body text
-val OutlineLight = Color(0xFFE9E4F2)
+val SurfaceElevated = Color(0xFFF1F5F9)
+val OnSurface = Color(0xFF0F172A)
+val OnSurfaceVariant = Color(0xFF475569)
+val OutlineLight = Color(0xFFCBD5E1)
 
 // ---------------------------------------------------------------------------
-// Dark theme palette
-//
-// Layered near-black surfaces with a violet tint, paired with brighter brand
-// tones so text, icons and status colours stay legible in dark mode.
+// Dark theme palette — blue / white / black only
 // ---------------------------------------------------------------------------
-val DarkPrimary = Color(0xFFA5B4FC)
-val DarkOnPrimary = Color(0xFF1E1B4B)
-val DarkPrimaryContainer = Color(0xFF3730A3)
-val DarkOnPrimaryContainer = Color(0xFFE0E7FF)
+val DarkPrimary = Color(0xFF93C5FD)
+val DarkOnPrimary = Color(0xFF0F172A)
+val DarkPrimaryContainer = Color(0xFF1E3A8A)
+val DarkOnPrimaryContainer = Color(0xFFDBEAFE)
 
-val DarkSecondary = Color(0xFF93C5FD)
-val DarkOnSecondary = Color(0xFF0B2545)
-val DarkSecondaryContainer = Color(0xFF1E3A8A)
-val DarkOnSecondaryContainer = Color(0xFFDBEAFE)
+val DarkSecondary = Color(0xFF60A5FA)
+val DarkOnSecondary = Color(0xFF0F172A)
+val DarkSecondaryContainer = Color(0xFF1E40AF)
+val DarkOnSecondaryContainer = Color(0xFFBFDBFE)
 
-val DarkTertiary = Color(0xFFFDBA74)
-val DarkOnTertiary = Color(0xFF3B1D00)
-val DarkTertiaryContainer = Color(0xFF7C2D12)
-val DarkOnTertiaryContainer = Color(0xFFFFEDD5)
+val DarkTertiary = Color(0xFFBFDBFE)
+val DarkOnTertiary = Color(0xFF0F172A)
+val DarkTertiaryContainer = Color(0xFF1E3A8A)
+val DarkOnTertiaryContainer = Color(0xFFDBEAFE)
 
-val DarkBackground = Color(0xFF0F0D18)
-val DarkSurface = Color(0xFF171426)
-val DarkSurfaceVariant = Color(0xFF2E2844)
+val DarkBackground = Color(0xFF0B1220)
+val DarkSurface = Color(0xFF0F172A)
+val DarkSurfaceVariant = Color(0xFF1E293B)
 
-val DarkSurfaceContainerLowest = Color(0xFF0B0912)
-val DarkSurfaceContainerLow = Color(0xFF141020)
-val DarkSurfaceContainer = Color(0xFF1A1629)
-val DarkSurfaceContainerHigh = Color(0xFF211C33)
-val DarkSurfaceContainerHighest = Color(0xFF29233D)
+val DarkSurfaceContainerLowest = Color(0xFF020617)
+val DarkSurfaceContainerLow = Color(0xFF0B1220)
+val DarkSurfaceContainer = Color(0xFF0F172A)
+val DarkSurfaceContainerHigh = Color(0xFF1E293B)
+val DarkSurfaceContainerHighest = Color(0xFF334155)
 
-val DarkOnSurface = Color(0xFFF2EEFA)
-val DarkOnSurfaceVariant = Color(0xFFBDB4D4)
-val DarkOutline = Color(0xFF6B6288)
-val DarkOutlineVariant = Color(0xFF3A3354)
+val DarkOnSurface = Color(0xFFF1F5F9)
+val DarkOnSurfaceVariant = Color(0xFF94A3B8)
+val DarkOutline = Color(0xFF475569)
+val DarkOutlineVariant = Color(0xFF334155)
 
-val DarkInverseSurface = Color(0xFFF2EEFA)
-val DarkInverseOnSurface = Color(0xFF1F1A33)
-val DarkInversePrimary = Color(0xFF4F46E5)
+val DarkInverseSurface = Color(0xFFF1F5F9)
+val DarkInverseOnSurface = Color(0xFF0F172A)
+val DarkInversePrimary = Color(0xFF2563EB)
 
-val DarkError = Color(0xFFFDA4AF)
-val DarkOnError = Color(0xFF4C0519)
-val DarkErrorContainer = Color(0xFF881337)
-val DarkOnErrorContainer = Color(0xFFFFE4E6)
+val DarkError = Color(0xFF93C5FD)
+val DarkOnError = Color(0xFF0F172A)
+val DarkErrorContainer = Color(0xFF1E3A8A)
+val DarkOnErrorContainer = Color(0xFFDBEAFE)
 
-// Semantic / status colors
-val Success = Color(0xFF10B981)
-val SuccessContainer = Color(0xFFECFDF5)
-val Warning = Color(0xFFFB923C)
-val WarningContainer = Color(0xFFFFF7ED)
-val Error = Color(0xFFF43F5E)
-val ErrorContainer = Color(0xFFFEEDFA)
+// Semantic / status colors — blue shades
+val Success = Color(0xFF2563EB)
+val SuccessContainer = Color(0xFFDBEAFE)
+val Warning = Color(0xFF1D4ED8)
+val WarningContainer = Color(0xFFBFDBFE)
+val Error = Color(0xFF1E40AF)
+val ErrorContainer = Color(0xFFDBEAFE)
 
-// Gradient stops used for the hero balance card
-val GradientStart = Color(0xFF6366F1) // indigo
-val GradientMid = Color(0xFFA855F7)   // purple
-val GradientEnd = Color(0xFFFB923C)   // orange
+// Gradient stops used for hero cards — blue shades
+val GradientStart = Color(0xFF1D4ED8)
+val GradientMid = Color(0xFF2563EB)
+val GradientEnd = Color(0xFF60A5FA)

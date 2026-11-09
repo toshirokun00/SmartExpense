@@ -78,20 +78,60 @@ class ProfileUseCase(
         return profileRepository.observeProfile(userId).first()
     }
 
-    suspend fun saveProfile(username: String, avatarUri: String?) {
+    /**
+     * Saves the profile locally for instant UI feedback, then pushes it to the
+     * remote backend. When a `content://` avatar is uploaded, the returned
+     * public URL replaces the device-only URI in the local store so the avatar
+     * survives a restart or reinstall.
+     *
+     * @return the avatar URI that should be shown to the user (the public URL
+     * after a successful upload).
+     */
+    suspend fun saveProfile(username: String, avatarUri: String?): String? {
         val userId = authRepository.getCurrentUserId()
-            ?: return
+            ?: return avatarUri
         // 1) Persist locally so the UI reflects the change immediately.
         profileRepository.saveProfile(
             userId = userId,
             username = username,
             avatarUri = avatarUri
         )
-        // 2) Push to remote. Fire-and-forget on the caller's scope is fine;
-        //    the remote layer tolerates offline failures.
-        profileRemoteRepository.saveProfile(
+        // 2) Push to remote. Upload errors propagate to the caller so the UI
+        //    can tell the user the avatar was not uploaded.
+        val resolvedAvatar = profileRemoteRepository.saveProfile(
             username = username,
             avatarUri = avatarUri
+        )
+        val durableAvatar = resolvedAvatar?.takeIf {
+            it.startsWith("http://") || it.startsWith("https://")
+        }
+        if (durableAvatar != null && durableAvatar != avatarUri) {
+            profileRepository.saveProfile(
+                userId = userId,
+                username = username,
+                avatarUri = durableAvatar
+            )
+        }
+        return durableAvatar ?: avatarUri
+    }
+
+    /**
+     * Removes the current user's avatar while keeping the username. The local
+     * avatar is cleared first so the UI immediately falls back to the initial
+     * placeholder, then the remote storage object and metadata are cleared.
+     */
+    suspend fun removeAvatar(username: String) {
+        val userId = authRepository.getCurrentUserId()
+            ?: return
+        profileRepository.saveProfile(
+            userId = userId,
+            username = username,
+            avatarUri = null
+        )
+        profileRemoteRepository.saveProfile(
+            username = username.takeIf { it.isNotBlank() },
+            avatarUri = null,
+            deleteAvatar = true
         )
     }
 

@@ -55,7 +55,7 @@ class ProfileViewModelTest {
         coEvery { profileUseCase.observeLocalProfileForCurrentUser() } returns profile
         coEvery { profileUseCase.getCurrentUserDetails() } returns
                 UserDetails(email = "malvin@example.com", memberSince = "January 2024")
-        coEvery { profileUseCase.saveProfile(any(), any()) } returns Unit
+        coEvery { profileUseCase.saveProfile(any(), any()) } returns null
         coEvery { authUseCase.signOut() } returns Unit
     }
 
@@ -183,6 +183,60 @@ class ProfileViewModelTest {
             coVerify(exactly = 1) {
                 profileUseCase.saveProfile("Malvin", "content://new-avatar")
             }
+        }
+
+    @Test
+    fun `avatar change stores the uploaded public url`() =
+        runTest(testDispatcher) {
+            coEvery {
+                profileUseCase.saveProfile(any(), any())
+            } returns "https://cdn/avatar.jpg"
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onIntent(ProfileIntent.AvatarChanged("content://new-avatar"))
+            advanceUntilIdle()
+
+            assertEquals(
+                "https://cdn/avatar.jpg",
+                viewModel.uiState.value.avatarUri
+            )
+        }
+
+    @Test
+    fun `remove avatar clears avatar and deletes the stored photo`() =
+        runTest(testDispatcher) {
+            coEvery { profileUseCase.removeAvatar(any()) } returns Unit
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onIntent(ProfileIntent.RemoveAvatar)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertNull(state.avatarUri)
+            assertEquals("Malvin", state.username)
+            assertFalse(state.isSaving)
+            coVerify(exactly = 1) { profileUseCase.removeAvatar("Malvin") }
+        }
+
+    @Test
+    fun `failed avatar removal shows an error`() =
+        runTest(testDispatcher) {
+            coEvery { profileUseCase.removeAvatar(any()) } throws
+                    IllegalStateException("Could not remove photo")
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onIntent(ProfileIntent.RemoveAvatar)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("Could not remove photo", state.error)
+            assertFalse(state.isSaving)
         }
 
     @Test

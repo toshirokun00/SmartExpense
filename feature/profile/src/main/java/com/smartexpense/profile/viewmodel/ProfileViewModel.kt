@@ -42,6 +42,10 @@ class ProfileViewModel(
                 viewModelScope.launch { saveProfile() }
             }
 
+            is ProfileIntent.RemoveAvatar -> {
+                viewModelScope.launch { removeAvatar() }
+            }
+
             is ProfileIntent.SaveProfile -> {
                 viewModelScope.launch { saveProfile() }
             }
@@ -67,16 +71,52 @@ class ProfileViewModel(
         val current = _uiState.value
         _uiState.value = current.copy(isSaving = true, error = null, saveMessage = null)
         try {
-            profileUseCase.saveProfile(
+            val resolvedAvatar = profileUseCase.saveProfile(
                 username = current.username,
                 avatarUri = current.avatarUri
             )
-            _uiState.value = _uiState.value.copy(saveMessage = "Profile saved")
+            // Swap the temporary content:// preview for the uploaded public
+            // URL, unless the user picked a different image meanwhile.
+            val latest = _uiState.value
+            val avatarUri = if (
+                resolvedAvatar != null && latest.avatarUri == current.avatarUri
+            ) {
+                resolvedAvatar
+            } else {
+                latest.avatarUri
+            }
+            _uiState.value = latest.copy(
+                avatarUri = avatarUri,
+                saveMessage = "Profile saved"
+            )
             delay(1500)
             _uiState.value = _uiState.value.copy(saveMessage = null)
         } catch (exception: Exception) {
             _uiState.value = _uiState.value.copy(
                 error = exception.message ?: "Failed to save profile"
+            )
+        } finally {
+            _uiState.value = _uiState.value.copy(isSaving = false)
+        }
+    }
+
+    private suspend fun removeAvatar() {
+        val current = _uiState.value
+        _uiState.value = current.copy(
+            // Clearing locally first makes the placeholder appear immediately.
+            avatarUri = null,
+            isSaving = true,
+            error = null,
+            saveMessage = null
+        )
+        try {
+            profileUseCase.removeAvatar(username = current.username)
+            _uiState.value = _uiState.value.copy(saveMessage = "Photo removed")
+            delay(1500)
+            _uiState.value = _uiState.value.copy(saveMessage = null)
+        } catch (exception: Exception) {
+            _uiState.value = _uiState.value.copy(
+                error = exception.message ?: "Failed to remove photo"
             )
         } finally {
             _uiState.value = _uiState.value.copy(isSaving = false)

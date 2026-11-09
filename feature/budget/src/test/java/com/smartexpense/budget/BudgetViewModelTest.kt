@@ -516,7 +516,7 @@ class BudgetViewModelTest {
             )
 
             assertEquals(
-                "5000.0",
+                "5,000.0",
                 state.form.amount
             )
 

@@ -219,17 +219,11 @@ class ReportsViewModelTest {
     fun pickerIntentsUpdatePickerState() = runTest {
         advanceUntilIdle()
 
-        viewModel.onIntent(ReportsIntent.StartDatePickerOpened)
-        assertTrue(viewModel.uiState.value.isStartDatePickerOpen)
-        assertFalse(viewModel.uiState.value.isEndDatePickerOpen)
-
-        viewModel.onIntent(ReportsIntent.EndDatePickerOpened)
-        assertFalse(viewModel.uiState.value.isStartDatePickerOpen)
-        assertTrue(viewModel.uiState.value.isEndDatePickerOpen)
+        viewModel.onIntent(ReportsIntent.DateRangePickerOpened)
+        assertTrue(viewModel.uiState.value.isDateRangePickerOpen)
 
         viewModel.onIntent(ReportsIntent.DatePickerDismissed)
-        assertFalse(viewModel.uiState.value.isStartDatePickerOpen)
-        assertFalse(viewModel.uiState.value.isEndDatePickerOpen)
+        assertFalse(viewModel.uiState.value.isDateRangePickerOpen)
     }
 
     @Test

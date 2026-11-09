@@ -1,8 +1,12 @@
 package com.smartexpense.profile.screen
 
+import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,17 +19,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.smartexpense.designsystems.*
 import com.smartexpense.profile.intent.ProfileIntent
-import com.smartexpense.profile.state.ProfileUiState
 import com.smartexpense.profile.viewmodel.ProfileEffect
 import com.smartexpense.profile.viewmodel.ProfileViewModel
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -50,6 +61,15 @@ fun ProfileScreen(
         }
     }
 
+    // Surface save/upload failures (e.g. missing storage bucket) instead of
+    // leaving the avatar silently stuck as a device-only URI.
+    val errorMessage = uiState.error
+    LaunchedEffect(errorMessage) {
+        if (!errorMessage.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(errorMessage)
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -58,7 +78,8 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             // ── Hero header ─────────────────────────────────────────────
             item {
@@ -69,13 +90,18 @@ fun ProfileScreen(
                 )
             }
 
-            // ── Avatar ──────────────────────────────────────────────────
+            // ── Identity card ────────────────────────────────────────────
             item {
-                ProfileAvatarSection(
+                Spacer(Modifier.height(16.dp))
+                ProfileHeroCard(
                     avatarUri = uiState.avatarUri,
                     username = uiState.username,
+                    email = uiState.email,
                     onAvatarSelected = { uri ->
                         viewModel.onIntent(ProfileIntent.AvatarChanged(uri?.toString()))
+                    },
+                    onAvatarRemoved = {
+                        viewModel.onIntent(ProfileIntent.RemoveAvatar)
                     }
                 )
             }
@@ -84,24 +110,37 @@ fun ProfileScreen(
             item {
                 ModernSectionHeader(
                     title = "Personal Information",
-                    modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
+                    modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
                 )
 
-                ProfileInfoCard(
-                    title = "Username",
-                    value = uiState.username.takeIf { it.isNotBlank() } ?: "Tap to set a username",
-                    icon = Icons.Default.Badge,
-                    onClick = { showEditNameDialog = true }
-                )
+                LivelySectionCard(
+                    accent = LivelyBlue,
+                    accentEnd = LivelyCyan,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    LivelyInfoRow(
+                        title = "Nickname",
+                        subtitle = uiState.username.takeIf { it.isNotBlank() }
+                            ?: "Tap to set a nickname",
+                        icon = Icons.Default.Badge,
+                        accent = LivelyIndigo,
+                        accentEnd = LivelyViolet,
+                        onClick = { showEditNameDialog = true }
+                    )
 
-                Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
 
-                ProfileInfoCard(
-                    title = "Email Address",
-                    value = uiState.email,
-                    icon = Icons.Default.Email,
-                    onClick = null
-                )
+                    LivelyInfoRow(
+                        title = "Email Address",
+                        subtitle = uiState.email.takeIf { it.isNotBlank() } ?: "Not signed in",
+                        icon = Icons.Default.Email,
+                        accent = LivelyBlue,
+                        accentEnd = LivelyCyan,
+                        onClick = null
+                    )
+                }
             }
 
             // ── Save message ─────────────────────────────────────────────
@@ -110,7 +149,10 @@ fun ProfileScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(LivelyGreen.copy(alpha = 0.12f))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -118,13 +160,13 @@ fun ProfileScreen(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = ModernSuccessColor
+                            tint = LivelyGreen
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
                             text = uiState.saveMessage.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = ModernSuccessColor,
+                            color = LivelyGreen,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -135,18 +177,23 @@ fun ProfileScreen(
             item {
                 ModernSectionHeader(
                     title = "Account",
-                    modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
+                    modifier = Modifier.padding(top = 16.dp, bottom = 12.dp)
                 )
 
-                ModernListItemCard(
-                    title = "App Settings",
-                    subtitle = "Theme, notifications & budget alerts",
-                    avatarIcon = Icons.Default.Settings,
-                    avatarColor = MaterialTheme.colorScheme.primary,
-                    onClick = onNavigateToSettings,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    borderless = true
-                )
+                LivelySectionCard(
+                    accent = LivelyOrange,
+                    accentEnd = LivelyAmber,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    LivelyInfoRow(
+                        title = "App Settings",
+                        subtitle = "Theme, notifications & budget alerts",
+                        icon = Icons.Default.Settings,
+                        accent = LivelyOrange,
+                        accentEnd = LivelyAmber,
+                        onClick = onNavigateToSettings
+                    )
+                }
             }
 
             // ── About ───────────────────────────────────────────────────
@@ -156,37 +203,49 @@ fun ProfileScreen(
                     modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
                 )
 
-                ModernListItemCard(
-                    title = "About Spendora",
-                    subtitle = "Version info, features & support",
-                    avatarIcon = Icons.Default.Info,
-                    avatarColor = MaterialTheme.colorScheme.primary,
-                    onClick = onNavigateToAbout,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    borderless = true
-                )
+                LivelySectionCard(
+                    accent = LivelyGreen,
+                    accentEnd = LivelyTeal,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    LivelyInfoRow(
+                        title = "About Spendora",
+                        subtitle = "Version info, features & support",
+                        icon = Icons.Default.Info,
+                        accent = LivelyGreen,
+                        accentEnd = LivelyTeal,
+                        onClick = onNavigateToAbout
+                    )
+                }
             }
 
             // ── Sign out ────────────────────────────────────────────────
             item {
                 Spacer(Modifier.height(24.dp))
 
-                ModernListItemCard(
-                    title = "Sign Out",
+                LivelySectionCard(
+                    accent = LivelyRose,
+                    accentEnd = Color(0xFF1E3A8A),
+                    title = "Session",
                     subtitle = "Log out of this device",
-                    avatarIcon = Icons.Default.Logout,
-                    avatarColor = ModernErrorColor,
-                    onClick = { showSignOutDialog = true },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    borderless = true
-                )
+                    icon = Icons.Default.Logout,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    LivelyGradientButton(
+                        text = "Sign Out",
+                        accent = LivelyRose,
+                        accentEnd = Color(0xFF1E3A8A),
+                        icon = Icons.Default.Logout,
+                        onClick = { showSignOutDialog = true }
+                    )
+                }
             }
         }
     }
 
     // ── Edit username dialog ────────────────────────────────────────────
     if (showEditNameDialog) {
-        EditUsernameDialog(
+        EditNicknameDialog(
             currentName = uiState.username.orEmpty(),
             onDismiss = { showEditNameDialog = false },
             onConfirm = { newName ->
@@ -213,146 +272,152 @@ fun ProfileScreen(
 // ───────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ProfileAvatarSection(
+private fun ProfileHeroCard(
     avatarUri: String?,
     username: String,
-    onAvatarSelected: (Uri?) -> Unit
+    email: String,
+    onAvatarSelected: (Uri?) -> Unit,
+    onAvatarRemoved: () -> Unit
 ) {
     val imageLoader = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        onAvatarSelected(uri)
+        // A null URI means the picker was cancelled — keep the current avatar.
+        if (uri != null) onAvatarSelected(uri)
     }
 
-    Box(
+    val avatarImage = rememberAvatarImage(avatarUri)
+    val heroShape = RoundedCornerShape(28.dp)
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 16.dp),
+        shape = heroShape,
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box {
-            // Avatar circle
-            Surface(
-                modifier = Modifier
-                    .size(104.dp)
-                    .clip(CircleShape)
-                    .clickable { imageLoader.launch("image/*") },
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = CircleShape
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    if (avatarUri != null) {
-                        // Placeholder: in production use Coil here
-                        Text(
-                            text = username.firstOrNull()?.toString() ?: "?",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            LivelyIndigo,
+                            LivelyViolet,
+                            LivelyPink
                         )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(56.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box {
+                    Surface(
+                        modifier = Modifier
+                            .size(92.dp)
+                            .clip(CircleShape)
+                            .clickable { imageLoader.launch("image/*") },
+                        color = Color.White.copy(alpha = 0.22f),
+                        shape = CircleShape
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            when {
+                                avatarImage != null -> Image(
+                                    bitmap = avatarImage,
+                                    contentDescription = "Profile picture",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+
+                                username.isNotBlank() -> Text(
+                                    text = username.first().toString().uppercase(),
+                                    style = MaterialTheme.typography.displaySmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                else -> Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = Color.White.copy(alpha = 0.75f)
+                                )
+                            }
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .clickable { imageLoader.launch("image/*") },
+                        color = Color.White,
+                        shape = CircleShape
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = "Upload avatar",
+                                modifier = Modifier.size(15.dp),
+                                tint = LivelyIndigo
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = username.takeIf { it.isNotBlank() } ?: "Your name",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = email.takeIf { it.isNotBlank() } ?: "Not signed in",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        onClick = { imageLoader.launch("image/*") },
+                        shape = RoundedCornerShape(percent = 50),
+                        color = Color.White.copy(alpha = 0.2f),
+                        contentColor = Color.White
+                    ) {
+                        Text(
+                            text = "Change photo",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
                 }
             }
 
-            // Edit badge
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .clickable { imageLoader.launch("image/*") },
-                color = MaterialTheme.colorScheme.primary,
-                shape = CircleShape,
-                tonalElevation = 4.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = "Upload avatar",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
+            if (avatarUri != null) {
+                TextButton(
+                    onClick = onAvatarRemoved,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.White
                     )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProfileInfoCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    onClick: (() -> Unit)?
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .then(
-                if (onClick != null) {
-                    Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable(onClick = onClick)
-                } else Modifier
-            ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
+                ) {
                     Icon(
-                        imageVector = icon,
+                        imageVector = Icons.Default.Delete,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.secondary
+                        modifier = Modifier.size(16.dp)
                     )
+                    Spacer(Modifier.width(6.dp))
+                    Text("Remove photo")
                 }
-            }
-
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
-                )
-            }
-
-            if (onClick != null) {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
             }
         }
     }
@@ -397,7 +462,7 @@ private fun SignOutConfirmDialog(
 }
 
 @Composable
-private fun EditUsernameDialog(
+private fun EditNicknameDialog(
     currentName: String,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
@@ -406,31 +471,144 @@ private fun EditUsernameDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Username") },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Username") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+        icon = {
+            LivelyIconBadge(
+                icon = Icons.Default.Badge,
+                accent = LivelyIndigo,
+                accentEnd = LivelyViolet,
+                size = 44.dp,
+                shape = RoundedCornerShape(14.dp)
             )
+        },
+        title = {
+            Text(
+                "Edit Nickname",
+                fontWeight = FontWeight.Bold,
+                color = LivelyIndigo
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Choose a nickname to personalize your profile.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nickname") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = LivelyIndigo,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedLabelColor = LivelyIndigo,
+                        cursorColor = LivelyIndigo,
+                        focusedContainerColor = LivelyIndigo.copy(alpha = 0.05f),
+                        unfocusedContainerColor = Color.Transparent
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                )
+            }
         },
         confirmButton = {
             Button(
                 onClick = { onConfirm(name) },
                 enabled = name.isNotBlank(),
-                shape = RoundedCornerShape(12.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LivelyIndigo,
+                    contentColor = Color.White,
+                    disabledContainerColor = LivelyIndigo.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(percent = 50)
             ) {
-                Text("Save")
+                Text("Save", fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = LivelyRose)
+            ) {
+                Text("Cancel", fontWeight = FontWeight.SemiBold)
             }
         },
         shape = RoundedCornerShape(24.dp)
     )
 }
+
+// ───────────────────────────────────────────────────────────────────────
+// Avatar image loading
+//
+// The project does not use an image library, so decode the picked
+// `content://` URI (or the uploaded `https://` URL) into a small bitmap
+// off the main thread. Down-sampling keeps memory use low for large
+// camera photos.
+// ───────────────────────────────────────────────────────────────────────
+
+private const val AVATAR_MAX_SIZE_PX = 512
+
+@Composable
+private fun rememberAvatarImage(avatarUri: String?): ImageBitmap? {
+    val context = LocalContext.current
+    // Keep the last successfully decoded image while a new URI loads, so
+    // switching from the local content:// preview to the uploaded https://
+    // URL (or picking another photo) doesn't flash an empty avatar.
+    var image by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(avatarUri) {
+        val uri = avatarUri?.takeIf { it.isNotBlank() }
+        if (uri == null) {
+            image = null
+            return@LaunchedEffect
+        }
+
+        val loaded = withContext(Dispatchers.IO) {
+            runCatching { decodeAvatar(context, Uri.parse(uri)) }.getOrNull()
+        }
+        if (loaded != null) {
+            image = loaded
+        }
+    }
+
+    return image
+}
+
+private fun decodeAvatar(context: Context, uri: Uri): ImageBitmap? {
+    val bytes = when (uri.scheme?.lowercase()) {
+        "content", "file", "android.resource" ->
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+
+        "http", "https" -> readRemoteBytes(uri.toString())
+
+        else -> null
+    } ?: return null
+
+    if (bytes.isEmpty()) return null
+
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    var sampleSize = 1
+    while (
+        bounds.outWidth / sampleSize > AVATAR_MAX_SIZE_PX * 2 ||
+        bounds.outHeight / sampleSize > AVATAR_MAX_SIZE_PX * 2
+    ) {
+        sampleSize *= 2
+    }
+
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    return BitmapFactory
+        .decodeByteArray(bytes, 0, bytes.size, options)
+        ?.asImageBitmap()
+}
+
+private fun readRemoteBytes(url: String): ByteArray? = runCatching {
+    val connection = URL(url).openConnection() as HttpURLConnection
+    connection.connectTimeout = 10_000
+    connection.readTimeout = 10_000
+    connection.setRequestProperty("Accept", "image/*")
+    connection.inputStream.use { it.readBytes() }
+}.getOrNull()

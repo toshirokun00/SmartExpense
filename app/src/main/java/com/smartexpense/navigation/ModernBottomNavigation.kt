@@ -17,6 +17,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,6 +38,15 @@ enum class AppTab {
     Budget,
     Profile
 }
+
+/**
+ * Saver for [AppTab] so tab selection survives navigation pops
+ * (e.g. returning from Add Budget / Edit Budget back to Budget tab).
+ */
+val AppTabSaver = Saver<AppTab, String>(
+    save = { it.name },
+    restore = { AppTab.valueOf(it as String) }
+)
 
 private data class BottomTabItem(
     val tab: AppTab,

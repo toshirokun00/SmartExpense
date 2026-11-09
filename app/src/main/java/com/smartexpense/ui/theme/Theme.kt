@@ -63,7 +63,7 @@ private val LightColorScheme = lightColorScheme(
     primary = ModernPrimary,
     onPrimary = ModernOnPrimary,
     primaryContainer = ModernPrimaryContainer,
-    onPrimaryContainer = Color(0xFF312E81),
+    onPrimaryContainer = Color(0xFF1E3A8A),
 
     secondary = ModernSecondary,
     onSecondary = ModernOnPrimary,

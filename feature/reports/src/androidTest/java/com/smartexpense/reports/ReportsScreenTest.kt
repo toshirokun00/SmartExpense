@@ -347,45 +347,48 @@ class ReportsScreenTest {
     // --- date picker ---
 
     @Test
-    fun tappingStartDateOpensDatePicker() {
+    fun tappingChangeRangeOpensDateRangePicker() {
         setContent()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Start Date").performClick()
+        composeRule.onNodeWithText("Change range").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Select start date").assertIsDisplayed()
+        composeRule.onNodeWithText("Custom date range").assertIsDisplayed()
 
         composeRule.onNodeWithText("Cancel").performClick()
         composeRule.waitForIdle()
     }
 
     @Test
-    fun tappingEndDateOpensDatePicker() {
+    fun dateRangePickerShowsSelectedRange() {
         setContent()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("End Date").performClick()
+        composeRule.onNodeWithText("Change range").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Select end date").assertIsDisplayed()
+        composeRule.onNodeWithText("Pick a start date, then an end date")
+            .assertDoesNotExist()
+
+        composeRule.onNodeWithText("Apply range").assertIsDisplayed()
 
         composeRule.onNodeWithText("Cancel").performClick()
         composeRule.waitForIdle()
     }
 
     @Test
-    fun dismissingDatePickerClosesIt() {
+    fun dismissingDateRangePickerClosesIt() {
         setContent()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Start Date").performClick()
+        composeRule.onNodeWithText("Change range").performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Cancel").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Select start date").assertDoesNotExist()
+        composeRule.onNodeWithText("Custom date range").assertDoesNotExist()
     }
 
     // --- helpers ---

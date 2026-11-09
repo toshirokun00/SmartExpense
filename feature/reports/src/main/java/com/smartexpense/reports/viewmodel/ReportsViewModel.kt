@@ -104,28 +104,13 @@ class ReportsViewModel(
 
             ReportsIntent.DatePickerDismissed -> {
                 _uiState.update {
-                    it.copy(
-                        isStartDatePickerOpen = false,
-                        isEndDatePickerOpen = false
-                    )
+                    it.copy(isDateRangePickerOpen = false)
                 }
             }
 
-            ReportsIntent.EndDatePickerOpened -> {
+            ReportsIntent.DateRangePickerOpened -> {
                 _uiState.update {
-                    it.copy(
-                        isStartDatePickerOpen = false,
-                        isEndDatePickerOpen = true
-                    )
-                }
-            }
-
-            ReportsIntent.StartDatePickerOpened -> {
-                _uiState.update {
-                    it.copy(
-                        isStartDatePickerOpen = true,
-                        isEndDatePickerOpen = false
-                    )
+                    it.copy(isDateRangePickerOpen = true)
                 }
             }
 
@@ -225,8 +210,7 @@ class ReportsViewModel(
             it.copy(
                 startDateInclusive = startDateInclusive,
                 endDateExclusive = endDateExclusive,
-                isStartDatePickerOpen = false,
-                isEndDatePickerOpen = false,
+                isDateRangePickerOpen = false,
                 isLoading = true,
                 error = null
             )
@@ -280,8 +264,7 @@ class ReportsViewModel(
         _uiState.update {
             it.copy(
                 isExporting = true,
-                isStartDatePickerOpen = false,
-                isEndDatePickerOpen = false,
+                isDateRangePickerOpen = false,
                 error = null
             )
         }

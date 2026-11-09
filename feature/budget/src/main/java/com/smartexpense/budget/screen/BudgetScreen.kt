@@ -1,11 +1,20 @@
 package com.smartexpense.budget.screen
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -13,7 +22,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,7 +45,9 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetScreen(
-    viewModel: BudgetViewModel = koinViewModel()
+    viewModel: BudgetViewModel = koinViewModel(),
+    onAddBudgetClick: () -> Unit,
+    onEditBudgetClick: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val screenState by viewModel.screenState.collectAsStateWithLifecycle()
@@ -53,25 +69,11 @@ fun BudgetScreen(
         }
     }
 
-    var showStartDatePicker by remember {
-        mutableStateOf(false)
-    }
-
-    var showEndDatePicker by remember {
-        mutableStateOf(false)
-    }
-
-    var showCategoryDropdown by remember {
-        mutableStateOf(false)
-    }
-
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState)
         },
         containerColor = MaterialTheme.colorScheme.surface,
-        // MainScreen already handles system bar insets. Applying them here
-        // again pushed the header too far down from the top.
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(
@@ -80,9 +82,45 @@ fun BudgetScreen(
                 .padding(paddingValues)
         ) {
             ModernHeader(
-                title = if (uiState.form.editingBudgetId != null) "Edit Budget" else "Budgets",
+                title = "Budgets",
                 subtitle = "Set limits and track spending by category",
-                icon = Icons.Default.Wallet
+                icon = Icons.Default.Wallet,
+                actions = {
+                    val colorScheme = MaterialTheme.colorScheme
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        colorScheme.primary,
+                                        colorScheme.secondary
+                                    )
+                                )
+                            )
+                            .clickable(enabled = true, onClick = onAddBudgetClick)
+                            .padding(vertical = 8.dp, horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = Color.White
+                            )
+                            Text(
+                                text = "Add Budget",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
             )
 
             LazyColumn(
@@ -93,9 +131,7 @@ fun BudgetScreen(
             ) {
 
                 item {
-                    ModernSectionHeader(
-                        title = "Your Budgets"
-                    )
+                    ModernSectionHeader(title = "Your Budgets")
                 }
 
                 items(
@@ -107,11 +143,7 @@ fun BudgetScreen(
                     ModernBudgetCard(
                         summary = summary,
                         onEdit = {
-                            viewModel.onIntent(
-                                BudgetIntent.LoadBudget(
-                                    summary.budget.id
-                                )
-                            )
+                            onEditBudgetClick(summary.budget.id)
                         },
                         onDelete = {
                             viewModel.onIntent(
@@ -136,132 +168,12 @@ fun BudgetScreen(
                 }
 
                 item {
-                    ModernSectionHeader(title = "New Budget")
-                }
-
-                item {
-                    ModernBudgetForm(
-                        uiState = uiState,
-                        showCategoryDropdown = showCategoryDropdown,
-                        showStartDatePicker = showStartDatePicker,
-                        showEndDatePicker = showEndDatePicker,
-                        onToggleCategoryDropdown = {
-                            showCategoryDropdown = !showCategoryDropdown
-                        },
-                        onOpenStartDatePicker = {
-                            showStartDatePicker = true
-                        },
-                        onOpenEndDatePicker = {
-                            showEndDatePicker = true
-                        },
-                        onIntent = viewModel::onIntent
-                    )
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
     }
 
-    // Start Date Picker
-    if (showStartDatePicker) {
-
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis =
-                uiState.form.startDate
-        )
-
-        DatePickerDialog(
-            onDismissRequest = {
-                showStartDatePicker = false
-            },
-            confirmButton = {
-
-                TextButton(
-                    onClick = {
-
-                        datePickerState
-                            .selectedDateMillis
-                            ?.let { date ->
-
-                                viewModel.onIntent(
-                                    BudgetIntent.StartDateChanged(
-                                        date
-                                    )
-                                )
-                            }
-
-                        showStartDatePicker = false
-                    }
-                ) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-
-                TextButton(
-                    onClick = {
-                        showStartDatePicker = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(
-                state = datePickerState
-            )
-        }
-    }
-
-    // End Date Picker
-    if (showEndDatePicker) {
-
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis =
-                uiState.form.endDate
-        )
-
-        DatePickerDialog(
-            onDismissRequest = {
-                showEndDatePicker = false
-            },
-            confirmButton = {
-
-                TextButton(
-                    onClick = {
-
-                        datePickerState
-                            .selectedDateMillis
-                            ?.let { date ->
-
-                                viewModel.onIntent(
-                                    BudgetIntent.EndDateChanged(
-                                        date
-                                    )
-                                )
-                            }
-
-                        showEndDatePicker = false
-                    }
-                ) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-
-                TextButton(
-                    onClick = {
-                        showEndDatePicker = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(
-                state = datePickerState
-            )
-        }
-    }
     // Delete Confirmation
     if (screenState.showDeleteConfirmation) {
 
@@ -308,6 +220,68 @@ fun BudgetScreen(
 }
 
 @Composable
+private fun BudgetSection(
+    title: String,
+    icon: ImageVector,
+    accent: Color,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.22f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            accent.copy(alpha = 0.08f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    color = accent.copy(alpha = 0.15f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = accent
+                        )
+                    }
+                }
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            content()
+        }
+    }
+}
+
+@Composable
 private fun ModernBudgetCard(
     summary: BudgetSummaryState,
     onEdit: () -> Unit,
@@ -321,309 +295,296 @@ private fun ModernBudgetCard(
         else -> ModernSuccessColor
     }
 
+    val gradient = remember(colorScheme.secondaryContainer, progressColor) {
+        Brush.linearGradient(
+            colors = listOf(
+                colorScheme.secondaryContainer.copy(alpha = 0.95f),
+                progressColor.copy(alpha = 0.4f)
+            )
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, progressColor.copy(alpha = 0.22f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(gradient)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    color = progressColor.copy(alpha = 0.2f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Category,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = progressColor
+                        )
+                    }
+                }
+
+                Column {
+                    Text(
+                        text = summary.categoryName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = summary.budget.startDate.toDateString() + " - " + summary.budget.endDate.toDateString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            HorizontalDivider(
+                color = colorScheme.onSurface.copy(alpha = 0.15f)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 0.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Budget",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = summary.budget.amount.toPesoAmount(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Spent",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = summary.spentAmount.toPesoAmount(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
+                    )
+                }
+            }
+
+            HorizontalDivider(
+                color = colorScheme.onSurface.copy(alpha = 0.15f)
+            )
+
+            Text(
+                text = if (summary.isOverBudget) {
+                    "Over by ${(-summary.remainingAmount).toPesoAmount()}"
+                } else {
+                    "Remaining ${summary.remainingAmount.toPesoAmount()}"
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = progressColor
+            )
+
+            LivelyProgressBar(
+                progress = summary.progress,
+                color = progressColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
+            )
+
+            Text(
+                text = "${summary.utilizationPercentage.toInt()}% used" +
+                        summary.status.indicatorSuffix(),
+                style = MaterialTheme.typography.labelSmall,
+                color = colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                BudgetActionButton(
+                    label = "Edit",
+                    icon = Icons.Default.Edit,
+                    background = Brush.horizontalGradient(
+                        colors = listOf(
+                            colorScheme.primary,
+                            colorScheme.secondary
+                        )
+                    ),
+                    contentColor = Color.White,
+                    borderColor = colorScheme.primary.copy(alpha = 0.35f),
+                    glowColor = colorScheme.primary,
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f)
+                )
+
+                BudgetActionButton(
+                    label = "Delete",
+                    icon = Icons.Default.Delete,
+                    background = Brush.horizontalGradient(
+                        colors = listOf(
+                            colorScheme.error.copy(alpha = 0.16f),
+                            colorScheme.error.copy(alpha = 0.06f)
+                        )
+                    ),
+                    contentColor = colorScheme.error,
+                    borderColor = colorScheme.error.copy(alpha = 0.35f),
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Pill-shaped budget action with a soft press animation.
+ *
+ * A vivid gradient is reserved for the primary action (Edit); the destructive
+ * action (Delete) uses a tinted, low-emphasis container so it reads as
+ * secondary and is harder to hit by accident — the recommended hierarchy for a
+ * finance app.
+ */
+@Composable
+private fun BudgetActionButton(
+    label: String,
+    icon: ImageVector,
+    background: Brush,
+    contentColor: Color,
+    borderColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    glowColor: Color? = null
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        label = "budgetActionScale"
+    )
+
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .then(
+                if (glowColor != null) {
+                    Modifier.shadow(
+                        elevation = 8.dp,
+                        shape = shape,
+                        ambientColor = glowColor.copy(alpha = 0.45f),
+                        spotColor = glowColor.copy(alpha = 0.45f)
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .clip(shape)
+            .background(brush = background)
+            .border(BorderStroke(1.dp, borderColor), shape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(color = contentColor),
+                onClick = onClick
+            )
+            .heightIn(min = 46.dp)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = progressColor.copy(alpha = 0.2f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Category,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp),
-                        tint = progressColor
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = summary.categoryName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = summary.budget.startDate.toDateString() + " - " + summary.budget.endDate.toDateString(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurfaceVariant
-                )
-            }
-
-            Column(horizontalAlignment = Alignment.End) {
-                IconButton(onClick = onEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit budget",
-                        tint = colorScheme.primary
-                    )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete budget",
-                        tint = colorScheme.error
-                    )
-                }
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = contentColor
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
         }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Budget ${summary.budget.amount.toPesoAmount()}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colorScheme.onSurfaceVariant
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Spent ${summary.spentAmount.toPesoAmount()}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = if (summary.isOverBudget) {
-                        "Over by ${(-summary.remainingAmount).toPesoAmount()}"
-                    } else {
-                        "Remaining ${summary.remainingAmount.toPesoAmount()}"
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = progressColor,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        LinearProgressIndicator(
-            progress = { summary.progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .height(8.dp),
-            color = progressColor,
-            trackColor = progressColor.copy(alpha = 0.15f)
-        )
-
-        Text(
-            text = "${summary.utilizationPercentage.toInt()}% used" +
-                    summary.status.indicatorSuffix(),
-            style = MaterialTheme.typography.labelSmall,
-            color = colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        )
     }
 }
 
 @Composable
 private fun ModernInsightCard(insight: BudgetInsight) {
+    val colorScheme = MaterialTheme.colorScheme
+    val gradient = remember(colorScheme.secondaryContainer, colorScheme.tertiaryContainer) {
+        Brush.horizontalGradient(
+            colors = listOf(
+                colorScheme.secondaryContainer.copy(alpha = 0.9f),
+                colorScheme.tertiaryContainer.copy(alpha = 0.8f)
+            )
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, colorScheme.secondary.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(gradient)
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Lightbulb,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                tint = colorScheme.onSecondaryContainer
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = insight.message(),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = colorScheme.onSecondaryContainer
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModernBudgetForm(
-    uiState: com.smartexpense.budget.state.BudgetUiState,
-    showCategoryDropdown: Boolean,
-    showStartDatePicker: Boolean,
-    showEndDatePicker: Boolean,
-    onToggleCategoryDropdown: () -> Unit,
-    onOpenStartDatePicker: () -> Unit,
-    onOpenEndDatePicker: () -> Unit,
-    onIntent: (BudgetIntent) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ExposedDropdownMenuBox(
-                expanded = showCategoryDropdown,
-                onExpandedChange = {
-                    onToggleCategoryDropdown()
-                }
-            ) {
-                OutlinedTextField(
-                    value = uiState.categories
-                        .firstOrNull {
-                            it.id == uiState.form.categoryId
-                        }
-                        ?.name
-                        ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = {
-                        Text("Category")
-                    },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(
-                            expanded = showCategoryDropdown
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-
-                ExposedDropdownMenu(
-                    expanded = showCategoryDropdown,
-                    onDismissRequest = {
-                        onToggleCategoryDropdown()
-                    }
-                ) {
-                    uiState.categories.forEach { category ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(category.name)
-                            },
-                            onClick = {
-                                onIntent(
-                                    BudgetIntent.CategoryChanged(
-                                        category.id
-                                    )
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-
-            OutlinedTextField(
-                value = uiState.form.amount,
-                onValueChange = {
-                    onIntent(BudgetIntent.AmountChanged(it))
-                },
-                label = {
-                    Text("Budget Amount")
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = uiState.form.startDate
-                    ?.toDateString()
-                    ?: "",
-                onValueChange = {},
-                readOnly = true,
-                label = {
-                    Text("Start Date")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    IconButton(onClick = onOpenStartDatePicker) {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = "Pick start date",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            )
-
-            OutlinedTextField(
-                value = uiState.form.endDate
-                    ?.toDateString()
-                    ?: "",
-                onValueChange = {},
-                readOnly = true,
-                label = {
-                    Text("End Date")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    IconButton(onClick = onOpenEndDatePicker) {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = "Pick end date",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            )
-
-            Button(
-                onClick = {
-                    if (uiState.form.editingBudgetId != null) {
-                        onIntent(BudgetIntent.UpdateBudget)
-                    } else {
-                        onIntent(BudgetIntent.AddBudget)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = if (
-                        uiState.form.editingBudgetId != null
-                    ) {
-                        "Update Budget"
-                    } else {
-                        "Add Budget"
-                    }
-                )
-            }
-
-            if (uiState.form.editingBudgetId != null) {
-                TextButton(
-                    onClick = {
-                        onIntent(BudgetIntent.CancelEdit)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Cancel Edit")
-                }
-            }
         }
     }
 }
