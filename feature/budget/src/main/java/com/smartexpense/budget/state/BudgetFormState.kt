@@ -5,5 +5,6 @@ data class BudgetFormState(
     val amount: String = "",
     val startDate: Long? = null,
     val endDate: Long? = null,
-    val editingBudgetId: Long? = null
+    val editingBudgetId: Long? = null,
+    val isSaving: Boolean = false
 )

@@ -46,7 +46,7 @@ class ProfileUseCaseTest {
         coEvery { profileRepository.saveProfile(any(), any(), any()) } just Runs
         coEvery {
             profileRemoteRepository.saveProfile(any(), any(), any())
-        } just Runs
+        } returns null
 
         useCase.saveProfile(
             username = "Malvin",
@@ -163,12 +163,70 @@ class ProfileUseCaseTest {
     }
 
     @Test
+    fun `saveProfile persists the uploaded public URL locally`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRepository.saveProfile(any(), any(), any()) } just Runs
+        coEvery {
+            profileRemoteRepository.saveProfile(any(), any(), any())
+        } returns "https://cdn/avatar.jpg"
+
+        val result = useCase.saveProfile(
+            username = "Malvin",
+            avatarUri = "content://avatar"
+        )
+
+        assertEquals("https://cdn/avatar.jpg", result)
+        coVerifyOrder {
+            profileRepository.saveProfile("user-1", "Malvin", "content://avatar")
+            profileRepository.saveProfile(
+                "user-1",
+                "Malvin",
+                "https://cdn/avatar.jpg"
+            )
+        }
+    }
+
+    @Test
+    fun `removeAvatar clears local avatar and deletes remote avatar`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRepository.saveProfile(any(), any(), any()) } just Runs
+        coEvery {
+            profileRemoteRepository.saveProfile(any(), any(), any())
+        } returns null
+
+        useCase.removeAvatar(username = "Malvin")
+
+        coVerifyOrder {
+            profileRepository.saveProfile(
+                "user-1",
+                "Malvin",
+                null as String?
+            )
+            profileRemoteRepository.saveProfile("Malvin", null, true)
+        }
+    }
+
+    @Test
+    fun `removeAvatar does nothing when no user is signed in`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns null
+
+        useCase.removeAvatar(username = "Malvin")
+
+        coVerify(exactly = 0) {
+            profileRepository.saveProfile(any(), any(), any())
+        }
+        coVerify(exactly = 0) {
+            profileRemoteRepository.saveProfile(any(), any(), any())
+        }
+    }
+
+    @Test
     fun `deleteProfile clears local profile and remote avatar`() = runTest {
         coEvery { authRepository.getCurrentUserId() } returns "user-1"
         coEvery { profileRepository.deleteProfile(any()) } just Runs
         coEvery {
             profileRemoteRepository.saveProfile(any(), any(), any())
-        } just Runs
+        } returns null
 
         useCase.deleteProfile()
 

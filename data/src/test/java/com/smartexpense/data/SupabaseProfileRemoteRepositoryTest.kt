@@ -4,10 +4,8 @@ import app.cash.turbine.test
 import com.smartexpense.data.remote.SupabaseProfileRemoteDataSource
 import com.smartexpense.data.repositoryimpl.SupabaseProfileRemoteRepository
 import com.smartexpense.domain.repository.ProfileRemoteRepository
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -42,7 +40,7 @@ class SupabaseProfileRemoteRepositoryTest {
 
     @Test
     fun `saveProfile delegates and publishes the saved profile`() = runTest {
-        coEvery { dataSource.saveProfile(any(), any(), any()) } just Runs
+        coEvery { dataSource.saveProfile(any(), any(), any()) } returns null
         coEvery { dataSource.loadProfile() } returns
                 SupabaseProfileRemoteDataSource.ProfileData("Malvin", null)
 
@@ -63,7 +61,7 @@ class SupabaseProfileRemoteRepositoryTest {
 
     @Test
     fun `saveProfile publishes nothing when remote profile is empty`() = runTest {
-        coEvery { dataSource.saveProfile(any(), any(), any()) } just Runs
+        coEvery { dataSource.saveProfile(any(), any(), any()) } returns null
         coEvery { dataSource.loadProfile() } returns null
 
         repository.usernameChanged.test {
@@ -79,7 +77,7 @@ class SupabaseProfileRemoteRepositoryTest {
     fun `usernameChanged does not replay a previous account's profile`() =
         runTest {
             // User A saves a profile.
-            coEvery { dataSource.saveProfile(any(), any(), any()) } just Runs
+            coEvery { dataSource.saveProfile(any(), any(), any()) } returns null
             coEvery { dataSource.loadProfile() } returns
                     SupabaseProfileRemoteDataSource.ProfileData("UserA", null)
 

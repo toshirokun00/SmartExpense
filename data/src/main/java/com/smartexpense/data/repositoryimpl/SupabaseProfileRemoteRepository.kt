@@ -24,8 +24,8 @@ class SupabaseProfileRemoteRepository(
         username: String?,
         avatarUri: String?,
         deleteAvatar: Boolean
-    ) {
-        remoteDataSource.saveProfile(
+    ): String? {
+        val resolvedAvatar = remoteDataSource.saveProfile(
             username = username,
             avatarUri = avatarUri,
             deleteAvatar = deleteAvatar
@@ -36,10 +36,11 @@ class SupabaseProfileRemoteRepository(
             _usernameChanged.emit(
                 ProfileRemoteRepository.RemoteProfile(
                     username = latest.username,
-                    avatarUri = latest.avatarUri
+                    avatarUri = resolvedAvatar ?: latest.avatarUri
                 )
             )
         }
+        return resolvedAvatar ?: latest?.avatarUri
     }
 
     override suspend fun loadProfile(): ProfileRemoteRepository.RemoteProfile? {

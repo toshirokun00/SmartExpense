@@ -56,3 +56,11 @@ data object AddRecurringExpenseRoute : Route
 data class EditRecurringExpenseRoute(
     val scheduleId: Long
 ) : Route
+
+@Serializable
+data object AddBudgetRoute : Route
+
+@Serializable
+data class EditBudgetRoute(
+    val budgetId: Long
+) : Route

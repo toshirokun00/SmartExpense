@@ -5,9 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.smartexpense.dashoard.effect.DashboardEffect
 import com.smartexpense.dashoard.intent.DashboardIntent
 import com.smartexpense.dashoard.state.DashboardUiState
+import com.smartexpense.domain.model.BudgetAlertThresholds
 import com.smartexpense.domain.usecase.BudgetUseCase
+import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.ProfileUseCase
+import com.smartexpense.domain.usecase.SettingsUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +28,9 @@ import java.time.ZoneId
 class DashboardViewModel(
     private val getExpenseUseCase: GetExpenseUseCase,
     private val budgetUseCase: BudgetUseCase,
+    private val categoryUseCase: CategoryUseCase,
+    private val settingsUseCase: SettingsUseCase,
+    private val getBudgetInsightsUseCase: GetBudgetInsightsUseCase,
     private val profileUseCase: ProfileUseCase
 ) : ViewModel() {
 
@@ -44,6 +51,24 @@ class DashboardViewModel(
             _effect.emit(
                 DashboardEffect.ShowError(
                     exception.message ?: "Failed to load budgets"
+                )
+            )
+        }
+
+    private val categoriesFlow = categoryUseCase.getCategories()
+        .catch { exception ->
+            _effect.emit(
+                DashboardEffect.ShowError(
+                    exception.message ?: "Failed to load categories"
+                )
+            )
+        }
+
+    private val settingsFlow = settingsUseCase.getSettings()
+        .catch { exception ->
+            _effect.emit(
+                DashboardEffect.ShowError(
+                    exception.message ?: "Failed to load settings"
                 )
             )
         }
@@ -74,8 +99,10 @@ class DashboardViewModel(
         combine(
             expensesFlow,
             budgetFlow,
+            categoriesFlow,
+            settingsFlow,
             usernameFlow
-        ) { expenses, budgets, username ->
+        ) { expenses, budgets, categories, settings, username ->
 
             val totalExpense = expenses.sumOf { it.amount }
 
@@ -106,6 +133,17 @@ class DashboardViewModel(
                     0f
                 }
 
+            val warningThreshold = BudgetAlertThresholds.warningThreshold(
+                settings.budgetAlertThresholds
+            )
+
+            val insights = getBudgetInsightsUseCase(
+                budgets = budgets,
+                expenses = expenses,
+                categories = categories,
+                warningThreshold = warningThreshold
+            )
+
             DashboardUiState(
                 totalExpense = totalExpense,
                 expenseCount = expenses.size,
@@ -115,6 +153,7 @@ class DashboardViewModel(
                 budgetProgress = budgetProgress,
                 isOverBudget = totalBudgetSpent > totalBudget,
                 recentExpenses = expenses.take(5),
+                insights = insights,
                 isLoading = false,
                 username = username
             )

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -23,7 +24,14 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MainScreen(navController: NavHostController) {
-    var selectedTab by remember { mutableStateOf(AppTab.Home) }
+    // Persist selected tab across navigation pops (e.g. returning from Add Budget
+    // back to Budget tab). rememberSaveable keeps the tab value in the Bundle so
+    // it survives being removed from and re-added to the composition tree.
+    val selectedTabState = rememberSaveable(
+        stateSaver = AppTabSaver,
+        init = { mutableStateOf(AppTab.Home) }
+    )
+    var selectedTab by selectedTabState
 
     val onTabSelected: (AppTab) -> Unit = remember {
         { tab -> selectedTab = tab }
@@ -100,7 +108,13 @@ fun MainScreen(navController: NavHostController) {
                     )
 
                     AppTab.Budget -> BudgetScreen(
-                        viewModel = koinViewModel()
+                        viewModel = koinViewModel(),
+                        onAddBudgetClick = {
+                            navController.navigate(AddBudgetRoute)
+                        },
+                        onEditBudgetClick = { budgetId ->
+                            navController.navigate(EditBudgetRoute(budgetId))
+                        }
                     )
 
                     AppTab.Profile -> ProfileScreen(

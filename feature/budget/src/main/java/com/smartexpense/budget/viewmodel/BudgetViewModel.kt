@@ -8,6 +8,7 @@ import com.smartexpense.budget.state.BudgetFormState
 import com.smartexpense.budget.state.BudgetScreenState
 import com.smartexpense.budget.state.BudgetSummaryState
 import com.smartexpense.budget.state.BudgetUiState
+import com.smartexpense.core.common.util.MoneyInputUtil
 import com.smartexpense.domain.budget.BudgetCalculator
 import com.smartexpense.domain.model.Budget
 import com.smartexpense.domain.model.BudgetAlertThresholds
@@ -207,7 +208,7 @@ class BudgetViewModel(
 
         val state = _formState.value
 
-        val amount = state.amount.toDoubleOrNull()
+        val amount = MoneyInputUtil.cleanAmount(state.amount).toDoubleOrNull()
 
         if (amount == null || amount <= 0) {
             showError("Please enter a valid budget amount")
@@ -235,6 +236,7 @@ class BudgetViewModel(
         }
 
         viewModelScope.launch {
+            _formState.update { it.copy(isSaving = true) }
 
             budgetUseCase.addBudget(
                 Budget(
@@ -270,7 +272,7 @@ class BudgetViewModel(
 
             _formState.value = BudgetFormState(
                 categoryId = budget.categoryId,
-                amount = budget.amount.toString(),
+                amount = MoneyInputUtil.formatAmountInput(budget.amount.toString()),
                 startDate = budget.startDate,
                 endDate = budget.endDate,
                 editingBudgetId = budget.id
@@ -284,7 +286,7 @@ class BudgetViewModel(
 
         val budgetId = state.editingBudgetId
 
-        val amount = state.amount.toDoubleOrNull()
+        val amount = MoneyInputUtil.cleanAmount(state.amount).toDoubleOrNull()
 
         if (budgetId == null) {
             showError("No budget selected for editing")
@@ -318,10 +320,13 @@ class BudgetViewModel(
 
         viewModelScope.launch {
 
+            _formState.update { it.copy(isSaving = true) }
+
             val existingBudget =
                 budgetUseCase.getBudgetById(budgetId)
 
             if (existingBudget == null) {
+                _formState.update { it.copy(isSaving = false) }
                 _effect.emit(
                     BudgetEffect.ShowError(
                         "Budget not found"

@@ -44,16 +44,16 @@ import androidx.compose.ui.unit.dp
 // ---------------------------------------------------------------------------
 // Modern design tokens used across the app.
 // ---------------------------------------------------------------------------
-val ModernErrorColor: Color = Color(0xFFF43F5E)
-val ModernSuccessColor: Color = Color(0xFF10B981)
-val ModernWarningColor: Color = Color(0xFFF59E0B)
+val ModernErrorColor: Color = Color(0xFF1E3A8A)
+val ModernSuccessColor: Color = Color(0xFF3B82F6)
+val ModernWarningColor: Color = Color(0xFF2563EB)
 
 val ModernCardShape: Shape = RoundedCornerShape(24.dp)
 
 private val ModernGradientColors: List<Color> = listOf(
-    Color(0xFF6366F1),
-    Color(0xFFA855F7),
-    Color(0xFFD946EF)
+    Color(0xFF2563EB),
+    Color(0xFF1D4ED8),
+    Color(0xFF60A5FA)
 )
 
 /**

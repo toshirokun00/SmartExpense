@@ -3,9 +3,9 @@ package com.smartexpene.categories.screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -13,15 +13,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartexpene.categories.effect.CategoryEffect
 import com.smartexpene.categories.intent.CategoryIntent
 import com.smartexpene.categories.viewmodel.CategoryViewModel
+import com.smartexpense.designsystems.LivelyGradientButton
+import com.smartexpense.designsystems.LivelyIndigo
+import com.smartexpense.designsystems.LivelyInfoRow
+import com.smartexpense.designsystems.LivelyPink
+import com.smartexpense.designsystems.LivelySectionCard
+import com.smartexpense.designsystems.LivelyViolet
 import com.smartexpense.designsystems.ModernEmptyState
 import com.smartexpense.designsystems.ModernHeader
-import com.smartexpense.designsystems.ModernListItemCard
 import com.smartexpense.designsystems.ModernSectionHeader
 import com.smartexpense.domain.model.Category
 import org.koin.androidx.compose.koinViewModel
@@ -112,64 +118,71 @@ fun CategoryScreen(
                 onBackClick = onBackClick
             )
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
+            LivelySectionCard(
+                accent = LivelyIndigo,
+                accentEnd = LivelyViolet,
+                title = if (uiState.editingCategoryId != null) "Edit Category" else "New Category",
+                subtitle = "Organize your spending",
+                icon = Icons.Default.Category,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.name,
-                        onValueChange = {
-                            viewModel.onIntent(CategoryIntent.NameChanged(it))
-                        },
-                        label = {
-                            Text("Category name")
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                OutlinedTextField(
+                    value = uiState.name,
+                    onValueChange = {
+                        viewModel.onIntent(CategoryIntent.NameChanged(it))
+                    },
+                    label = {
+                        Text("Category name")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = LivelyIndigo,
+                        unfocusedBorderColor = LivelyIndigo.copy(alpha = 0.28f),
+                        focusedLabelColor = LivelyIndigo,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = LivelyIndigo,
+                        focusedContainerColor = LivelyIndigo.copy(alpha = 0.05f),
+                        unfocusedContainerColor = Color.Transparent
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                )
 
-                    if (uiState.editingCategoryId == null) {
-                        Button(
-                            onClick = {
-                                viewModel.onIntent(CategoryIntent.AddCategory)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Add Category")
+                if (uiState.editingCategoryId == null) {
+                    LivelyGradientButton(
+                        text = "Add Category",
+                        accent = LivelyIndigo,
+                        accentEnd = LivelyViolet,
+                        icon = Icons.Default.Add,
+                        onClick = {
+                            viewModel.onIntent(CategoryIntent.AddCategory)
                         }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    viewModel.onIntent(CategoryIntent.UpdateCategory)
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Update")
+                    )
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LivelyGradientButton(
+                            text = "Update",
+                            accent = LivelyIndigo,
+                            accentEnd = LivelyViolet,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                viewModel.onIntent(CategoryIntent.UpdateCategory)
                             }
+                        )
 
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.onIntent(
-                                        CategoryIntent.CancelEdit
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Cancel")
-                            }
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.onIntent(
+                                    CategoryIntent.CancelEdit
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Cancel")
                         }
                     }
                 }
@@ -201,48 +214,62 @@ fun CategoryScreen(
                         items = uiState.categories,
                         key = { it.id }
                     ) { category ->
-                        ModernListItemCard(
-                            avatarIcon = Icons.Default.Category,
-                            avatarColor = if (uiState.editingCategoryId == category.id) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.secondary
-                            },
-                            title = category.name,
-                            subtitle = null,
-                            trailing = {
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.onIntent(
-                                                CategoryIntent.LoadCategory(category.id)
-                                            )
-                                        }
+                        val isEditing = uiState.editingCategoryId == category.id
+                        val accent = if (isEditing) LivelyIndigo else LivelyViolet
+                        val accentEnd = if (isEditing) LivelyViolet else LivelyPink
+
+                        LivelySectionCard(
+                            accent = accent,
+                            accentEnd = accentEnd,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            LivelyInfoRow(
+                                title = category.name,
+                                subtitle = if (isEditing) "Editing now" else "Tap to edit",
+                                icon = Icons.Default.Category,
+                                accent = accent,
+                                accentEnd = accentEnd,
+                                onClick = {
+                                    viewModel.onIntent(
+                                        CategoryIntent.LoadCategory(category.id)
+                                    )
+                                },
+                                trailing = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(0.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.onIntent(
-                                                CategoryIntent.RequestDeleteCategory(
-                                                    category.id
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.onIntent(
+                                                    CategoryIntent.LoadCategory(category.id)
                                                 )
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Edit",
+                                                tint = LivelyIndigo
                                             )
                                         }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.onIntent(
+                                                    CategoryIntent.RequestDeleteCategory(
+                                                        category.id
+                                                    )
+                                                )
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }

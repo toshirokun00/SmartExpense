@@ -1,29 +1,46 @@
 package com.smartexpense.settings.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.smartexpense.designsystems.ModernEmptyState
+import com.smartexpense.designsystems.LivelyAmber
+import com.smartexpense.designsystems.LivelyBlue
+import com.smartexpense.designsystems.LivelyChoicePill
+import com.smartexpense.designsystems.LivelyCyan
+import com.smartexpense.designsystems.LivelyGreen
+import com.smartexpense.designsystems.LivelyIconBadge
+import com.smartexpense.designsystems.LivelyIndigo
+import com.smartexpense.designsystems.LivelyOrange
+import com.smartexpense.designsystems.LivelySectionCard
+import com.smartexpense.designsystems.LivelyTeal
+import com.smartexpense.designsystems.LivelyToggleRow
+import com.smartexpense.designsystems.LivelyViolet
 import com.smartexpense.designsystems.ModernHeader
 import com.smartexpense.designsystems.ModernSectionHeader
 import com.smartexpense.domain.model.AppTheme
@@ -54,7 +71,7 @@ fun SettingsScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
@@ -62,22 +79,22 @@ fun SettingsScreen(
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                LivelySectionCard(
+                    accent = LivelyIndigo,
+                    accentEnd = LivelyViolet,
+                    title = "Theme",
+                    subtitle = "Choose how Spendora looks",
+                    icon = Icons.Default.Palette
                 ) {
-                    Column(
-                        modifier = Modifier.padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        ThemeOption(
-                            title = "System default",
-                            icon = Icons.Default.Settings,
+                        ThemeTile(
+                            label = "System",
+                            icon = Icons.Default.BrightnessAuto,
                             selected = uiState.theme == AppTheme.SYSTEM,
+                            modifier = Modifier.weight(1f),
                             onClick = {
                                 viewModel.onIntent(
                                     SettingsIntent.ThemeChanged(AppTheme.SYSTEM)
@@ -85,10 +102,11 @@ fun SettingsScreen(
                             }
                         )
 
-                        ThemeOption(
-                            title = "Light",
+                        ThemeTile(
+                            label = "Light",
                             icon = Icons.Default.LightMode,
                             selected = uiState.theme == AppTheme.LIGHT,
+                            modifier = Modifier.weight(1f),
                             onClick = {
                                 viewModel.onIntent(
                                     SettingsIntent.ThemeChanged(AppTheme.LIGHT)
@@ -96,10 +114,11 @@ fun SettingsScreen(
                             }
                         )
 
-                        ThemeOption(
-                            title = "Dark",
+                        ThemeTile(
+                            label = "Dark",
                             icon = Icons.Default.DarkMode,
                             selected = uiState.theme == AppTheme.DARK,
+                            modifier = Modifier.weight(1f),
                             onClick = {
                                 viewModel.onIntent(
                                     SettingsIntent.ThemeChanged(AppTheme.DARK)
@@ -115,45 +134,23 @@ fun SettingsScreen(
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                LivelySectionCard(
+                    accent = LivelyBlue,
+                    accentEnd = LivelyCyan
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Expense Notifications",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Get notified about expenses and budgets",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    LivelyToggleRow(
+                        title = "Expense Notifications",
+                        subtitle = "Get notified about expenses and budgets",
+                        icon = Icons.Default.NotificationsActive,
+                        accent = LivelyBlue,
+                        accentEnd = LivelyCyan,
+                        checked = uiState.notificationsEnabled,
+                        onCheckedChange = { enabled ->
+                            viewModel.onIntent(
+                                SettingsIntent.NotificationsChanged(enabled)
                             )
                         }
-
-                        Switch(
-                            checked = uiState.notificationsEnabled,
-                            onCheckedChange = { enabled ->
-                                viewModel.onIntent(
-                                    SettingsIntent.NotificationsChanged(
-                                        enabled
-                                    )
-                                )
-                            }
-                        )
-                    }
+                    )
                 }
             }
 
@@ -162,29 +159,27 @@ fun SettingsScreen(
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                LivelySectionCard(
+                    accent = LivelyOrange,
+                    accentEnd = LivelyAmber,
+                    title = "Alert thresholds",
+                    subtitle = "Notify me when a budget reaches",
+                    icon = Icons.Default.WarningAmber
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Notify me when a budget reaches",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        BudgetAlertThresholds.SUPPORTED.forEach { threshold ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(enabled = uiState.notificationsEnabled) {
+                    BudgetAlertThresholds.SUPPORTED.chunked(2).forEach { rowThresholds ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowThresholds.forEach { threshold ->
+                                LivelyChoicePill(
+                                    label = "$threshold%",
+                                    selected = uiState.budgetAlertThresholds.contains(threshold),
+                                    accent = LivelyOrange,
+                                    accentEnd = LivelyAmber,
+                                    enabled = uiState.notificationsEnabled,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
                                         viewModel.onIntent(
                                             SettingsIntent.BudgetAlertThresholdsChanged(
                                                 toggleThreshold(
@@ -194,21 +189,32 @@ fun SettingsScreen(
                                             )
                                         )
                                     }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = uiState.budgetAlertThresholds.contains(threshold),
-                                    onCheckedChange = null,
-                                    enabled = uiState.notificationsEnabled
-                                )
-
-                                Text(
-                                    text = "$threshold%",
-                                    modifier = Modifier.padding(start = 8.dp)
                                 )
                             }
                         }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LivelyIconBadge(
+                            icon = Icons.Default.NotificationsActive,
+                            accent = LivelyGreen,
+                            accentEnd = LivelyTeal,
+                            size = 28.dp,
+                            shape = RoundedCornerShape(9.dp)
+                        )
+                        Text(
+                            text = if (uiState.notificationsEnabled) {
+                                "Alerts are active at the selected milestones."
+                            } else {
+                                "Turn on expense notifications to enable alerts."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -217,28 +223,36 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun ThemeOption(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun ThemeTile(
+    label: String,
+    icon: ImageVector,
     selected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(18.dp)
 
-    val avatarColor = if (selected) {
-        colorScheme.primaryContainer
-    } else {
-        colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    }
-    val avatarTint = if (selected) {
-        colorScheme.onPrimaryContainer
-    } else {
-        colorScheme.onSurfaceVariant
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .then(
+                if (selected) {
+                    Modifier.background(
+                        Brush.verticalGradient(
+                            colors = listOf(LivelyIndigo, LivelyViolet)
+                        )
+                    )
+                } else {
+                    Modifier
+                        .background(colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .border(
+                            width = 1.dp,
+                            color = LivelyIndigo.copy(alpha = 0.25f),
+                            shape = shape
+                        )
+                }
+            )
             .selectable(
                 selected = selected,
                 onClick = onClick,
@@ -247,38 +261,23 @@ private fun ThemeOption(
             .semantics {
                 role = Role.RadioButton
             }
-            .padding(vertical = 8.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Surface(
-            modifier = Modifier.size(36.dp),
-            shape = CircleShape,
-            color = avatarColor
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = avatarTint
-                )
-            }
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = if (selected) Color.White else LivelyIndigo
         )
-        if (selected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = colorScheme.primary
-            )
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (selected) Color.White else colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
     }
 }
 

@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -129,7 +132,7 @@ fun RecurringExpenseListScreen(
                     ModernEmptyState(
                         icon = Icons.Default.Loop,
                         title = "No recurring expenses yet",
-                        subtitle = "Tap + to create your first scheduled expense.",
+                        subtitle = "Tap Add Schedule to create your first scheduled expense.",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(paddingValues)
@@ -228,36 +231,44 @@ private fun RecurringScheduleCard(
         RecurringScheduleStatus.PAUSED -> ModernWarningColor
         RecurringScheduleStatus.ENDED -> MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val accentEnd = when (summary.status) {
+        RecurringScheduleStatus.ACTIVE -> LivelyTeal
+        RecurringScheduleStatus.PAUSED -> LivelyOrange
+        RecurringScheduleStatus.ENDED -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.22f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            statusColor.copy(alpha = 0.10f),
+                            MaterialTheme.colorScheme.surface,
+                            statusColor.copy(alpha = 0.02f)
+                        )
+                    )
+                )
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = statusColor.copy(alpha = 0.2f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Loop,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp),
-                        tint = statusColor
-                    )
-                }
-            }
+            LivelyIconBadge(
+                icon = Icons.Default.Loop,
+                accent = statusColor,
+                accentEnd = accentEnd,
+                size = 46.dp,
+                shape = RoundedCornerShape(15.dp)
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -308,7 +319,7 @@ private fun RecurringScheduleCard(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit recurring expense",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = LivelyIndigo
                         )
                     }
                     if (summary.status != RecurringScheduleStatus.ENDED) {
@@ -324,7 +335,7 @@ private fun RecurringScheduleCard(
                                 } else {
                                     "Resume recurring expense"
                                 },
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = LivelyOrange
                             )
                         }
                     }
@@ -332,7 +343,7 @@ private fun RecurringScheduleCard(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete recurring expense",
-                            tint = MaterialTheme.colorScheme.error
+                            tint = LivelyRose
                         )
                     }
                 }

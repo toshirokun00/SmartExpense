@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.smartexpense.R
+import com.smartexpense.budget.screen.BudgetFormScreen
 import com.smartexpense.budget.screen.BudgetScreen
 import com.smartexpense.reports.screen.ReportsScreen
 import com.smartexpense.profile.screen.AboutScreen
@@ -116,7 +117,39 @@ fun AppNavHost() {
             }
 
             composable<BudgetRoute> {
-                BudgetScreen()
+                BudgetScreen(
+                    onAddBudgetClick = {
+                        navController.navigate(AddBudgetRoute)
+                    },
+                    onEditBudgetClick = { budgetId ->
+                        navController.navigate(EditBudgetRoute(budgetId))
+                    }
+                )
+            }
+
+            composable<AddBudgetRoute> {
+                BudgetFormScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable<EditBudgetRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<EditBudgetRoute>()
+
+                BudgetFormScreen(
+                    budgetId = route.budgetId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             composable<ProfileAboutRoute> {

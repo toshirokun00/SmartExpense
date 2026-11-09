@@ -10,6 +10,9 @@ val dashboardModule = module {
         DashboardViewModel(
             getExpenseUseCase = get(),
             budgetUseCase = get(),
+            categoryUseCase = get(),
+            settingsUseCase = get(),
+            getBudgetInsightsUseCase = get(),
             profileUseCase = get()
         )
     }

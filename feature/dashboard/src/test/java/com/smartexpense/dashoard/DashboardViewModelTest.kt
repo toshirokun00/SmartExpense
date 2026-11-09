@@ -2,12 +2,16 @@ package com.smartexpense.dashoard
 
 import app.cash.turbine.test
 import com.smartexpense.dashoard.viewmodel.DashboardViewModel
+import com.smartexpense.domain.model.AppSettings
 import com.smartexpense.domain.model.Budget
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.UserProfile
 import com.smartexpense.domain.usecase.BudgetUseCase
+import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.ProfileUseCase
+import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.test.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
@@ -31,13 +35,18 @@ class DashboardViewModelTest {
 
     private lateinit var getExpenseUseCase: GetExpenseUseCase
     private lateinit var budgetUseCase: BudgetUseCase
+    private lateinit var categoryUseCase: CategoryUseCase
+    private lateinit var settingsUseCase: SettingsUseCase
     private lateinit var profileUseCase: ProfileUseCase
+    private val getBudgetInsightsUseCase = GetBudgetInsightsUseCase()
     private lateinit var viewModel: DashboardViewModel
 
     @Before
     fun setup() {
         getExpenseUseCase = mockk()
         budgetUseCase = mockk()
+        categoryUseCase = mockk()
+        settingsUseCase = mockk()
         profileUseCase = mockk()
 
         every {
@@ -47,6 +56,14 @@ class DashboardViewModelTest {
         every {
             budgetUseCase.getBudgets()
         } returns flowOf(emptyList())
+
+        every {
+            categoryUseCase.getCategories()
+        } returns flowOf(emptyList())
+
+        every {
+            settingsUseCase.getSettings()
+        } returns flowOf(AppSettings())
 
         coEvery {
             profileUseCase.hydrateLocalFromRemote()
@@ -59,6 +76,9 @@ class DashboardViewModelTest {
         viewModel = DashboardViewModel(
             getExpenseUseCase = getExpenseUseCase,
             budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
             profileUseCase = profileUseCase
         )
     }
@@ -96,6 +116,9 @@ class DashboardViewModelTest {
         viewModel = DashboardViewModel(
             getExpenseUseCase = getExpenseUseCase,
             budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
             profileUseCase = profileUseCase
         )
 
@@ -146,9 +169,12 @@ class DashboardViewModelTest {
         every { getExpenseUseCase() } returns flowOf(expenses)
 
         viewModel = DashboardViewModel(
-            getExpenseUseCase,
-            budgetUseCase,
-            profileUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
+            profileUseCase = profileUseCase
         )
 
         viewModel.uiState.test {
@@ -186,9 +212,12 @@ class DashboardViewModelTest {
         every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
 
         viewModel = DashboardViewModel(
-            getExpenseUseCase,
-            budgetUseCase,
-            profileUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
+            profileUseCase = profileUseCase
         )
 
         viewModel.uiState.test {
@@ -230,9 +259,12 @@ class DashboardViewModelTest {
         every { budgetUseCase.getBudgets() } returns flowOf(listOf(budget))
 
         viewModel = DashboardViewModel(
-            getExpenseUseCase,
-            budgetUseCase,
-            profileUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
+            profileUseCase = profileUseCase
         )
 
         viewModel.uiState.test {
@@ -265,9 +297,12 @@ class DashboardViewModelTest {
         every { getExpenseUseCase() } returns flowOf(expenses)
 
         viewModel = DashboardViewModel(
-            getExpenseUseCase,
-            budgetUseCase,
-            profileUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
+            profileUseCase = profileUseCase
         )
 
         viewModel.uiState.test {
@@ -293,9 +328,12 @@ class DashboardViewModelTest {
         coEvery { profileUseCase.observeLocalProfileForCurrentUser() } returns profile
 
         viewModel = DashboardViewModel(
-            getExpenseUseCase,
-            budgetUseCase,
-            profileUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
+            profileUseCase = profileUseCase
         )
 
         viewModel.uiState.test {
@@ -312,9 +350,12 @@ class DashboardViewModelTest {
         coEvery { profileUseCase.observeLocalProfileForCurrentUser() } returns null
 
         viewModel = DashboardViewModel(
-            getExpenseUseCase,
-            budgetUseCase,
-            profileUseCase
+            getExpenseUseCase = getExpenseUseCase,
+            budgetUseCase = budgetUseCase,
+            categoryUseCase = categoryUseCase,
+            settingsUseCase = settingsUseCase,
+            getBudgetInsightsUseCase = getBudgetInsightsUseCase,
+            profileUseCase = profileUseCase
         )
 
         viewModel.uiState.test {

@@ -1,38 +1,49 @@
 package com.smartexpense.feature.expenses.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
+import com.smartexpense.designsystems.ModernEmptyState
 import com.smartexpense.designsystems.ModernHeader
-import com.smartexpense.designsystems.ModernListItemCard
 import com.smartexpense.designsystems.ModernSectionHeader
+import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.ExpenseSyncStatus
 import com.smartexpense.feature.expenses.intent.ExpenseIntent
 import com.smartexpense.feature.expenses.viewmodel.ExpenseViewModel
 import org.koin.androidx.compose.koinViewModel
 
-private val SuccessColor = androidx.compose.ui.graphics.Color(0xFF10B981)
+private val PrimaryAccent = Color(0xFF2563EB)
+private val PrimaryAccentEnd = Color(0xFF60A5FA)
+private val SuccessColor = Color(0xFF3B82F6)
+private val ErrorColor = Color(0xFF1E3A8A)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,44 +92,56 @@ fun ExpenseScreen(
         )
     }
 
+    val expenses = uiState.expenses
+    val syncedCount = expenses.count {
+        it.syncStatus == ExpenseSyncStatus.SYNCED
+    }
+    val pendingCount = expenses.count {
+        it.syncStatus == ExpenseSyncStatus.PENDING
+    }
+    val failedCount = expenses.count {
+        it.syncStatus == ExpenseSyncStatus.FAILED
+    }
+    val syncCaption = when {
+        failedCount > 0 -> "$failedCount need attention"
+        pendingCount > 0 -> "$pendingCount pending sync"
+        else -> "All synced"
+    }
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
         ModernHeader(
             title = "Expenses",
             subtitle = "Track and manage your spending",
-            icon = Icons.AutoMirrored.Filled.ReceiptLong
+            icon = Icons.AutoMirrored.Filled.ReceiptLong,
+            actions = {
+                HeaderActionPill(
+                    label = "Manage categories",
+                    icon = Icons.Default.Category,
+                    onClick = onAddExpenseCategoryClick
+                )
+            }
         )
 
-        // Modern summary stats
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            StatChip(
-                label = "Expenses",
-                value = uiState.expenses.size.toString(),
-                modifier = Modifier.weight(1f)
-            )
-            StatChip(
-                label = "Total",
-                value = uiState.totalAmount.toPesoAmount(),
-                accentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        if (uiState.expenses.isEmpty()) {
-            androidx.compose.foundation.layout.Box(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+        if (expenses.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                com.smartexpense.designsystems.ModernEmptyState(
+                ModernEmptyState(
                     icon = Icons.AutoMirrored.Filled.ReceiptLong,
                     title = "No expenses yet",
-                    subtitle = "Add your first expense to get started."
+                    subtitle = "Add your first expense to get started.",
+                    action = {
+                        GradientCta(
+                            label = "Add your first expense",
+                            icon = Icons.Default.Add,
+                            onClick = onAddExpenseClick
+                        )
+                    }
                 )
             }
         } else {
@@ -126,98 +149,67 @@ fun ExpenseScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 16.dp,
+                    end = 16.dp,
+                    bottom = 96.dp
+                )
             ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ExpenseStatCard(
+                            modifier = Modifier.weight(1f),
+                            label = "Total spent",
+                            value = uiState.totalAmount.toPesoAmount(),
+                            caption = "Across all expenses",
+                            icon = Icons.Default.Payments,
+                            accent = PrimaryAccent,
+                            accentEnd = PrimaryAccentEnd
+                        )
+                        ExpenseStatCard(
+                            modifier = Modifier.weight(1f),
+                            label = "Expenses",
+                            value = expenses.size.toString(),
+                            caption = syncCaption,
+                            icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                            accent = SuccessColor,
+                            accentEnd = Color(0xFF93C5FD)
+                        )
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ModernSectionHeader(title = "All expenses")
+                }
+
                 items(
-                    items = uiState.expenses,
+                    items = expenses,
                     key = { expense -> expense.id }
                 ) { expense ->
-                    ModernListItemCard(
-                        avatarIcon = Icons.AutoMirrored.Filled.ReceiptLong,
-                        avatarColor = if (expense.syncStatus == ExpenseSyncStatus.SYNCED) {
-                            SuccessColor
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
-                        title = expense.description.ifBlank { "Expense" },
-                        subtitle = expense.amount.toPesoAmount(),
-                        trailing = {
-                            Column(
-                                horizontalAlignment = Alignment.End,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = expense.date.toDateString(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                if (expense.syncStatus == ExpenseSyncStatus.FAILED) {
-                                    TextButton(
-                                        onClick = {
-                                            viewModel.onIntent(
-                                                ExpenseIntent.RetrySync(expense.id)
-                                            )
-                                        }
-                                    ) {
-                                        Text("Retry")
-                                    }
-                                }
-                                TextButton(
-                                    onClick = {
-                                        viewModel.onIntent(ExpenseIntent.RequestDeleteExpense(id = expense.id))
-                                    }
-                                ) {
-                                    Text(
-                                        text = "Delete",
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-                        },
+                    ExpenseListCard(
+                        expense = expense,
                         onClick = {
                             onExpenseClick(expense.id)
                         },
-                        borderless = true
+                        onRetry = {
+                            viewModel.onIntent(
+                                ExpenseIntent.RetrySync(expense.id)
+                            )
+                        },
+                        onDelete = {
+                            viewModel.onIntent(
+                                ExpenseIntent.RequestDeleteExpense(
+                                    id = expense.id
+                                )
+                            )
+                        }
                     )
-                }
-            }
-        }
-
-        // Modern action bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Button(
-                onClick = onAddExpenseClick,
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add Expense")
-                }
-            }
-
-            OutlinedButton(
-                onClick = onAddExpenseCategoryClick,
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Category,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Categories")
                 }
             }
         }
@@ -225,30 +217,351 @@ fun ExpenseScreen(
 }
 
 @Composable
-private fun StatChip(
-    modifier: Modifier = Modifier,
+private fun HeaderActionPill(
     label: String,
-    value: String,
-    accentColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFA855F7)
+    icon: ImageVector,
+    onClick: () -> Unit
 ) {
+    val pillShape = RoundedCornerShape(percent = 50)
+
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(16.dp)
+        onClick = onClick,
+        shape = pillShape,
+        color = Color.White.copy(alpha = 0.18f),
+        contentColor = Color.White,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = Color.White
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
             )
-            Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+}
+
+@Composable
+private fun GradientCta(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(percent = 50)
+
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(PrimaryAccent, PrimaryAccentEnd)
+                )
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = Color.White
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+private fun ExpenseStatCard(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String,
+    caption: String,
+    icon: ImageVector,
+    accent: Color,
+    accentEnd: Color
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val chipShape = RoundedCornerShape(14.dp)
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.22f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            accent.copy(alpha = 0.16f),
+                            colorScheme.surface,
+                            accent.copy(alpha = 0.03f)
+                        )
+                    )
+                )
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(chipShape)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    accent.copy(alpha = 0.75f),
+                                    accentEnd
+                                )
+                            )
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = Color.White.copy(alpha = 0.25f),
+                            shape = chipShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.8.sp,
+                    color = accent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = accentColor
+                color = colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpenseListCard(
+    expense: Expense,
+    onClick: () -> Unit,
+    onRetry: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val accent = when (expense.syncStatus) {
+        ExpenseSyncStatus.SYNCED -> SuccessColor
+        ExpenseSyncStatus.FAILED -> ErrorColor
+        ExpenseSyncStatus.PENDING -> PrimaryAccent
+    }
+    val chipShape = RoundedCornerShape(15.dp)
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.22f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            accent.copy(alpha = 0.10f),
+                            colorScheme.surface,
+                            accent.copy(alpha = 0.02f)
+                        )
+                    )
+                )
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(chipShape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                accent.copy(alpha = 0.75f),
+                                accent
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.25f),
+                        shape = chipShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                    contentDescription = null,
+                    modifier = Modifier.size(23.dp),
+                    tint = Color.White
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = expense.description.ifBlank { "Expense" },
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = expense.date.toDateString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(accent)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = expense.syncStatus.label(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = accent,
+                        maxLines = 1
+                    )
+                }
+            }
+
+            Text(
+                text = expense.amount.toPesoAmount(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface,
+                maxLines = 1
+            )
+
+            Box {
+                IconButton(
+                    onClick = { menuExpanded = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Expense actions",
+                        modifier = Modifier.size(18.dp),
+                        tint = colorScheme.onSurfaceVariant
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = colorScheme.surface,
+                    shadowElevation = 8.dp
+                ) {
+                    if (expense.syncStatus == ExpenseSyncStatus.FAILED) {
+                        DropdownMenuItem(
+                            text = { Text("Retry sync") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    tint = PrimaryAccent
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onRetry()
+                            }
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Delete",
+                                color = ErrorColor
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = ErrorColor
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onDelete()
+                        }
+                    )
+                }
+            }
         }
     }
 }

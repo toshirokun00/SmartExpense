@@ -13,12 +13,15 @@ interface ProfileRemoteRepository {
      * Saves the profile to the remote backend. [avatarUri], when a `content://`
      * URI, is first uploaded to remote storage. A null [avatarUri] is a no-op;
      * set [deleteAvatar] to explicitly clear it.
+     *
+     * @return the final avatar URI (the uploaded public URL when a new image
+     * was uploaded), or null when there is nothing to store.
      */
     suspend fun saveProfile(
         username: String?,
         avatarUri: String?,
         deleteAvatar: Boolean = false
-    )
+    ): String?
 
     /**
      * Fetches the current remote profile. May return `null` when no data

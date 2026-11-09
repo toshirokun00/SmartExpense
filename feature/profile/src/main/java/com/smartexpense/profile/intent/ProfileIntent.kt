@@ -10,6 +10,8 @@ sealed interface ProfileIntent {
         val avatarUri: String?
     ) : ProfileIntent
 
+    data object RemoveAvatar : ProfileIntent
+
     data object SaveProfile : ProfileIntent
 
     data object SignOut : ProfileIntent
