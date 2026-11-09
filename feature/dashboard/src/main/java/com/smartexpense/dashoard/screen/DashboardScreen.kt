@@ -34,6 +34,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartexpense.core.common.toDateString
@@ -87,37 +92,36 @@ fun DashboardScreen(
                 )
             )
         },
-        // MainScreen already handles system bar insets. Applying them here
-        // again added extra padding at the bottom of the list.
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
-    ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+     ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 96.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            item {
+                DashboardHeader(
+                    username = uiState.username
+                )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    top = 16.dp,
-                    end = 16.dp,
-                    bottom = 96.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                item {
-                    DashboardHeader(
-                        username = uiState.username
-                    )
-                }
 
-                item {
+            item {
+                if (uiState.isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(224.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(shimmerBrush())
+                    )
+                } else {
                     val balance = uiState.totalBudget - uiState.totalExpense
                     HeroBalanceCard(
                         balance = balance,
@@ -126,62 +130,90 @@ fun DashboardScreen(
                         progress = uiState.budgetProgress
                     )
                 }
+            }
 
-                item {
+            item {
+                if (uiState.isLoading) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        repeat(2) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(96.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(shimmerBrush())
+                            )
+                        }
+                    }
+                } else {
                     StatRow(
                         totalExpense = uiState.totalExpense,
                         totalBudget = uiState.totalBudget
                     )
                 }
+            }
 
-                if (uiState.insights.isNotEmpty()) {
-                    item {
-                        SectionHeader(
-                            title = "Insights",
-                            onSeeAllClick = null
-                        )
-                    }
-                    items(
-                        items = uiState.insights,
-                        key = { it.dashboardKey() }
-                    ) { insight ->
-                        DashboardInsightCard(insight = insight)
-                    }
-                }
-
+            if (!uiState.isLoading && uiState.insights.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "Quick Actions",
+                        title = "Insights",
                         onSeeAllClick = null
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    QuickActionsGrid(
-                        onNavigateToExpenses = onNavigateToExpenses,
-                        onNavigateToBudgets = onNavigateToBudgets,
-                        onNavigateToReports = onNavigateToReports,
-                        onNavigateToRecurring = onNavigateToRecurring
+                }
+                items(
+                    items = uiState.insights,
+                    key = { it.dashboardKey() }
+                ) { insight ->
+                    DashboardInsightCard(insight = insight)
+                }
+            }
+
+            item {
+                SectionHeader(
+                    title = "Quick Actions",
+                    onSeeAllClick = null
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                QuickActionsGrid(
+                    onNavigateToExpenses = onNavigateToExpenses,
+                    onNavigateToBudgets = onNavigateToBudgets,
+                    onNavigateToReports = onNavigateToReports,
+                    onNavigateToRecurring = onNavigateToRecurring
+                )
+            }
+
+            item {
+                SectionHeader(
+                    title = "Recent Expenses",
+                    onSeeAllClick = onNavigateToTransactions
+                )
+            }
+
+            if (uiState.isLoading) {
+                items(3) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(shimmerBrush())
                     )
                 }
-
+            } else if (uiState.recentExpenses.isEmpty()) {
                 item {
-                    SectionHeader(
-                        title = "Recent Expenses",
-                        onSeeAllClick = onNavigateToTransactions
-                    )
+                    EmptyRecentState()
                 }
+            } else {
+                items(
+                    items = uiState.recentExpenses,
+                    key = { it.id }
+                ) { expense ->
+                    RecentExpenseItem(expense = expense)
+                }
+            }
 
-                if (uiState.recentExpenses.isEmpty()) {
-                    item {
-                        EmptyRecentState()
-                    }
-                } else {
-                    items(
-                        items = uiState.recentExpenses,
-                        key = { it.id }
-                    ) { expense ->
-                        RecentExpenseItem(expense = expense)
-                    }
-                }
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -978,4 +1010,28 @@ private fun BudgetInsight.dashboardMessage(): String {
                 "versus the previous period " +
                 "(${currentAmount.toPesoAmount()} vs ${previousAmount.toPesoAmount()})."
     }
+}
+
+
+@Composable
+private fun shimmerBrush(): Brush {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val progress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerProgress"
+    )
+    return Brush.linearGradient(
+        colors = listOf(
+            Color(0xFFE2E8F0),
+            Color(0xFFF1F5F9),
+            Color(0xFFE2E8F0)
+        ),
+        start = Offset(progress * 600f, 0f),
+        end = Offset(progress * 600f + 300f, 0f)
+    )
 }
