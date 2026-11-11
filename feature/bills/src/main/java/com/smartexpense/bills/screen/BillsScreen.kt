@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -466,7 +467,9 @@ private fun BillPaySheet(
                             onPay(parsed, paidDate, method, createExpense)
                         }
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("bill_pay_confirm"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = LivelyIndigo,
                         contentColor = Color.White

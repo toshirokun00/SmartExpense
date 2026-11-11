@@ -37,4 +37,16 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":core:common"))
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.junit)
+    testImplementation(project(":core:test"))
+
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.mockk.android)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

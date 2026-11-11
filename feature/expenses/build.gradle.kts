@@ -61,7 +61,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.android)
 
     implementation(project(":core:common"))
     implementation(project(":core:notification"))
