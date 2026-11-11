@@ -106,6 +106,7 @@ dependencies {
     implementation(project(":feature:reports"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:recurring"))
+    implementation(project(":feature:bills"))
     implementation(project(":feature:profile"))
 
 

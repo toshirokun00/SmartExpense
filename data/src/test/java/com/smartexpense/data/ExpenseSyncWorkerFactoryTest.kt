@@ -28,7 +28,9 @@ class ExpenseSyncWorkerFactoryTest {
         factory = ExpenseSyncWorkerFactory(
             expenseRepository = expenseRepository,
             processRecurringExpensesUseCase =
-                processRecurringExpensesUseCase
+                processRecurringExpensesUseCase,
+            billDao = mockk(relaxed = true),
+            authRepository = mockk(relaxed = true)
         )
     }
 

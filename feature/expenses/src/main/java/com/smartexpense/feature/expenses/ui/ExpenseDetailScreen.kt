@@ -2,7 +2,9 @@ package com.smartexpense.feature.expenses.ui
 
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Receipt
@@ -70,7 +72,9 @@ fun ExpenseDetailScreen(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = {
             SnackbarHost(hostState = snackBarHostState)
-        }
+        },
+        // The header draws behind the status bar and handles its own inset.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         ExpenseFormContent(
             title = "Edit Expense",

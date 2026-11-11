@@ -4,12 +4,17 @@ import android.app.Application
 import androidx.work.Configuration
 import com.smartexpene.categories.di.categoryModule
 import com.smartexpense.auth.di.authFeatureModule
+import com.smartexpense.bills.di.billsModule
 import com.smartexpense.budget.alerts.BudgetAlertCoordinator
 import com.smartexpense.budget.di.budgetModule
 import com.smartexpense.core.common.dataStoreModule
 import com.smartexpense.dashoard.di.dashboardModule
 import com.smartexpense.data.di.dataModule
 import com.smartexpense.data.di.supabaseModule
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.smartexpense.data.sync.BillReminderWorker
 import com.smartexpense.data.sync.ExpenseSyncWorkerFactory
 import com.smartexpense.data.sync.RecurringExpenseScheduler
 import com.smartexpense.database.di.databaseModule
@@ -57,7 +62,8 @@ class SmartExpenseApplication : Application(), Configuration.Provider, KoinCompo
                 supabaseModule,
                 authFeatureModule,
                 recurringModule,
-                profileModule
+                profileModule,
+                billsModule
             )
         }
 
@@ -67,6 +73,15 @@ class SmartExpenseApplication : Application(), Configuration.Provider, KoinCompo
         // Background safety net for recurring expenses. Foreground processing
         // is also triggered whenever the activity resumes.
         get<RecurringExpenseScheduler>().schedulePeriodic()
+
+        // Daily reminder for upcoming unpaid bills.
+        val billReminderRequest = PeriodicWorkRequestBuilder<BillReminderWorker>(1, java.util.concurrent.TimeUnit.DAYS)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            BillReminderWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            billReminderRequest
+        )
     }
 
     override val workManagerConfiguration: Configuration

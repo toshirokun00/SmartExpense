@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -98,7 +99,10 @@ fun ModernHeader(
         modifier = modifier
             .fillMaxWidth()
             .then(headerBackground)
-            .padding(horizontal = 24.dp, vertical = 28.dp)
+            // The gradient stays full-bleed behind the status bar while the
+            // title and icons are pushed below it.
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

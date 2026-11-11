@@ -14,12 +14,15 @@ import androidx.navigation.toRoute
 import com.smartexpense.R
 import com.smartexpense.budget.screen.BudgetFormScreen
 import com.smartexpense.budget.screen.BudgetScreen
+import com.smartexpense.bills.screen.BillFormScreen
+import com.smartexpense.bills.screen.BillsScreen
 import com.smartexpense.reports.screen.ReportsScreen
 import com.smartexpense.profile.screen.AboutScreen
 import com.smartexpense.settings.screen.SettingsScreen
 import com.smartexpense.SplashScreen
 import com.smartexpense.StartupViewModel
 import com.smartexpene.categories.screen.CategoryScreen
+import com.smartexpense.auth.di.authFeatureModule
 import com.smartexpense.auth.screen.AuthScreen
 import com.smartexpense.auth.screen.EmailConfirmationScreen
 import com.smartexpense.feature.expenses.ui.AddExpenseScreen
@@ -185,6 +188,42 @@ fun AppNavHost() {
                         navController.navigate(
                             EditRecurringExpenseRoute(scheduleId)
                         )
+                    }
+                )
+            }
+
+            composable<BillsRoute> {
+                BillsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onAddBill = { navController.navigate(AddBillRoute) },
+                    onEditBill = { billId ->
+                        navController.navigate(EditBillRoute(billId))
+                    }
+                )
+            }
+
+            composable<AddBillRoute> {
+                BillFormScreen(
+                    billId = null,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable<EditBillRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<EditBillRoute>()
+
+                BillFormScreen(
+                    billId = route.billId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
                     }
                 )
             }

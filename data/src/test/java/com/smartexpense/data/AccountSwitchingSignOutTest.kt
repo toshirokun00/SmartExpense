@@ -53,6 +53,7 @@ class AccountSwitchingSignOutTest {
             supabaseClient = supabaseClient,
             categoryRepository = categoryRepository,
             budgetRepository = budgetRepository,
+            billRepository = mockk(relaxed = true),
             expenseSyncEnqueuer = expenseSyncEnqueuer,
             pendingExpenseDeletionDao = pendingDeletionDao,
             deletionTransaction = deletionTransaction,

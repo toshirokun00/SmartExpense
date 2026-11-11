@@ -68,7 +68,8 @@ fun DashboardScreen(
     onNavigateToBudgets: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToReports: () -> Unit,
-    onNavigateToRecurring: () -> Unit
+    onNavigateToRecurring: () -> Unit,
+    onNavigateToBills: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val colorScheme = MaterialTheme.colorScheme
@@ -104,7 +105,7 @@ fun DashboardScreen(
                 end = 16.dp,
                 bottom = 96.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 DashboardHeader(
@@ -153,8 +154,19 @@ fun DashboardScreen(
                 }
             }
 
+            if (!uiState.isLoading && uiState.billsDueThisWeek > 0) {
+                item {
+                    BillsDueCard(
+                        count = uiState.billsDueThisWeek,
+                        total = uiState.billsDueThisWeekTotal,
+                        onClick = onNavigateToBills
+                    )
+                }
+            }
+
             if (!uiState.isLoading && uiState.insights.isNotEmpty()) {
                 item {
+                    Spacer(modifier = Modifier.height(8.dp))
                     SectionHeader(
                         title = "Insights",
                         onSeeAllClick = null
@@ -169,6 +181,7 @@ fun DashboardScreen(
             }
 
             item {
+                Spacer(modifier = Modifier.height(8.dp))
                 SectionHeader(
                     title = "Quick Actions",
                     onSeeAllClick = null
@@ -178,11 +191,13 @@ fun DashboardScreen(
                     onNavigateToExpenses = onNavigateToExpenses,
                     onNavigateToBudgets = onNavigateToBudgets,
                     onNavigateToReports = onNavigateToReports,
-                    onNavigateToRecurring = onNavigateToRecurring
+                    onNavigateToRecurring = onNavigateToRecurring,
+                    onNavigateToBills = onNavigateToBills
                 )
             }
 
             item {
+                Spacer(modifier = Modifier.height(8.dp))
                 SectionHeader(
                     title = "Recent Expenses",
                     onSeeAllClick = onNavigateToTransactions
@@ -194,8 +209,8 @@ fun DashboardScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .height(58.dp)
+                            .clip(RoundedCornerShape(18.dp))
                             .background(shimmerBrush())
                     )
                 }
@@ -715,7 +730,8 @@ private fun QuickActionsGrid(
     onNavigateToExpenses: () -> Unit,
     onNavigateToBudgets: () -> Unit,
     onNavigateToReports: () -> Unit,
-    onNavigateToRecurring: () -> Unit
+    onNavigateToRecurring: () -> Unit,
+    onNavigateToBills: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -770,6 +786,13 @@ private fun QuickActionsGrid(
                 icon = Icons.Default.Update,
                 accent = Color(0xFF1E40AF),
                 onClick = onNavigateToRecurring
+            )
+            QuickActionItem(
+                modifier = Modifier.weight(1f),
+                label = "Bills",
+                icon = Icons.Default.Receipt,
+                accent = Color(0xFF2563EB),
+                onClick = onNavigateToBills
             )
         }
     }
@@ -861,7 +884,7 @@ private fun RecentExpenseItem(expense: Expense) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorScheme.surface
         ),
@@ -880,13 +903,13 @@ private fun RecentExpenseItem(expense: Expense) {
                         )
                     )
                 )
-                .padding(14.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(38.dp)
                     .clip(chipShape)
                     .background(
                         Brush.linearGradient(
@@ -906,7 +929,7 @@ private fun RecentExpenseItem(expense: Expense) {
                 Icon(
                     imageVector = Icons.Default.Payments,
                     contentDescription = null,
-                    modifier = Modifier.size(23.dp),
+                    modifier = Modifier.size(20.dp),
                     tint = Color.White
                 )
             }
@@ -920,7 +943,7 @@ private fun RecentExpenseItem(expense: Expense) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = expense.date.toDateString(),
@@ -1012,6 +1035,78 @@ private fun BudgetInsight.dashboardMessage(): String {
     }
 }
 
+
+@Composable
+private fun BillsDueCard(
+    count: Int,
+    total: Double,
+    onClick: () -> Unit
+) {
+    val accent = Color(0xFF4F46E5)
+    val accentEnd = Color(0xFF7C3AED)
+    val colorScheme = MaterialTheme.colorScheme
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            accent.copy(alpha = 0.12f),
+                            accentEnd.copy(alpha = 0.04f)
+                        )
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.horizontalGradient(colors = listOf(accent, accentEnd))
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Receipt,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "$count ${if (count == 1) "bill" else "bills"} due this week",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface
+                )
+                Text(
+                    text = "${total.toPesoAmount()} due within 7 days",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = "View bills",
+                tint = accent
+            )
+        }
+    }
+}
 
 @Composable
 private fun shimmerBrush(): Brush {
