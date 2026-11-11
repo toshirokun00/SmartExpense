@@ -2,6 +2,7 @@ package com.smartexpense.bills.screen
 
 import android.app.TimePickerDialog
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,17 +13,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -44,7 +41,6 @@ import com.smartexpense.bills.util.intervalUnitLabel
 import com.smartexpense.bills.util.reminderDaysLabel
 import com.smartexpense.bills.viewmodel.BillFormViewModel
 import com.smartexpense.designsystems.LivelyBlue
-import com.smartexpense.designsystems.LivelyChoicePill
 import com.smartexpense.designsystems.LivelyIndigo
 import com.smartexpense.designsystems.LivelyRose
 import com.smartexpense.designsystems.LivelySectionCard
@@ -72,6 +68,12 @@ fun BillFormScreen(
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var amountTypeExpanded by remember { mutableStateOf(false) }
+    var categoryExpanded by remember { mutableStateOf(false) }
+    var billTypeExpanded by remember { mutableStateOf(false) }
+    var frequencyExpanded by remember { mutableStateOf(false) }
+    var paymentMethodExpanded by remember { mutableStateOf(false) }
+    var remindersExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(billId) {
         viewModel.load(billId)
@@ -148,76 +150,6 @@ fun BillFormScreen(
                             icon = Icons.Default.Receipt
                         ) {
                             OutlinedTextField(
-                                value = form.name,
-                                onValueChange = {
-                                    viewModel.onIntent(BillFormIntent.NameChanged(it))
-                                },
-                                label = { Text("Name") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            MoneyAmountField(
-                                value = form.amount,
-                                onValueChange = {
-                                    viewModel.onIntent(BillFormIntent.AmountChanged(it))
-                                },
-                                label = if (form.amountType == BillAmountType.VARIABLE) {
-                                    "Estimated amount"
-                                } else {
-                                    "Amount"
-                                },
-                                prefix = "₱"
-                            )
-                            ExpenseDateField(
-                                dateMillis = form.dueDateMillis,
-                                onDateSelected = {
-                                    viewModel.onIntent(BillFormIntent.DueDateChanged(it))
-                                },
-                                accentColor = LivelyIndigo
-                            )
-
-                            FieldLabel("Category")
-                            if (uiState.categories.isEmpty()) {
-                                Text(
-                                    "No categories yet — you can add one under Categories.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            } else {
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    LivelyChoicePill(
-                                        label = "None",
-                                        selected = form.categoryId == null,
-                                        accent = LivelyIndigo,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        role = Role.RadioButton,
-                                        onClick = {
-                                            viewModel.onIntent(
-                                                BillFormIntent.CategoryChanged(null)
-                                            )
-                                        }
-                                    )
-                                    uiState.categories.forEach { category ->
-                                        LivelyChoicePill(
-                                            label = category.name,
-                                            selected = form.categoryId == category.id,
-                                            accent = LivelyIndigo,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            role = Role.RadioButton,
-                                            onClick = {
-                                                viewModel.onIntent(
-                                                    BillFormIntent.CategoryChanged(category.id)
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
-                            OutlinedTextField(
                                 value = form.payee,
                                 onValueChange = {
                                     viewModel.onIntent(BillFormIntent.PayeeChanged(it))
@@ -228,6 +160,149 @@ fun BillFormScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp)
                             )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                MoneyAmountField(
+                                    value = form.amount,
+                                    onValueChange = {
+                                        viewModel.onIntent(BillFormIntent.AmountChanged(it))
+                                    },
+                                    label = "Bill amount",
+                                    prefix = "₱",
+                                    modifier = Modifier.weight(1f)
+                                )
+                                BillDropdownField(
+                                    label = "Type",
+                                    value = if (form.amountType == BillAmountType.VARIABLE) {
+                                        "Variable"
+                                    } else {
+                                        "Fixed"
+                                    },
+                                    expanded = amountTypeExpanded,
+                                    onExpandedChange = { amountTypeExpanded = it },
+                                    accent = LivelyBlue,
+                                    modifier = Modifier.width(140.dp)
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Fixed") },
+                                        trailingIcon = {
+                                            if (form.amountType == BillAmountType.STATIC) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = LivelyBlue
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            viewModel.onIntent(
+                                                BillFormIntent.AmountTypeChanged(
+                                                    BillAmountType.STATIC
+                                                )
+                                            )
+                                            amountTypeExpanded = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Variable") },
+                                        trailingIcon = {
+                                            if (form.amountType == BillAmountType.VARIABLE) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = LivelyBlue
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            viewModel.onIntent(
+                                                BillFormIntent.AmountTypeChanged(
+                                                    BillAmountType.VARIABLE
+                                                )
+                                            )
+                                            amountTypeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                            if (form.amountType == BillAmountType.VARIABLE) {
+                                Text(
+                                    "Enter your best estimate. When you mark it paid you " +
+                                        "can enter the actual amount — future estimates use " +
+                                        "your recent payments.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            ExpenseDateField(
+                                dateMillis = form.dueDateMillis,
+                                onDateSelected = {
+                                    viewModel.onIntent(BillFormIntent.DueDateChanged(it))
+                                },
+                                label = "Due date",
+                                accentColor = LivelyIndigo
+                            )
+
+                            BillDropdownField(
+                                label = "Category",
+                                value = uiState.categories
+                                    .firstOrNull { it.id == form.categoryId }
+                                    ?.name
+                                    ?: "None",
+                                expanded = categoryExpanded,
+                                onExpandedChange = { categoryExpanded = it },
+                                accent = LivelyIndigo
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("None") },
+                                    trailingIcon = {
+                                        if (form.categoryId == null) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = LivelyIndigo
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.onIntent(
+                                            BillFormIntent.CategoryChanged(null)
+                                        )
+                                        categoryExpanded = false
+                                    }
+                                )
+                                uiState.categories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = { Text(category.name) },
+                                        trailingIcon = {
+                                            if (form.categoryId == category.id) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = LivelyIndigo
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            viewModel.onIntent(
+                                                BillFormIntent.CategoryChanged(category.id)
+                                            )
+                                            categoryExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                            if (uiState.categories.isEmpty()) {
+                                Text(
+                                    "No categories yet — you can add one under Categories.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
                             OutlinedTextField(
                                 value = form.notes,
                                 onValueChange = {
@@ -247,49 +322,83 @@ fun BillFormScreen(
                             title = "Schedule",
                             icon = Icons.Default.Event
                         ) {
-                            FieldLabel("Bill type")
-                            LivelyChoicePill(
-                                label = "One-time",
-                                selected = !form.isRecurring,
-                                accent = LivelyIndigo,
-                                modifier = Modifier.fillMaxWidth(),
-                                icon = Icons.Default.Event,
-                                role = Role.RadioButton,
-                                onClick = {
-                                    viewModel.onIntent(BillFormIntent.RecurringChanged(false))
-                                }
-                            )
-                            LivelyChoicePill(
-                                label = "Recurring",
-                                selected = form.isRecurring,
-                                accent = LivelyIndigo,
-                                modifier = Modifier.fillMaxWidth(),
-                                icon = Icons.Default.Repeat,
-                                role = Role.RadioButton,
-                                onClick = {
-                                    viewModel.onIntent(BillFormIntent.RecurringChanged(true))
-                                }
-                            )
+                            BillDropdownField(
+                                label = "Bill type",
+                                value = if (form.isRecurring) "Recurring" else "One-time",
+                                expanded = billTypeExpanded,
+                                onExpandedChange = { billTypeExpanded = it },
+                                accent = LivelyIndigo
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("One-time") },
+                                    trailingIcon = {
+                                        if (!form.isRecurring) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = LivelyIndigo
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.onIntent(BillFormIntent.RecurringChanged(false))
+                                        billTypeExpanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Recurring") },
+                                    trailingIcon = {
+                                        if (form.isRecurring) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = LivelyIndigo
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.onIntent(BillFormIntent.RecurringChanged(true))
+                                        billTypeExpanded = false
+                                    }
+                                )
+                            }
                             if (form.isRecurring) {
-                                FieldLabel("Repeat every")
-                                listOf(
+                                val frequencies = listOf(
                                     BillFrequency.WEEKLY to "Weekly",
                                     BillFrequency.MONTHLY to "Monthly",
                                     BillFrequency.QUARTERLY to "Quarterly",
                                     BillFrequency.YEARLY to "Yearly"
-                                ).forEach { (frequency, label) ->
-                                    LivelyChoicePill(
-                                        label = label,
-                                        selected = form.frequency == frequency,
-                                        accent = LivelyBlue,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        role = Role.RadioButton,
-                                        onClick = {
-                                            viewModel.onIntent(
-                                                BillFormIntent.FrequencyChanged(frequency)
-                                            )
-                                        }
-                                    )
+                                )
+                                BillDropdownField(
+                                    label = "Repeat every",
+                                    value = frequencies
+                                        .firstOrNull { it.first == form.frequency }
+                                        ?.second
+                                        ?: "Monthly",
+                                    expanded = frequencyExpanded,
+                                    onExpandedChange = { frequencyExpanded = it },
+                                    accent = LivelyBlue
+                                ) {
+                                    frequencies.forEach { (frequency, label) ->
+                                        DropdownMenuItem(
+                                            text = { Text(label) },
+                                            trailingIcon = {
+                                                if (form.frequency == frequency) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = LivelyBlue
+                                                    )
+                                                }
+                                            },
+                                            onClick = {
+                                                viewModel.onIntent(
+                                                    BillFormIntent.FrequencyChanged(frequency)
+                                                )
+                                                frequencyExpanded = false
+                                            }
+                                        )
+                                    }
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -323,61 +432,33 @@ fun BillFormScreen(
                         LivelySectionCard(
                             accent = LivelyBlue,
                             accentEnd = LivelyViolet,
-                            title = "Amount & payment",
-                            icon = Icons.Default.AttachMoney
+                            title = "Payment",
+                            icon = Icons.Default.CreditCard
                         ) {
-                            FieldLabel("Amount type")
-                            LivelyChoicePill(
-                                label = "Fixed",
-                                selected = form.amountType == BillAmountType.STATIC,
-                                accent = LivelyBlue,
-                                modifier = Modifier.fillMaxWidth(),
-                                icon = Icons.Default.AttachMoney,
-                                role = Role.RadioButton,
-                                onClick = {
-                                    viewModel.onIntent(
-                                        BillFormIntent.AmountTypeChanged(BillAmountType.STATIC)
-                                    )
-                                }
-                            )
-                            LivelyChoicePill(
-                                label = "Variable",
-                                selected = form.amountType == BillAmountType.VARIABLE,
-                                accent = LivelyBlue,
-                                modifier = Modifier.fillMaxWidth(),
-                                icon = Icons.Default.TrackChanges,
-                                role = Role.RadioButton,
-                                onClick = {
-                                    viewModel.onIntent(
-                                        BillFormIntent.AmountTypeChanged(
-                                            BillAmountType.VARIABLE
-                                        )
-                                    )
-                                }
-                            )
-                            if (form.amountType == BillAmountType.VARIABLE) {
-                                Text(
-                                    "Enter your best estimate. When you mark it paid you " +
-                                        "can enter the actual amount — future estimates use " +
-                                        "your recent payments.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            FieldLabel("Payment method")
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BillDropdownField(
+                                label = "Payment method",
+                                value = form.paymentMethod.displayName,
+                                expanded = paymentMethodExpanded,
+                                onExpandedChange = { paymentMethodExpanded = it },
+                                accent = LivelyBlue
+                            ) {
                                 PaymentMethod.entries.toList().forEach { method ->
-                                    LivelyChoicePill(
-                                        label = method.displayName,
-                                        selected = form.paymentMethod == method,
-                                        accent = LivelyBlue,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        role = Role.RadioButton,
+                                    DropdownMenuItem(
+                                        text = { Text(method.displayName) },
+                                        trailingIcon = {
+                                            if (form.paymentMethod == method) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = LivelyBlue
+                                                )
+                                            }
+                                        },
                                         onClick = {
                                             viewModel.onIntent(
                                                 BillFormIntent.PaymentMethodChanged(method)
                                             )
+                                            paymentMethodExpanded = false
                                         }
                                     )
                                 }
@@ -392,21 +473,26 @@ fun BillFormScreen(
                             title = "Reminders & status",
                             icon = Icons.Default.NotificationsActive
                         ) {
-                            FieldLabel("Remind me")
-                            Text(
-                                "Select all that apply. You'll be notified on each chosen day " +
-                                    "before the bill is due.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BillDropdownField(
+                                label = "Reminders",
+                                value = reminderDaysLabel(form.reminderDays),
+                                expanded = remindersExpanded,
+                                onExpandedChange = { remindersExpanded = it },
+                                accent = LivelyIndigo
+                            ) {
                                 REMINDER_DAY_OPTIONS.forEach { days ->
-                                    LivelyChoicePill(
-                                        label = reminderDaysLabel(days),
-                                        selected = form.reminderDays.contains(days),
-                                        accent = LivelyIndigo,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        role = Role.Checkbox,
+                                    val selected = form.reminderDays.contains(days)
+                                    DropdownMenuItem(
+                                        text = { Text(reminderDaysLabel(days)) },
+                                        trailingIcon = {
+                                            if (selected) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = LivelyIndigo
+                                                )
+                                            }
+                                        },
                                         onClick = {
                                             viewModel.onIntent(
                                                 BillFormIntent.ReminderDaysToggled(days)
@@ -415,6 +501,12 @@ fun BillFormScreen(
                                     )
                                 }
                             }
+                            Text(
+                                "Select all that apply. You'll be notified on each chosen day " +
+                                    "before the bill is due.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             OutlinedButton(
                                 onClick = { showTimePicker = true },
                                 modifier = Modifier.fillMaxWidth(),
@@ -571,11 +663,53 @@ fun BillFormScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FieldLabel(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+internal fun BillDropdownField(
+    label: String,
+    value: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    accent: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(label) },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accent,
+                focusedLabelColor = accent,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                cursorColor = accent
+            ),
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+            matchAnchorWidth = true,
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.30f)),
+            shadowElevation = 8.dp
+        ) {
+            content()
+        }
+    }
 }
+

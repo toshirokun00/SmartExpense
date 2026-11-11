@@ -86,40 +86,11 @@ fun BudgetScreen(
                 subtitle = "Set limits and track spending by category",
                 icon = Icons.Default.Wallet,
                 actions = {
-                    val colorScheme = MaterialTheme.colorScheme
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(
-                                        colorScheme.primary,
-                                        colorScheme.secondary
-                                    )
-                                )
-                            )
-                            .clickable(enabled = true, onClick = onAddBudgetClick)
-                            .padding(vertical = 8.dp, horizontal = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = Color.White
-                            )
-                            Text(
-                                text = "Add Budget",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White
-                            )
-                        }
-                    }
+                    ModernHeaderActionPill(
+                        label = "Add Budget",
+                        icon = Icons.Default.Add,
+                        onClick = onAddBudgetClick
+                    )
                 }
             )
 
@@ -295,11 +266,12 @@ private fun ModernBudgetCard(
         else -> ModernSuccessColor
     }
 
-    val gradient = remember(colorScheme.secondaryContainer, progressColor) {
+    val gradient = remember(colorScheme.secondaryContainer, colorScheme.surface, progressColor) {
         Brush.linearGradient(
             colors = listOf(
-                colorScheme.secondaryContainer.copy(alpha = 0.95f),
-                progressColor.copy(alpha = 0.4f)
+                colorScheme.secondaryContainer.copy(alpha = 0.38f),
+                colorScheme.surface,
+                progressColor.copy(alpha = 0.12f)
             )
         )
     }
@@ -307,7 +279,7 @@ private fun ModernBudgetCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, progressColor.copy(alpha = 0.22f))
     ) {
@@ -316,7 +288,7 @@ private fun ModernBudgetCard(
                 .fillMaxWidth()
                 .background(gradient)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -370,7 +342,7 @@ private fun ModernBudgetCard(
                         style = MaterialTheme.typography.labelMedium,
                         color = colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = summary.budget.amount.toPesoAmount(),
                         style = MaterialTheme.typography.headlineMedium,
@@ -384,7 +356,7 @@ private fun ModernBudgetCard(
                         style = MaterialTheme.typography.labelMedium,
                         color = colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = summary.spentAmount.toPesoAmount(),
                         style = MaterialTheme.typography.headlineMedium,
@@ -414,7 +386,7 @@ private fun ModernBudgetCard(
                 color = progressColor,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp)
+                    .padding(vertical = 4.dp)
             )
 
             Text(
@@ -422,13 +394,12 @@ private fun ModernBudgetCard(
                         summary.status.indicatorSuffix(),
                 style = MaterialTheme.typography.labelSmall,
                 color = colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 12.dp)
+                modifier = Modifier.padding(vertical = 2.dp)
             )
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 2.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 BudgetActionButton(

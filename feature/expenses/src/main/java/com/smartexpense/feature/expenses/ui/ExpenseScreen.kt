@@ -33,6 +33,7 @@ import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
 import com.smartexpense.designsystems.ModernEmptyState
 import com.smartexpense.designsystems.ModernHeader
+import com.smartexpense.designsystems.ModernHeaderActionPill
 import com.smartexpense.designsystems.ModernSectionHeader
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.ExpenseSyncStatus
@@ -119,7 +120,7 @@ fun ExpenseScreen(
                 subtitle = "Track and manage your spending",
                 icon = Icons.AutoMirrored.Filled.ReceiptLong,
                 actions = {
-                    HeaderActionPill(
+                    ModernHeaderActionPill(
                         label = "Manage categories",
                         icon = Icons.Default.Category,
                         onClick = onAddExpenseCategoryClick
@@ -231,42 +232,6 @@ fun ExpenseScreen(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Add expense",
                 modifier = Modifier.size(26.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun HeaderActionPill(
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    val pillShape = RoundedCornerShape(percent = 50)
-
-    Surface(
-        onClick = onClick,
-        shape = pillShape,
-        color = Color.White.copy(alpha = 0.18f),
-        contentColor = Color.White,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = Color.White
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
             )
         }
     }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -108,6 +109,7 @@ fun LivelySectionCard(
     subtitle: String? = null,
     icon: ImageVector? = null,
     compact: Boolean = false,
+    contentPadding: PaddingValues? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -131,7 +133,13 @@ fun LivelySectionCard(
                         )
                     )
                 )
-                .padding(if (compact) 8.dp else 16.dp),
+                .padding(
+                    contentPadding ?: if (compact) {
+                        PaddingValues(8.dp)
+                    } else {
+                        PaddingValues(16.dp)
+                    }
+                ),
             verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp)
         ) {
             if (icon != null || title != null) {

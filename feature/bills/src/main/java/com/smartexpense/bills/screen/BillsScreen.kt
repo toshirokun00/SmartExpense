@@ -5,13 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Repeat
@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,7 +33,6 @@ import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
 import com.smartexpense.core.common.util.MoneyInputUtil
 import com.smartexpense.designsystems.LivelyBlue
-import com.smartexpense.designsystems.LivelyChoicePill
 import com.smartexpense.designsystems.LivelyIconBadge
 import com.smartexpense.designsystems.LivelyIndigo
 import com.smartexpense.designsystems.LivelyRose
@@ -43,6 +41,7 @@ import com.smartexpense.designsystems.LivelyToggleRow
 import com.smartexpense.designsystems.LivelyViolet
 import com.smartexpense.designsystems.ModernEmptyState
 import com.smartexpense.designsystems.ModernHeader
+import com.smartexpense.designsystems.ModernHeaderActionPill
 import com.smartexpense.designsystems.MoneyAmountField
 import com.smartexpense.domain.model.Bill
 import com.smartexpense.domain.model.BillAmountType
@@ -69,32 +68,11 @@ fun BillsScreen(
             icon = Icons.Default.Receipt,
             onBackClick = onNavigateBack,
             actions = {
-                Surface(
-                    onClick = onAddBill,
-                    shape = RoundedCornerShape(percent = 50),
-                    color = Color.White.copy(alpha = 0.18f),
-                    contentColor = Color.White,
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Add Bill",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
-                        )
-                    }
-                }
+                ModernHeaderActionPill(
+                    label = "Add Bill",
+                    icon = Icons.Default.Add,
+                    onClick = onAddBill
+                )
             }
         )
 
@@ -233,13 +211,18 @@ private fun BillCard(
         BillStatus.UPCOMING -> LivelyViolet
     }
 
-    LivelySectionCard(accent = accent, accentEnd = accent) {
+    LivelySectionCard(
+        accent = accent,
+        accentEnd = accent,
+        compact = true,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             LivelyIconBadge(
                 icon = when {
@@ -249,8 +232,8 @@ private fun BillCard(
                 },
                 accent = accent,
                 accentEnd = accent,
-                size = 42.dp,
-                shape = RoundedCornerShape(14.dp)
+                size = 38.dp,
+                shape = RoundedCornerShape(12.dp)
             )
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -265,25 +248,29 @@ private fun BillCard(
                 }
                 Text(
                     "${if (bill.isRecurring) "Next" else "Due"} ${bill.dueDateMillis.toDateString()}",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val meta = buildList {
-                    categoryName?.let { add(it) }
                     add(bill.repeatLabel())
-                    if (bill.payee.isNotBlank()) add(bill.payee)
+                    categoryName?.let { add(it) }
                     if (bill.autopay) add("Auto-pay")
                 }
                 Text(
                     meta.joinToString(" • "),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
-                if (needsAmount) {
-                    Spacer(Modifier.height(3.dp))
-                    StatusChip("Amount needed", LivelyRose)
-                }
+                Spacer(Modifier.height(3.dp))
+                StatusChip(
+                    label = if (bill.amountType == BillAmountType.VARIABLE) {
+                        "Variable"
+                    } else {
+                        "Fixed"
+                    },
+                    color = if (needsAmount) LivelyRose else LivelyIndigo
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -358,6 +345,7 @@ private fun BillPaySheet(
     var amount by remember(bill.id) { mutableStateOf(formatAmountForEditing(bill.amount)) }
     var paidDate by remember(bill.id) { mutableStateOf(System.currentTimeMillis()) }
     var method by remember(bill.id) { mutableStateOf(bill.paymentMethod) }
+    var methodExpanded by remember(bill.id) { mutableStateOf(false) }
     var createExpense by remember(bill.id) { mutableStateOf(true) }
 
     ModalBottomSheet(
@@ -414,23 +402,39 @@ private fun BillPaySheet(
                     "Actual amount paid"
                 } else {
                     "Amount paid"
-                }
+                },
+                prefix = "₱"
             )
             ExpenseDateField(
                 dateMillis = paidDate,
                 onDateSelected = { paidDate = it },
+                label = "Paid on",
                 accentColor = LivelyIndigo
             )
 
-            FieldLabel("Payment method")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(PaymentMethod.entries.toList(), key = { it.name }) { option ->
-                    LivelyChoicePill(
-                        label = option.displayName,
-                        selected = method == option,
-                        accent = LivelyBlue,
-                        role = Role.RadioButton,
-                        onClick = { method = option }
+            BillDropdownField(
+                label = "Payment method",
+                value = method.displayName,
+                expanded = methodExpanded,
+                onExpandedChange = { methodExpanded = it },
+                accent = LivelyBlue
+            ) {
+                PaymentMethod.entries.toList().forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.displayName) },
+                        trailingIcon = {
+                            if (method == option) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = LivelyBlue
+                                )
+                            }
+                        },
+                        onClick = {
+                            method = option
+                            methodExpanded = false
+                        }
                     )
                 }
             }

@@ -7,7 +7,6 @@ import com.smartexpense.domain.model.PaymentMethod
 
 /** Text-field values and toggles captured by the add/edit bill screen. */
 data class BillFormState(
-    val name: String = "",
     val amount: String = "",
     val dueDateMillis: Long = System.currentTimeMillis(),
     val notes: String = "",

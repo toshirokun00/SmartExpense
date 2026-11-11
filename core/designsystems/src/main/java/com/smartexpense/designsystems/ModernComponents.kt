@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -170,6 +171,62 @@ fun ModernHeader(
             ) {
                 actions(this)
             }
+        }
+    }
+}
+
+/**
+ * Pill-shaped action rendered inside [ModernHeader]'s action row.
+ *
+ * Kept as a single shared component so every screen that puts a button under
+ * its header (Expenses, Bills, Budgets) has an identical size and height.
+ */
+@Composable
+fun ModernHeaderActionPill(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val isDarkTheme = colorScheme.background.luminance() < 0.5f
+    val contentColor = if (isDarkTheme) colorScheme.onSurface else Color.White
+    val containerColor = if (isDarkTheme) {
+        colorScheme.surfaceVariant
+    } else {
+        Color.White.copy(alpha = 0.18f)
+    }
+    val borderColor = if (isDarkTheme) {
+        colorScheme.outline.copy(alpha = 0.35f)
+    } else {
+        Color.White.copy(alpha = 0.28f)
+    }
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(percent = 50),
+        color = containerColor,
+        contentColor = contentColor,
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = contentColor
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor
+            )
         }
     }
 }

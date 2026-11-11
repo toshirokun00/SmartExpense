@@ -97,7 +97,6 @@ class BillFormViewModel(
 
     fun onIntent(intent: BillFormIntent) {
         when (intent) {
-            is BillFormIntent.NameChanged -> updateForm { it.copy(name = intent.value) }
             is BillFormIntent.AmountChanged -> updateForm { it.copy(amount = intent.value) }
             is BillFormIntent.DueDateChanged ->
                 updateForm { it.copy(dueDateMillis = intent.millis) }
@@ -148,8 +147,8 @@ class BillFormViewModel(
         val state = _uiState.value.form
         if (state.isSaving) return
 
-        if (state.name.isBlank()) {
-            showError("Please enter a bill name")
+        if (state.payee.isBlank()) {
+            showError("Please enter a payee or biller")
             return
         }
 
@@ -240,7 +239,7 @@ class BillFormViewModel(
     }
 
     private fun BillFormState.toBill(amount: Double): Bill = Bill(
-        name = name.trim(),
+        name = payee.trim(),
         amount = amount,
         dueDateMillis = dueDateMillis,
         notes = notes,
@@ -258,7 +257,6 @@ class BillFormViewModel(
     )
 
     private fun Bill.toFormState(): BillFormState = BillFormState(
-        name = name,
         amount = formatAmountForEditing(amount),
         dueDateMillis = dueDateMillis,
         notes = notes,
@@ -267,7 +265,7 @@ class BillFormViewModel(
         intervalText = repeatInterval.coerceAtLeast(1).toString(),
         amountType = amountType,
         categoryId = categoryId,
-        payee = payee,
+        payee = payee.ifBlank { name },
         paymentMethod = paymentMethod,
         autopay = autopay,
         reminderDays = setOf(reminderDaysBefore.coerceAtLeast(0)),

@@ -5,7 +5,6 @@ import com.smartexpense.domain.model.BillFrequency
 import com.smartexpense.domain.model.PaymentMethod
 
 sealed interface BillFormIntent {
-    data class NameChanged(val value: String) : BillFormIntent
     data class AmountChanged(val value: String) : BillFormIntent
     data class DueDateChanged(val millis: Long) : BillFormIntent
     data class NotesChanged(val value: String) : BillFormIntent
