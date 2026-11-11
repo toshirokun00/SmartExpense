@@ -33,6 +33,7 @@ import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
 import com.smartexpense.designsystems.ModernEmptyState
 import com.smartexpense.designsystems.ModernHeader
+import com.smartexpense.designsystems.ModernHeaderActionPill
 import com.smartexpense.designsystems.ModernSectionHeader
 import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.ExpenseSyncStatus
@@ -108,21 +109,24 @@ fun ExpenseScreen(
         else -> "All synced"
     }
 
-    Column(
+    Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        ModernHeader(
-            title = "Expenses",
-            subtitle = "Track and manage your spending",
-            icon = Icons.AutoMirrored.Filled.ReceiptLong,
-            actions = {
-                HeaderActionPill(
-                    label = "Manage categories",
-                    icon = Icons.Default.Category,
-                    onClick = onAddExpenseCategoryClick
-                )
-            }
-        )
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            ModernHeader(
+                title = "Expenses",
+                subtitle = "Track and manage your spending",
+                icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                actions = {
+                    ModernHeaderActionPill(
+                        label = "Manage categories",
+                        icon = Icons.Default.Category,
+                        onClick = onAddExpenseCategoryClick
+                    )
+                }
+            )
 
         if (expenses.isEmpty()) {
             Box(
@@ -149,7 +153,7 @@ fun ExpenseScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     top = 16.dp,
@@ -212,41 +216,22 @@ fun ExpenseScreen(
                     )
                 }
             }
+            }
         }
-    }
-}
 
-@Composable
-private fun HeaderActionPill(
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    val pillShape = RoundedCornerShape(percent = 50)
-
-    Surface(
-        onClick = onClick,
-        shape = pillShape,
-        color = Color.White.copy(alpha = 0.18f),
-        contentColor = Color.White,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        FloatingActionButton(
+            onClick = onAddExpenseClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            containerColor = PrimaryAccent,
+            contentColor = Color.White,
+            shape = RoundedCornerShape(percent = 50)
         ) {
             Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = Color.White
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add expense",
+                modifier = Modifier.size(26.dp)
             )
         }
     }
@@ -413,7 +398,7 @@ private fun ExpenseListCard(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorScheme.surface
         ),
@@ -432,13 +417,13 @@ private fun ExpenseListCard(
                         )
                     )
                 )
-                .padding(14.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(38.dp)
                     .clip(chipShape)
                     .background(
                         Brush.linearGradient(
@@ -458,7 +443,7 @@ private fun ExpenseListCard(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
-                    modifier = Modifier.size(23.dp),
+                    modifier = Modifier.size(20.dp),
                     tint = Color.White
                 )
             }
@@ -472,7 +457,7 @@ private fun ExpenseListCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = expense.date.toDateString(),

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -107,13 +108,15 @@ fun LivelySectionCard(
     title: String? = null,
     subtitle: String? = null,
     icon: ImageVector? = null,
+    compact: Boolean = false,
+    contentPadding: PaddingValues? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(if (compact) 16.dp else 24.dp),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = BorderStroke(1.dp, accent.copy(alpha = 0.22f))
@@ -130,8 +133,14 @@ fun LivelySectionCard(
                         )
                     )
                 )
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(
+                    contentPadding ?: if (compact) {
+                        PaddingValues(8.dp)
+                    } else {
+                        PaddingValues(16.dp)
+                    }
+                ),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp)
         ) {
             if (icon != null || title != null) {
                 Row(
@@ -175,7 +184,8 @@ fun LivelySectionCard(
 
 /**
  * Lively list row with a gradient icon badge, supporting an optional click
- * action or a custom trailing composable.
+ * action or a custom trailing composable. Pass [compact] to reduce vertical
+ * padding and icon size for smaller list items (e.g. category rows).
  */
 @Composable
 fun LivelyInfoRow(
@@ -186,7 +196,8 @@ fun LivelyInfoRow(
     modifier: Modifier = Modifier,
     accentEnd: Color = accent,
     onClick: (() -> Unit)? = null,
-    trailing: @Composable (() -> Unit)? = null
+    trailing: @Composable (() -> Unit)? = null,
+    compact: Boolean = false
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(16.dp)
@@ -202,18 +213,21 @@ fun LivelyInfoRow(
                     Modifier
                 }
             )
-            .padding(vertical = 8.dp, horizontal = 8.dp),
+            .padding(
+                vertical = if (compact) 2.dp else 8.dp,
+                horizontal = if (compact) 4.dp else 8.dp
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         LivelyIconBadge(
             icon = icon,
             accent = accent,
             accentEnd = accentEnd,
-            size = 40.dp,
+            size = if (compact) 28.dp else 40.dp,
             shape = RoundedCornerShape(12.dp)
         )
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(8.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -229,7 +243,7 @@ fun LivelyInfoRow(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onSurfaceVariant,
-                    maxLines = 3,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -241,7 +255,7 @@ fun LivelyInfoRow(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(if (compact) 14.dp else 20.dp),
                 tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }

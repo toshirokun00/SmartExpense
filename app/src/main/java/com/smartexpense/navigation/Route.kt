@@ -64,3 +64,15 @@ data object AddBudgetRoute : Route
 data class EditBudgetRoute(
     val budgetId: Long
 ) : Route
+
+@Serializable
+data object BillsRoute : Route
+
+@Serializable
+data object AddBillRoute : Route
+
+@Serializable
+data class EditBillRoute(
+    val billId: Long
+) : Route
+

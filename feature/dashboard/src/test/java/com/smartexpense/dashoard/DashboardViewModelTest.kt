@@ -8,6 +8,7 @@ import com.smartexpense.domain.model.Expense
 import com.smartexpense.domain.model.UserProfile
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.GetBillsUseCase
 import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.ProfileUseCase
@@ -38,6 +39,7 @@ class DashboardViewModelTest {
     private lateinit var categoryUseCase: CategoryUseCase
     private lateinit var settingsUseCase: SettingsUseCase
     private lateinit var profileUseCase: ProfileUseCase
+    private lateinit var getBillsUseCase: GetBillsUseCase
     private val getBudgetInsightsUseCase = GetBudgetInsightsUseCase()
     private lateinit var viewModel: DashboardViewModel
 
@@ -48,9 +50,14 @@ class DashboardViewModelTest {
         categoryUseCase = mockk()
         settingsUseCase = mockk()
         profileUseCase = mockk()
+        getBillsUseCase = mockk()
 
         every {
             getExpenseUseCase()
+        } returns flowOf(emptyList())
+
+        every {
+            getBillsUseCase()
         } returns flowOf(emptyList())
 
         every {
@@ -79,7 +86,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
     }
 
@@ -119,7 +127,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
 
         viewModel.uiState.test {
@@ -174,7 +183,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
 
         viewModel.uiState.test {
@@ -217,7 +227,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
 
         viewModel.uiState.test {
@@ -264,7 +275,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
 
         viewModel.uiState.test {
@@ -302,7 +314,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
 
         viewModel.uiState.test {
@@ -333,7 +346,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
 
         viewModel.uiState.test {
@@ -355,7 +369,8 @@ class DashboardViewModelTest {
             categoryUseCase = categoryUseCase,
             settingsUseCase = settingsUseCase,
             getBudgetInsightsUseCase = getBudgetInsightsUseCase,
-            profileUseCase = profileUseCase
+            profileUseCase = profileUseCase,
+            getBillsUseCase = getBillsUseCase
         )
 
         viewModel.uiState.test {

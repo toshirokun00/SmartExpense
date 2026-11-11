@@ -104,12 +104,15 @@ fun CategoryScreen(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
-        }
+        },
+        // The header draws behind the status bar and handles its own inset.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .navigationBarsPadding()
         ) {
             ModernHeader(
                 title = if (uiState.editingCategoryId != null) "Edit Category" else "Categories",
@@ -192,8 +195,8 @@ fun CategoryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
             ) {
                 item {
                     ModernSectionHeader(
@@ -221,7 +224,8 @@ fun CategoryScreen(
                         LivelySectionCard(
                             accent = accent,
                             accentEnd = accentEnd,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            compact = true
                         ) {
                             LivelyInfoRow(
                                 title = category.name,
@@ -236,38 +240,43 @@ fun CategoryScreen(
                                 },
                                 trailing = {
                                     Row(
-                                        horizontalArrangement = Arrangement.spacedBy(0.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        IconButton(
+                                        TextButton(
                                             onClick = {
                                                 viewModel.onIntent(
                                                     CategoryIntent.LoadCategory(category.id)
                                                 )
-                                            }
+                                            },
+                                            colors = ButtonDefaults.textButtonColors(
+                                                contentColor = LivelyIndigo
+                                            )
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Edit,
-                                                contentDescription = "Edit",
-                                                tint = LivelyIndigo
+                                            Text(
+                                                "Edit",
+                                                fontWeight = FontWeight.SemiBold
                                             )
                                         }
-                                        IconButton(
+                                        TextButton(
                                             onClick = {
                                                 viewModel.onIntent(
                                                     CategoryIntent.RequestDeleteCategory(
                                                         category.id
                                                     )
                                                 )
-                                            }
+                                            },
+                                            colors = ButtonDefaults.textButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.error
+                                            )
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "Delete",
-                                                tint = MaterialTheme.colorScheme.error
+                                            Text(
+                                                "Delete",
+                                                fontWeight = FontWeight.SemiBold
                                             )
                                         }
                                     }
-                                }
+                                },
+                                compact = true
                             )
                         }
                     }

@@ -1,23 +1,31 @@
 package com.smartexpense.domain.di
 
 import com.smartexpense.domain.usecase.AddExpenseUseCase
+import com.smartexpense.domain.usecase.AddBillUseCase
 import com.smartexpense.domain.usecase.ProfileUseCase
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
 import com.smartexpense.domain.usecase.DeleteExpenseUseCase
+import com.smartexpense.domain.usecase.DeleteBillUseCase
 import com.smartexpense.domain.usecase.EvaluateBudgetAlertsUseCase
 import com.smartexpense.domain.usecase.ExportReportCsvUseCase
 import com.smartexpense.domain.usecase.ExportReportPdfUseCase
+import com.smartexpense.domain.usecase.GetBillPaymentsUseCase
+import com.smartexpense.domain.usecase.GetBillUseCase
+import com.smartexpense.domain.usecase.GetBillsUseCase
 import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseByIdUseCase
 import com.smartexpense.domain.usecase.GetExpenseReportUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpensesInRangeUseCase
+import com.smartexpense.domain.usecase.PayBillUseCase
 import com.smartexpense.domain.usecase.ProcessRecurringExpensesUseCase
 import com.smartexpense.domain.usecase.RecurringExpenseUseCase
 import com.smartexpense.domain.usecase.SearchExpensesUseCase
 import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
+import com.smartexpense.domain.usecase.SkipBillUseCase
+import com.smartexpense.domain.usecase.UpdateBillUseCase
 import com.smartexpense.domain.usecase.UpdateExpenseUseCase
 import com.smartexpense.domain.usecase.UploadReceiptPhotoUseCase
 import com.smartexpense.domain.usecase.ValidateAmountUseCase
@@ -38,6 +46,20 @@ val domainModule = module {
     factory { ValidateAmountUseCase() }
 
     factory { CategoryUseCase(get()) }
+
+    factory { GetBillsUseCase(get()) }
+    factory { GetBillUseCase(get()) }
+    factory { GetBillPaymentsUseCase(get()) }
+    factory { AddBillUseCase(get()) }
+    factory { UpdateBillUseCase(get()) }
+    factory { DeleteBillUseCase(get()) }
+    factory { SkipBillUseCase(get()) }
+    factory {
+        PayBillUseCase(
+            billRepository = get(),
+            addExpenseUseCase = get()
+        )
+    }
 
     factory { BudgetUseCase(get()) }
 

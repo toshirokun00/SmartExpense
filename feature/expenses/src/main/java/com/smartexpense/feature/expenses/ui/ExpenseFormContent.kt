@@ -88,6 +88,7 @@ internal fun ExpenseFormContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
         ) {
             ModernHeader(

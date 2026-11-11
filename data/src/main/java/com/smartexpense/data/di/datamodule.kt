@@ -2,6 +2,7 @@ package com.smartexpense.data.di
 
 import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBudgetRemoteDataSource
+import com.smartexpense.data.remote.SupabaseBillRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
 import com.smartexpense.data.remote.SupabaseStorageRemoteDataSource
 import com.smartexpense.data.recurring.RecurringExpenseProcessor
@@ -11,6 +12,7 @@ import com.smartexpense.data.repositoryimpl.BudgetRepositoryImpl
 import com.smartexpense.data.repositoryimpl.CategoryRepositoryImpl
 import com.smartexpense.data.repositoryimpl.ExpenseRepositoryImpl
 import com.smartexpense.data.repositoryimpl.ProfileRepositoryImpl
+import com.smartexpense.data.repositoryimpl.BillRepositoryImpl
 import com.smartexpense.data.repositoryimpl.RecurringExpenseRepositoryImpl
 import com.smartexpense.data.repositoryimpl.SettingsRepositoryImpl
 import com.smartexpense.data.repositoryimpl.SupabaseProfileRemoteRepository
@@ -27,6 +29,8 @@ import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
 import com.smartexpense.domain.repository.ProfileRepository
 import com.smartexpense.domain.repository.ProfileRemoteRepository
+import com.smartexpense.domain.repository.AuthRepository
+import com.smartexpense.domain.repository.BillRepository
 import com.smartexpense.domain.repository.RecurringExpenseRepository
 import com.smartexpense.domain.repository.SettingsRepository
 import com.smartexpense.domain.repository.SyncEnqueuer
@@ -58,7 +62,9 @@ val dataModule = module {
     single {
         ExpenseSyncWorkerFactory(
             expenseRepository = get(),
-            processRecurringExpensesUseCase = get()
+            processRecurringExpensesUseCase = get(),
+            billDao = get(),
+            authRepository = get()
         )
     }
 
@@ -107,15 +113,25 @@ val dataModule = module {
     }
 
     single {
+        SupabaseBillRemoteDataSource(
+            supabaseClient = get()
+        )
+    }
+
+    single {
         RemoteDataSync(
             categoryDao = get(),
             expenseDao = get(),
             budgetDao = get(),
+            billDao = get(),
+            billPaymentDao = get(),
             pendingExpenseDeletionDao = get(),
             pendingBudgetDeletionDao = get(),
+            pendingBillDeletionDao = get(),
             categoryRemoteDataSource = get(),
             expenseRemoteDataSource = get(),
-            budgetRemoteDataSource = get()
+            budgetRemoteDataSource = get(),
+            billRemoteDataSource = get()
         )
     }
 
@@ -127,6 +143,7 @@ val dataModule = module {
             supabaseClient = get(),
             categoryRepository = get(),
             budgetRepository = get(),
+            billRepository = get(),
             expenseSyncEnqueuer = get(),
             pendingExpenseDeletionDao = get(),
             deletionTransaction = get(),
@@ -167,6 +184,20 @@ val dataModule = module {
             processor = get(),
             expenseSyncEnqueuer = get(),
             scheduler = get(),
+            clock = get()
+        )
+    }
+
+    single<BillRepository> {
+        BillRepositoryImpl(
+            billDao = get(),
+            billPaymentDao = get(),
+            supabaseBillRemoteDataSource = get(),
+            categoryRepository = get(),
+            expenseSyncEnqueuer = get(),
+            pendingBillDeletionDao = get(),
+            billDeletionTransaction = get(),
+            authRepository = get(),
             clock = get()
         )
     }

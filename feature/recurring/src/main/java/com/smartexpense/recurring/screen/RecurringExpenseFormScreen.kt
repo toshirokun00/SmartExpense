@@ -75,12 +75,15 @@ fun RecurringExpenseFormScreen(
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState)
-        }
+        },
+        // The header draws behind the status bar and handles its own inset.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .navigationBarsPadding()
         ) {
             ModernHeader(
                 title = if (form.editingScheduleId == null) {

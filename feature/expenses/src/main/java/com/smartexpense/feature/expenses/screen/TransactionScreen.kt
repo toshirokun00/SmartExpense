@@ -198,7 +198,7 @@ fun TransactionScreen(
                 .weight(1f)
                 .fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (uiState.isLoading) {
                 item {
@@ -335,18 +335,19 @@ private fun TransactionCard(
     LivelySectionCard(
         accent = LivelyIndigo,
         accentEnd = LivelyViolet,
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier.clickable(onClick = onClick),
+        compact = true
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             LivelyIconBadge(
                 icon = Icons.Default.Receipt,
                 accent = syncColor,
                 accentEnd = syncColor,
-                size = 42.dp,
-                shape = RoundedCornerShape(14.dp)
+                size = 34.dp,
+                shape = RoundedCornerShape(12.dp)
             )
 
             Column(modifier = Modifier.weight(1f)) {

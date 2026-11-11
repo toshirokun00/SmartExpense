@@ -8,6 +8,8 @@ import com.smartexpense.dashoard.state.DashboardUiState
 import com.smartexpense.domain.model.BudgetAlertThresholds
 import com.smartexpense.domain.usecase.BudgetUseCase
 import com.smartexpense.domain.usecase.CategoryUseCase
+import com.smartexpense.domain.usecase.GetBillPaymentsUseCase
+import com.smartexpense.domain.usecase.GetBillsUseCase
 import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.ProfileUseCase
@@ -23,7 +25,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeout
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 class DashboardViewModel(
     private val getExpenseUseCase: GetExpenseUseCase,
@@ -31,7 +35,8 @@ class DashboardViewModel(
     private val categoryUseCase: CategoryUseCase,
     private val settingsUseCase: SettingsUseCase,
     private val getBudgetInsightsUseCase: GetBudgetInsightsUseCase,
-    private val profileUseCase: ProfileUseCase
+    private val profileUseCase: ProfileUseCase,
+    private val getBillsUseCase: GetBillsUseCase
 ) : ViewModel() {
 
     private val _effect = MutableSharedFlow<DashboardEffect>()
@@ -60,6 +65,15 @@ class DashboardViewModel(
             _effect.emit(
                 DashboardEffect.ShowError(
                     exception.message ?: "Failed to load categories"
+                )
+            )
+        }
+
+    private val billsFlow = getBillsUseCase()
+        .catch { exception ->
+            _effect.emit(
+                DashboardEffect.ShowError(
+                    exception.message ?: "Failed to load bills"
                 )
             )
         }
@@ -95,14 +109,20 @@ class DashboardViewModel(
         emit(null)
     }
 
+    // `combine` has no typed overload for more than five flows, so expenses
+    // and bills are paired first and merged with the rest.
+    private val expensesAndBillsFlow =
+        combine(expensesFlow, billsFlow) { expenses, bills -> expenses to bills }
+
     val uiState: StateFlow<DashboardUiState> =
         combine(
-            expensesFlow,
+            expensesAndBillsFlow,
             budgetFlow,
             categoriesFlow,
             settingsFlow,
             usernameFlow
-        ) { expenses, budgets, categories, settings, username ->
+        ) { expensesAndBills, budgets, categories, settings, username ->
+            val (expenses, bills) = expensesAndBills
 
             val totalExpense = expenses.sumOf { it.amount }
 
@@ -144,6 +164,18 @@ class DashboardViewModel(
                 warningThreshold = warningThreshold
             )
 
+            // Bills that are unpaid and fall due within the next 7 days.
+            val zoneId = ZoneId.systemDefault()
+            val today = LocalDate.now(zoneId)
+            val weekAhead = today.plusDays(7)
+            val billsDueThisWeek = bills.filter { bill ->
+                if (bill.isPaid || bill.skipped || !bill.isActive) return@filter false
+                val dueDate = Instant.ofEpochMilli(bill.dueDateMillis)
+                    .atZone(zoneId)
+                    .toLocalDate()
+                !dueDate.isBefore(today) && !dueDate.isAfter(weekAhead)
+            }
+
             DashboardUiState(
                 totalExpense = totalExpense,
                 expenseCount = expenses.size,
@@ -154,6 +186,8 @@ class DashboardViewModel(
                 isOverBudget = totalBudgetSpent > totalBudget,
                 recentExpenses = expenses.take(5),
                 insights = insights,
+                billsDueThisWeek = billsDueThisWeek.size,
+                billsDueThisWeekTotal = billsDueThisWeek.sumOf { it.amount },
                 isLoading = false,
                 username = username
             )

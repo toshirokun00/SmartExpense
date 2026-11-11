@@ -1,5 +1,6 @@
 package com.smartexpense.data
 
+import com.smartexpense.data.remote.SupabaseBillRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBudgetRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBudgetResponseDto
 import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
@@ -7,9 +8,12 @@ import com.smartexpense.data.remote.SupabaseCategoryResponseDto
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseResponseDto
 import com.smartexpense.data.sync.RemoteDataSync
+import com.smartexpense.database.dao.BillDao
+import com.smartexpense.database.dao.BillPaymentDao
 import com.smartexpense.database.dao.BudgetDao
 import com.smartexpense.database.dao.CategoryDao
 import com.smartexpense.database.dao.ExpenseDao
+import com.smartexpense.database.dao.PendingBillDeletionDao
 import com.smartexpense.database.dao.PendingBudgetDeletionDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
 import com.smartexpense.database.entity.BudgetEntity
@@ -30,11 +34,15 @@ class RemoteDataSyncTest {
     private lateinit var categoryDao: CategoryDao
     private lateinit var expenseDao: ExpenseDao
     private lateinit var budgetDao: BudgetDao
+    private lateinit var billDao: BillDao
+    private lateinit var billPaymentDao: BillPaymentDao
     private lateinit var pendingExpenseDeletionDao: PendingExpenseDeletionDao
     private lateinit var pendingBudgetDeletionDao: PendingBudgetDeletionDao
+    private lateinit var pendingBillDeletionDao: PendingBillDeletionDao
     private lateinit var categoryRemoteDataSource: SupabaseCategoryRemoteDataSource
     private lateinit var expenseRemoteDataSource: SupabaseExpenseRemoteDataSource
     private lateinit var budgetRemoteDataSource: SupabaseBudgetRemoteDataSource
+    private lateinit var billRemoteDataSource: SupabaseBillRemoteDataSource
 
     private lateinit var remoteDataSync: RemoteDataSync
 
@@ -43,21 +51,29 @@ class RemoteDataSyncTest {
         categoryDao = mockk(relaxed = true)
         expenseDao = mockk(relaxed = true)
         budgetDao = mockk(relaxed = true)
+        billDao = mockk(relaxed = true)
+        billPaymentDao = mockk(relaxed = true)
         pendingExpenseDeletionDao = mockk(relaxed = true)
         pendingBudgetDeletionDao = mockk(relaxed = true)
+        pendingBillDeletionDao = mockk(relaxed = true)
         categoryRemoteDataSource = mockk(relaxed = true)
         expenseRemoteDataSource = mockk(relaxed = true)
         budgetRemoteDataSource = mockk(relaxed = true)
+        billRemoteDataSource = mockk(relaxed = true)
 
         remoteDataSync = RemoteDataSync(
             categoryDao = categoryDao,
             expenseDao = expenseDao,
             budgetDao = budgetDao,
+            billDao = billDao,
+            billPaymentDao = billPaymentDao,
             pendingExpenseDeletionDao = pendingExpenseDeletionDao,
             pendingBudgetDeletionDao = pendingBudgetDeletionDao,
+            pendingBillDeletionDao = pendingBillDeletionDao,
             categoryRemoteDataSource = categoryRemoteDataSource,
             expenseRemoteDataSource = expenseRemoteDataSource,
-            budgetRemoteDataSource = budgetRemoteDataSource
+            budgetRemoteDataSource = budgetRemoteDataSource,
+            billRemoteDataSource = billRemoteDataSource
         )
     }
 

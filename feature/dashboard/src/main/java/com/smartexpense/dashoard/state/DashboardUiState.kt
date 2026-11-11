@@ -14,6 +14,8 @@ data class DashboardUiState(
     val isOverBudget: Boolean = false,
     val recentExpenses: List<Expense> = emptyList(),
     val insights: List<BudgetInsight> = emptyList(),
+    val billsDueThisWeek: Int = 0,
+    val billsDueThisWeekTotal: Double = 0.0,
     val isLoading: Boolean = false,
     val username: String? = null,
     val error: String? = null

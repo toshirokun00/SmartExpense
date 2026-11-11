@@ -52,11 +52,15 @@ fun AboutScreen(
         "unknown"
     }
 
-    Scaffold { padding ->
+    Scaffold(
+        // The header draws behind the status bar and handles its own inset.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .navigationBarsPadding(),
             contentPadding = PaddingValues(bottom = 40.dp)
         ) {
             // ── Hero header ────────────────────────────────────────────────

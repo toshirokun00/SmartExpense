@@ -13,7 +13,8 @@ val dashboardModule = module {
             categoryUseCase = get(),
             settingsUseCase = get(),
             getBudgetInsightsUseCase = get(),
-            profileUseCase = get()
+            profileUseCase = get(),
+            getBillsUseCase = get()
         )
     }
 }
