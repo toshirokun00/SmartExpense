@@ -72,6 +72,9 @@ data object BillsRoute : Route
 data object AddBillRoute : Route
 
 @Serializable
+data object BillHistoryRoute : Route
+
+@Serializable
 data class EditBillRoute(
     val billId: Long
 ) : Route

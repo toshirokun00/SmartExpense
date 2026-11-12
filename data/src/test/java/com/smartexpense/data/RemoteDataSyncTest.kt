@@ -1,6 +1,8 @@
 package com.smartexpense.data
 
+import com.smartexpense.data.remote.SupabaseBillPaymentResponseDto
 import com.smartexpense.data.remote.SupabaseBillRemoteDataSource
+import com.smartexpense.data.remote.SupabaseBillResponseDto
 import com.smartexpense.data.remote.SupabaseBudgetRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBudgetResponseDto
 import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
@@ -16,6 +18,7 @@ import com.smartexpense.database.dao.ExpenseDao
 import com.smartexpense.database.dao.PendingBillDeletionDao
 import com.smartexpense.database.dao.PendingBudgetDeletionDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
+import com.smartexpense.database.entity.BillEntity
 import com.smartexpense.database.entity.BudgetEntity
 import com.smartexpense.database.entity.CategoryEntity
 import com.smartexpense.database.entity.PendingBudgetDeletionEntity
@@ -459,8 +462,97 @@ class RemoteDataSyncTest {
         }
     }
 
-    private fun remoteBudget(clientId: String) = SupabaseBudgetResponseDto(
+    @Test
+    fun `restores remote bill payments after restoring their bill`() = runTest {
+        coEvery { categoryRemoteDataSource.getCategories(USER_ID) } returns emptyList()
+        coEvery { expenseRemoteDataSource.getExpenses(USER_ID) } returns emptyList()
+        coEvery { budgetRemoteDataSource.getBudgets(USER_ID) } returns emptyList()
+        coEvery { billRemoteDataSource.getBills(USER_ID) } returns listOf(
+            remoteBill(clientId = "bill-a")
+        )
+        coEvery { billDao.getAllClientIds() } returns emptyList()
+        coEvery { pendingBillDeletionDao.getPendingDeletions() } returns emptyList()
+        coEvery {
+            billRemoteDataSource.getBillPayments(USER_ID)
+        } returns listOf(
+            remoteBillPayment(clientId = "payment-a", billClientId = "bill-a")
+        )
+        coEvery { billPaymentDao.getAllClientIds() } returns emptyList()
+        coEvery {
+            billDao.getBillByClientId("bill-a")
+        } returns BillEntity(
+            id = 3L,
+            userId = USER_ID,
+            clientId = "bill-a",
+            syncStatus = SyncStatus.SYNCED,
+            name = "Meralco",
+            amount = 1000.0,
+            dueDate = 1L
+        )
+
+        remoteDataSync.pullRemoteData(USER_ID)
+
+        coVerify(exactly = 1) {
+            billPaymentDao.insertPayment(
+                match {
+                    it.clientId == "payment-a" &&
+                        it.userId == USER_ID &&
+                        it.billId == 3L &&
+                        it.billName == "Meralco" &&
+                        it.amount == 980.0 &&
+                        it.paymentMethod == "E_WALLET" &&
+                        it.syncStatus == SyncStatus.SYNCED
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `skips remote bill payments whose bill is missing locally`() = runTest {
+        coEvery { categoryRemoteDataSource.getCategories(USER_ID) } returns emptyList()
+        coEvery { expenseRemoteDataSource.getExpenses(USER_ID) } returns emptyList()
+        coEvery { budgetRemoteDataSource.getBudgets(USER_ID) } returns emptyList()
+        coEvery { billRemoteDataSource.getBills(USER_ID) } returns emptyList()
+        coEvery {
+            billRemoteDataSource.getBillPayments(USER_ID)
+        } returns listOf(
+            remoteBillPayment(clientId = "payment-a", billClientId = "bill-missing")
+        )
+        coEvery { billPaymentDao.getAllClientIds() } returns emptyList()
+        coEvery { billDao.getBillByClientId("bill-missing") } returns null
+
+        remoteDataSync.pullRemoteData(USER_ID)
+
+        coVerify(exactly = 0) {
+            billPaymentDao.insertPayment(any())
+        }
+    }
+
+    private fun remoteBill(clientId: String) = SupabaseBillResponseDto(
         id = 1L,
+        clientId = clientId,
+        userId = USER_ID,
+        name = "Meralco",
+        amount = 1000.0,
+        dueDate = "2026-11-15T00:00:00Z"
+    )
+
+    private fun remoteBillPayment(
+        clientId: String,
+        billClientId: String
+    ) = SupabaseBillPaymentResponseDto(
+        id = 1L,
+        clientId = clientId,
+        userId = USER_ID,
+        billClientId = billClientId,
+        billName = "Meralco",
+        amount = 980.0,
+        paidAt = "2026-11-10T08:00:00Z",
+        paymentMethod = "E_WALLET",
+        createdAt = "2026-11-10T08:00:00Z"
+    )
+
+    private fun remoteBudget(clientId: String) = SupabaseBudgetResponseDto(        id = 1L,
         clientId = clientId,
         userId = USER_ID,
         categoryId = 10L,

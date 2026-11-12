@@ -54,6 +54,17 @@ class BillRepositoryImpl(
         billPaymentDao.getPaymentsForBill(billId)
             .map { entities -> entities.map { it.toDomain() } }
 
+    override fun getPaymentHistory(): Flow<List<BillPayment>> = flow {
+        val userId = authRepository.getCurrentUserId()
+        if (userId == null) {
+            emit(emptyList())
+            return@flow
+        }
+        billPaymentDao.getPaymentsForUser(userId).collect { entities ->
+            emit(entities.map { it.toDomain() })
+        }
+    }
+
     override suspend fun getBill(id: Long): Bill? {
         val userId = authRepository.getCurrentUserId() ?: return null
         val entity = billDao.getBillById(id) ?: return null

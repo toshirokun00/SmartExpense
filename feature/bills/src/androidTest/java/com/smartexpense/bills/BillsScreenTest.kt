@@ -100,6 +100,7 @@ class BillsScreenTest {
     private fun setContent(
         onNavigateBack: () -> Unit = {},
         onAddBill: () -> Unit = {},
+        onHistory: () -> Unit = {},
         onEditBill: (Long) -> Unit = {}
     ) {
         composeRule.setContent {
@@ -107,6 +108,7 @@ class BillsScreenTest {
                 viewModel = viewModel,
                 onNavigateBack = onNavigateBack,
                 onAddBill = onAddBill,
+                onHistory = onHistory,
                 onEditBill = onEditBill
             )
         }
@@ -151,6 +153,17 @@ class BillsScreenTest {
         composeRule.waitForIdle()
 
         assertTrue(addClicked)
+    }
+
+    @Test
+    fun historyActionIsForwarded() {
+        var historyClicked = false
+        setContent(onHistory = { historyClicked = true })
+
+        composeRule.onNodeWithText("History").performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(historyClicked)
     }
 
     // --------------------------------------------------

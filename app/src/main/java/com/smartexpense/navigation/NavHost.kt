@@ -15,6 +15,7 @@ import com.smartexpense.R
 import com.smartexpense.budget.screen.BudgetFormScreen
 import com.smartexpense.budget.screen.BudgetScreen
 import com.smartexpense.bills.screen.BillFormScreen
+import com.smartexpense.bills.screen.BillHistoryScreen
 import com.smartexpense.bills.screen.BillsScreen
 import com.smartexpense.reports.screen.ReportsScreen
 import com.smartexpense.profile.screen.AboutScreen
@@ -196,9 +197,16 @@ fun AppNavHost() {
                 BillsScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onAddBill = { navController.navigate(AddBillRoute) },
+                    onHistory = { navController.navigate(BillHistoryRoute) },
                     onEditBill = { billId ->
                         navController.navigate(EditBillRoute(billId))
                     }
+                )
+            }
+
+            composable<BillHistoryRoute> {
+                BillHistoryScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

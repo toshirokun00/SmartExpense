@@ -15,6 +15,10 @@ interface BillPaymentDao {
     @Query("SELECT * FROM bill_payments WHERE billId = :billId ORDER BY paidAt DESC")
     fun getPaymentsForBill(billId: Long): Flow<List<BillPaymentEntity>>
 
+    /** All payments for a user, newest first, used by the payment history screen. */
+    @Query("SELECT * FROM bill_payments WHERE userId = :userId ORDER BY paidAt DESC")
+    fun getPaymentsForUser(userId: String): Flow<List<BillPaymentEntity>>
+
     @Query(
         "SELECT * FROM bill_payments WHERE billId = :billId " +
             "ORDER BY paidAt DESC LIMIT :limit"

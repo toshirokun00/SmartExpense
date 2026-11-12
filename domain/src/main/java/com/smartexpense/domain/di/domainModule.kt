@@ -11,6 +11,7 @@ import com.smartexpense.domain.usecase.EvaluateBudgetAlertsUseCase
 import com.smartexpense.domain.usecase.ExportReportCsvUseCase
 import com.smartexpense.domain.usecase.ExportReportPdfUseCase
 import com.smartexpense.domain.usecase.GetBillPaymentsUseCase
+import com.smartexpense.domain.usecase.GetBillPaymentHistoryUseCase
 import com.smartexpense.domain.usecase.GetBillUseCase
 import com.smartexpense.domain.usecase.GetBillsUseCase
 import com.smartexpense.domain.usecase.GetBudgetInsightsUseCase
@@ -50,6 +51,7 @@ val domainModule = module {
     factory { GetBillsUseCase(get()) }
     factory { GetBillUseCase(get()) }
     factory { GetBillPaymentsUseCase(get()) }
+    factory { GetBillPaymentHistoryUseCase(get()) }
     factory { AddBillUseCase(get()) }
     factory { UpdateBillUseCase(get()) }
     factory { DeleteBillUseCase(get()) }
