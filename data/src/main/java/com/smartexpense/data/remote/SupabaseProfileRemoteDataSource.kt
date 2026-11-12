@@ -5,6 +5,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
@@ -56,10 +57,14 @@ class SupabaseProfileRemoteDataSource(
         }
 
         try {
+            val existingMetadata = user.userMetadata
             val updatedMetadata = buildJsonObject {
-                // Username + avatar always win. Other keys (if any) are
-                // intentionally not preserved since this app only stores
-                // those two fields in userMetadata.
+                // Keep metadata written by other features (for example the
+                // Spendora account ID) instead of dropping unknown keys.
+                existingMetadata?.forEach { (key, value) ->
+                    put(key, value)
+                }
+                // Username + avatar always win.
                 username?.let { put("username", JsonPrimitive(it)) }
                 if (deleteAvatar) {
                     // GoTrue merges user metadata, so omitting the key would
@@ -96,18 +101,95 @@ class SupabaseProfileRemoteDataSource(
             val avatar = metadata?.get("avatar")
                 ?.jsonPrimitiveContentOrNull()
                 ?.takeUnless { it.startsWith("content://") }
-            val result = ProfileData(username, avatar)
-            if (result.username == null && result.avatarUri == null) null else result
+            val spendoraId = metadata?.get(SPENDORA_ID_KEY)
+                ?.jsonPrimitiveContentOrNull()
+                ?.takeIf { it.isNotBlank() }
+            val emailVisible = metadata?.get(EMAIL_VISIBLE_KEY)
+                ?.jsonPrimitiveBooleanOrNull()
+            val result = ProfileData(username, avatar, spendoraId, emailVisible)
+            if (
+                result.username == null &&
+                result.avatarUri == null &&
+                result.spendoraId == null &&
+                result.isEmailVisible == null
+            ) {
+                null
+            } else {
+                result
+            }
         } catch (_: Exception) {
             null
         }
     }
 
+    /** Reads the public Spendora account ID from user metadata. */
+    suspend fun loadSpendoraId(): String? {
+        return try {
+            val user = supabaseClient.auth.retrieveUserForCurrentSession()
+            user.userMetadata
+                ?.get(SPENDORA_ID_KEY)
+                ?.jsonPrimitiveContentOrNull()
+                ?.takeIf { it.isNotBlank() }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** Persists the public Spendora account ID in user metadata. */
+    suspend fun saveSpendoraId(spendoraId: String) {
+        val user = supabaseClient.auth.currentUserOrNull() ?: return
+        val updatedMetadata = buildJsonObject {
+            user.userMetadata?.forEach { (key, value) ->
+                put(key, value)
+            }
+            put(SPENDORA_ID_KEY, JsonPrimitive(spendoraId))
+        }
+        supabaseClient.auth.updateUser {
+            this.data = updatedMetadata
+        }
+    }
+
+    /** Reads the saved email visibility preference from user metadata. */
+    suspend fun loadEmailVisibility(): Boolean? {
+        return try {
+            val user = supabaseClient.auth.retrieveUserForCurrentSession()
+            user.userMetadata
+                ?.get(EMAIL_VISIBLE_KEY)
+                ?.jsonPrimitiveBooleanOrNull()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** Persists the email visibility preference in user metadata. */
+    suspend fun saveEmailVisibility(visible: Boolean) {
+        val user = supabaseClient.auth.currentUserOrNull() ?: return
+        val updatedMetadata = buildJsonObject {
+            user.userMetadata?.forEach { (key, value) ->
+                put(key, value)
+            }
+            put(EMAIL_VISIBLE_KEY, JsonPrimitive(visible))
+        }
+        supabaseClient.auth.updateUser {
+            this.data = updatedMetadata
+        }
+    }
+
     data class ProfileData(
         val username: String?,
-        val avatarUri: String?
+        val avatarUri: String?,
+        val spendoraId: String? = null,
+        val isEmailVisible: Boolean? = null
     )
+
+    private companion object {
+        const val SPENDORA_ID_KEY = "spendora_id"
+        const val EMAIL_VISIBLE_KEY = "email_visible"
+    }
 
     private fun kotlinx.serialization.json.JsonElement.jsonPrimitiveContentOrNull(): String? =
         (this as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
+
+    private fun kotlinx.serialization.json.JsonElement.jsonPrimitiveBooleanOrNull(): Boolean? =
+        (this as? kotlinx.serialization.json.JsonPrimitive)?.booleanOrNull
 }

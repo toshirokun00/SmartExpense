@@ -13,4 +13,8 @@ interface SettingsRepository {
     suspend fun setNotificationsEnabled(enabled: Boolean)
 
     suspend fun setBudgetAlertThresholds(thresholds: Set<Int>)
+
+    suspend fun setEmailVisible(visible: Boolean)
+
+    suspend fun setSpendoraId(spendoraId: String)
 }

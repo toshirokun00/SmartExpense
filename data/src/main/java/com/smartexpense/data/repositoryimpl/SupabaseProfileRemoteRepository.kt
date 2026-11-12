@@ -36,7 +36,9 @@ class SupabaseProfileRemoteRepository(
             _usernameChanged.emit(
                 ProfileRemoteRepository.RemoteProfile(
                     username = latest.username,
-                    avatarUri = resolvedAvatar ?: latest.avatarUri
+                    avatarUri = resolvedAvatar ?: latest.avatarUri,
+                    spendoraId = latest.spendoraId,
+                    isEmailVisible = latest.isEmailVisible
                 )
             )
         }
@@ -48,8 +50,24 @@ class SupabaseProfileRemoteRepository(
         return data?.let {
             ProfileRemoteRepository.RemoteProfile(
                 username = it.username,
-                avatarUri = it.avatarUri
+                avatarUri = it.avatarUri,
+                spendoraId = it.spendoraId,
+                isEmailVisible = it.isEmailVisible
             )
         }
+    }
+
+    override suspend fun loadSpendoraId(): String? =
+        remoteDataSource.loadSpendoraId()
+
+    override suspend fun saveSpendoraId(spendoraId: String) {
+        remoteDataSource.saveSpendoraId(spendoraId)
+    }
+
+    override suspend fun loadEmailVisibility(): Boolean? =
+        remoteDataSource.loadEmailVisibility()
+
+    override suspend fun saveEmailVisibility(visible: Boolean) {
+        remoteDataSource.saveEmailVisibility(visible)
     }
 }

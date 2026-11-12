@@ -22,13 +22,17 @@ class SupabaseProfileRemoteRepositoryTest {
         coEvery { dataSource.loadProfile() } returns
                 SupabaseProfileRemoteDataSource.ProfileData(
                     username = "Malvin",
-                    avatarUri = "https://cdn/avatar.jpg"
+                    avatarUri = "https://cdn/avatar.jpg",
+                    spendoraId = "spendora42",
+                    isEmailVisible = false
                 )
 
         val profile = repository.loadProfile()
 
         assertEquals("Malvin", profile?.username)
         assertEquals("https://cdn/avatar.jpg", profile?.avatarUri)
+        assertEquals("spendora42", profile?.spendoraId)
+        assertEquals(false, profile?.isEmailVisible)
     }
 
     @Test
@@ -71,6 +75,30 @@ class SupabaseProfileRemoteRepositoryTest {
 
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `spendora id is loaded and saved through the data source`() = runTest {
+        coEvery { dataSource.loadSpendoraId() } returns "spendora7"
+        coEvery { dataSource.saveSpendoraId(any()) } returns Unit
+
+        assertEquals("spendora7", repository.loadSpendoraId())
+
+        repository.saveSpendoraId("spendora8")
+
+        coVerify(exactly = 1) { dataSource.saveSpendoraId("spendora8") }
+    }
+
+    @Test
+    fun `email visibility is loaded and saved through the data source`() = runTest {
+        coEvery { dataSource.loadEmailVisibility() } returns false
+        coEvery { dataSource.saveEmailVisibility(any()) } returns Unit
+
+        assertEquals(false, repository.loadEmailVisibility())
+
+        repository.saveEmailVisibility(true)
+
+        coVerify(exactly = 1) { dataSource.saveEmailVisibility(true) }
     }
 
     @Test
