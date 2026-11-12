@@ -30,4 +30,12 @@ class SettingsUseCase(
             BudgetAlertThresholds.normalize(thresholds)
         )
     }
+
+    suspend fun setEmailVisible(visible: Boolean) {
+        repository.setEmailVisible(visible)
+    }
+
+    suspend fun setSpendoraId(spendoraId: String) {
+        repository.setSpendoraId(spendoraId)
+    }
 }

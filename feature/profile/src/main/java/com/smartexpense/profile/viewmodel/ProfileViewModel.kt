@@ -5,19 +5,23 @@ import androidx.lifecycle.viewModelScope
 import com.smartexpense.domain.model.UserProfile
 import com.smartexpense.domain.usecase.AuthUseCase
 import com.smartexpense.domain.usecase.ProfileUseCase
+import com.smartexpense.domain.usecase.SettingsUseCase
 import com.smartexpense.profile.intent.ProfileIntent
 import com.smartexpense.profile.state.ProfileUiState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.milliseconds
 
 class ProfileViewModel(
     private val profileUseCase: ProfileUseCase,
-    private val authUseCase: AuthUseCase
+    private val authUseCase: AuthUseCase,
+    private val settingsUseCase: SettingsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState(isLoading = true))
@@ -44,6 +48,28 @@ class ProfileViewModel(
 
             is ProfileIntent.RemoveAvatar -> {
                 viewModelScope.launch { removeAvatar() }
+            }
+
+            is ProfileIntent.EmailVisibilityChanged -> {
+                _uiState.value = _uiState.value.copy(
+                    isEmailVisible = intent.isVisible,
+                    error = null
+                )
+                viewModelScope.launch {
+                    try {
+                        settingsUseCase.setEmailVisible(intent.isVisible)
+                        profileUseCase.saveEmailVisibility(intent.isVisible)
+                    } catch (exception: Exception) {
+                        runCatching {
+                            settingsUseCase.setEmailVisible(!intent.isVisible)
+                        }
+                        _uiState.value = _uiState.value.copy(
+                            isEmailVisible = !intent.isVisible,
+                            error = exception.message
+                                ?: "Failed to save email visibility"
+                        )
+                    }
+                }
             }
 
             is ProfileIntent.SaveProfile -> {
@@ -130,20 +156,53 @@ class ProfileViewModel(
                 // install picks up the user's previously-set nickname. Bound
                 // it with a timeout so a slow/unreachable network can't leave
                 // the screen stuck on the loading state.
+                var remoteUnavailable = false
                 try {
-                    withTimeout(HYDRATE_TIMEOUT_MS) {
+                    withTimeout(HYDRATE_TIMEOUT_MS.milliseconds) {
                         profileUseCase.hydrateLocalFromRemote()
                     }
                 } catch (_: Exception) {
                     // Remote unavailable — fall back to local data below.
+                    remoteUnavailable = true
+                }
+
+                val settings = settingsUseCase.getSettings().first()
+                var spendoraId = settings.spendoraId
+                var isEmailVisible = settings.isEmailVisible
+                if (!remoteUnavailable) {
+                    try {
+                        withTimeout(HYDRATE_TIMEOUT_MS.milliseconds) {
+                            val remoteSpendoraId =
+                                profileUseCase.ensureSpendoraId()
+                            if (!remoteSpendoraId.isNullOrBlank()) {
+                                spendoraId = remoteSpendoraId
+                                if (remoteSpendoraId != settings.spendoraId) {
+                                    settingsUseCase.setSpendoraId(remoteSpendoraId)
+                                }
+                            }
+
+                            val remoteEmailVisible =
+                                profileUseCase.loadEmailVisibility()
+                            if (remoteEmailVisible != null) {
+                                isEmailVisible = remoteEmailVisible
+                                if (remoteEmailVisible != settings.isEmailVisible) {
+                                    settingsUseCase.setEmailVisible(remoteEmailVisible)
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {
+                        // Keep the locally cached preferences.
+                    }
                 }
 
                 val details = profileUseCase.getCurrentUserDetails()
                 val profile = profileUseCase.observeLocalProfileForCurrentUser()
                 _uiState.value = ProfileUiState(
                     username = profile?.username.orEmpty(),
+                    spendoraId = spendoraId,
                     avatarUri = profile?.avatarUri,
                     email = details?.email.orEmpty(),
+                    isEmailVisible = isEmailVisible,
                     isLoading = false
                 )
             } catch (exception: Exception) {

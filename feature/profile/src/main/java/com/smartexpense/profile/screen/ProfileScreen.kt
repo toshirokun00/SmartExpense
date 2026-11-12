@@ -1,5 +1,7 @@
 package com.smartexpense.profile.screen
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -30,12 +32,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.smartexpense.designsystems.*
 import com.smartexpense.profile.intent.ProfileIntent
+import com.smartexpense.profile.util.maskEmail
 import com.smartexpense.profile.viewmodel.ProfileEffect
 import com.smartexpense.profile.viewmodel.ProfileViewModel
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 
@@ -48,6 +52,11 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val clipboardManager = remember(context) {
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+    }
+    val scope = rememberCoroutineScope()
     var showEditNameDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
 
@@ -85,7 +94,8 @@ fun ProfileScreen(
             item {
                 ModernHeader(
                     title = "Profile",
-                    subtitle = uiState.email.takeIf { it.isNotBlank() } ?: "Manage your account",
+                    subtitle = maskEmail(uiState.email, uiState.isEmailVisible)
+                        .takeIf { it.isNotBlank() } ?: "Manage your account",
                     icon = Icons.Default.Person
                 )
             }
@@ -96,12 +106,23 @@ fun ProfileScreen(
                 ProfileHeroCard(
                     avatarUri = uiState.avatarUri,
                     username = uiState.username,
-                    email = uiState.email,
+                    spendoraId = uiState.spendoraId,
                     onAvatarSelected = { uri ->
                         viewModel.onIntent(ProfileIntent.AvatarChanged(uri?.toString()))
                     },
                     onAvatarRemoved = {
                         viewModel.onIntent(ProfileIntent.RemoveAvatar)
+                    },
+                    onCopyId = {
+                        val spendoraId = uiState.spendoraId
+                        if (spendoraId.isNotBlank()) {
+                            clipboardManager?.setPrimaryClip(
+                                ClipData.newPlainText("Spendora ID", spendoraId)
+                            )
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Spendora ID copied")
+                            }
+                        }
                     }
                 )
             }
@@ -116,6 +137,7 @@ fun ProfileScreen(
                 LivelySectionCard(
                     accent = LivelyBlue,
                     accentEnd = LivelyCyan,
+                    contentPadding = PaddingValues(12.dp),
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     LivelyInfoRow(
@@ -134,11 +156,37 @@ fun ProfileScreen(
 
                     LivelyInfoRow(
                         title = "Email Address",
-                        subtitle = uiState.email.takeIf { it.isNotBlank() } ?: "Not signed in",
+                        subtitle = maskEmail(uiState.email, uiState.isEmailVisible)
+                            .takeIf { it.isNotBlank() } ?: "Not signed in",
                         icon = Icons.Default.Email,
                         accent = LivelyBlue,
                         accentEnd = LivelyCyan,
-                        onClick = null
+                        onClick = null,
+                        trailing = {
+                            IconButton(
+                                onClick = {
+                                    viewModel.onIntent(
+                                        ProfileIntent.EmailVisibilityChanged(
+                                            !uiState.isEmailVisible
+                                        )
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (uiState.isEmailVisible) {
+                                        Icons.Default.Visibility
+                                    } else {
+                                        Icons.Default.VisibilityOff
+                                    },
+                                    contentDescription = if (uiState.isEmailVisible) {
+                                        "Hide email"
+                                    } else {
+                                        "Show email"
+                                    },
+                                    tint = LivelyBlue
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -183,6 +231,7 @@ fun ProfileScreen(
                 LivelySectionCard(
                     accent = LivelyOrange,
                     accentEnd = LivelyAmber,
+                    contentPadding = PaddingValues(12.dp),
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     LivelyInfoRow(
@@ -206,6 +255,7 @@ fun ProfileScreen(
                 LivelySectionCard(
                     accent = LivelyGreen,
                     accentEnd = LivelyTeal,
+                    contentPadding = PaddingValues(12.dp),
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     LivelyInfoRow(
@@ -275,9 +325,10 @@ fun ProfileScreen(
 private fun ProfileHeroCard(
     avatarUri: String?,
     username: String,
-    email: String,
+    spendoraId: String,
     onAvatarSelected: (Uri?) -> Unit,
-    onAvatarRemoved: () -> Unit
+    onAvatarRemoved: () -> Unit,
+    onCopyId: () -> Unit
 ) {
     val imageLoader = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -379,13 +430,33 @@ private fun ProfileHeroCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = email.takeIf { it.isNotBlank() } ?: "Not signed in",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.85f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = spendoraId.takeIf { it.isNotBlank() } ?: "Not signed in",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (spendoraId.isNotBlank()) {
+                            Spacer(Modifier.width(2.dp))
+                            IconButton(
+                                onClick = onCopyId,
+                                modifier = Modifier.size(30.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copy Spendora ID",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.White.copy(alpha = 0.85f)
+                                )
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(10.dp))
                     Surface(
                         onClick = { imageLoader.launch("image/*") },

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlin.random.Random
 
 class ProfileUseCase(
     private val profileRepository: ProfileRepository,
@@ -149,6 +150,40 @@ class ProfileUseCase(
     suspend fun getCurrentUserDetails() = authRepository.getCurrentUserDetails()
 
     /**
+     * Returns the user's public Spendora ID (for example `spendora4821`),
+     * creating and storing it in Supabase metadata the first time it is
+     * needed. Returns null when the user is signed out or the remote update
+     * fails, in which case the caller can fall back to its cached value.
+     */
+    suspend fun ensureSpendoraId(): String? {
+        authRepository.getCurrentUserId() ?: return null
+
+        val existing = profileRemoteRepository.loadSpendoraId()
+            ?.takeIf { it.startsWith(SPENDORA_ID_PREFIX, ignoreCase = true) }
+        if (existing != null) return existing
+
+        val generated = "$SPENDORA_ID_PREFIX${Random.nextInt(1, 1_000_000)}"
+        return try {
+            profileRemoteRepository.saveSpendoraId(generated)
+            generated
+        } catch (exception: Exception) {
+            null
+        }
+    }
+
+    /** Reads the email visibility preference saved on the remote account. */
+    suspend fun loadEmailVisibility(): Boolean? {
+        authRepository.getCurrentUserId() ?: return null
+        return profileRemoteRepository.loadEmailVisibility()
+    }
+
+    /** Saves the email visibility preference so other devices can restore it. */
+    suspend fun saveEmailVisibility(visible: Boolean) {
+        authRepository.getCurrentUserId() ?: return
+        profileRemoteRepository.saveEmailVisibility(visible)
+    }
+
+    /**
      * Pulls remote profile data. Call this when the app starts on a fresh
      * install or when the user signs in so we hydrate the local DB with
      * the user's previously saved profile.
@@ -170,5 +205,9 @@ class ProfileUseCase(
             // previous session doesn't show.
             profileRepository.deleteProfile(userId)
         }
+    }
+
+    private companion object {
+        const val SPENDORA_ID_PREFIX = "spendora"
     }
 }

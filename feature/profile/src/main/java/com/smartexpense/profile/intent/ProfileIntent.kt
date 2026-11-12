@@ -12,6 +12,10 @@ sealed interface ProfileIntent {
 
     data object RemoveAvatar : ProfileIntent
 
+    data class EmailVisibilityChanged(
+        val isVisible: Boolean
+    ) : ProfileIntent
+
     data object SaveProfile : ProfileIntent
 
     data object SignOut : ProfileIntent

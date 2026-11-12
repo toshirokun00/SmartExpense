@@ -9,7 +9,8 @@ val profileModule = module {
     viewModel {
         ProfileViewModel(
             profileUseCase = get(),
-            authUseCase = get()
+            authUseCase = get(),
+            settingsUseCase = get()
         )
     }
 }

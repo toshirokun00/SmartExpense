@@ -30,6 +30,24 @@ interface ProfileRemoteRepository {
     suspend fun loadProfile(): RemoteProfile?
 
     /**
+     * Reads the user's public Spendora account ID (for example `spendora4821`).
+     * Returns null when it has not been generated yet.
+     */
+    suspend fun loadSpendoraId(): String?
+
+    /**
+     * Persists the user's public Spendora account ID in the remote profile
+     * metadata so every device displays the same value.
+     */
+    suspend fun saveSpendoraId(spendoraId: String)
+
+    /** Reads the user's saved email visibility preference. */
+    suspend fun loadEmailVisibility(): Boolean?
+
+    /** Saves the user's email visibility preference for other devices. */
+    suspend fun saveEmailVisibility(visible: Boolean)
+
+    /**
      * Hot stream of remote profile changes. Consumers that observe this will
      * be notified whenever a profile update succeeds on the remote side.
      */
@@ -37,6 +55,8 @@ interface ProfileRemoteRepository {
 
     data class RemoteProfile(
         val username: String?,
-        val avatarUri: String?
+        val avatarUri: String?,
+        val spendoraId: String? = null,
+        val isEmailVisible: Boolean? = null
     )
 }

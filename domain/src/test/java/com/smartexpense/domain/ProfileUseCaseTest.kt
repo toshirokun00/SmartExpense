@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -233,6 +234,74 @@ class ProfileUseCaseTest {
         coVerifyOrder {
             profileRepository.deleteProfile("user-1")
             profileRemoteRepository.saveProfile(null, null, true)
+        }
+    }
+
+    @Test
+    fun `ensureSpendoraId returns the existing remote id`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRemoteRepository.loadSpendoraId() } returns "spendora42"
+
+        val result = useCase.ensureSpendoraId()
+
+        assertEquals("spendora42", result)
+        coVerify(exactly = 0) { profileRemoteRepository.saveSpendoraId(any()) }
+    }
+
+    @Test
+    fun `ensureSpendoraId generates and saves a new id`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRemoteRepository.loadSpendoraId() } returns null
+        coEvery { profileRemoteRepository.saveSpendoraId(any()) } just Runs
+
+        val result = useCase.ensureSpendoraId()
+
+        assertTrue(result != null && Regex("spendora\\d+").matches(result))
+        coVerify(exactly = 1) { profileRemoteRepository.saveSpendoraId(result!!) }
+    }
+
+    @Test
+    fun `ensureSpendoraId does nothing when signed out`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns null
+
+        assertNull(useCase.ensureSpendoraId())
+        coVerify(exactly = 0) { profileRemoteRepository.loadSpendoraId() }
+    }
+
+    @Test
+    fun `loadEmailVisibility returns the remote preference`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRemoteRepository.loadEmailVisibility() } returns false
+
+        assertEquals(false, useCase.loadEmailVisibility())
+    }
+
+    @Test
+    fun `loadEmailVisibility returns null when signed out`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns null
+
+        assertNull(useCase.loadEmailVisibility())
+        coVerify(exactly = 0) { profileRemoteRepository.loadEmailVisibility() }
+    }
+
+    @Test
+    fun `saveEmailVisibility delegates when signed in`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { profileRemoteRepository.saveEmailVisibility(any()) } just Runs
+
+        useCase.saveEmailVisibility(false)
+
+        coVerify(exactly = 1) { profileRemoteRepository.saveEmailVisibility(false) }
+    }
+
+    @Test
+    fun `saveEmailVisibility does nothing when signed out`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns null
+
+        useCase.saveEmailVisibility(false)
+
+        coVerify(exactly = 0) {
+            profileRemoteRepository.saveEmailVisibility(any())
         }
     }
 }

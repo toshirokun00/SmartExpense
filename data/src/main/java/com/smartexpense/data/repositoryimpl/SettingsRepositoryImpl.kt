@@ -15,8 +15,10 @@ class SettingsRepositoryImpl(
         return combine(
             dataStore.theme,
             dataStore.notificationsEnabled,
-            dataStore.budgetAlertThresholds
-        ) { theme, notificationsEnabled, thresholds ->
+            dataStore.budgetAlertThresholds,
+            dataStore.emailVisible,
+            dataStore.spendoraId
+        ) { theme, notificationsEnabled, thresholds, emailVisible, spendoraId ->
 
             AppSettings(
                 theme = when (theme) {
@@ -27,7 +29,9 @@ class SettingsRepositoryImpl(
                 notificationsEnabled = notificationsEnabled,
                 budgetAlertThresholds = thresholds
                     ?.let { BudgetAlertThresholds.normalize(it) }
-                    ?: BudgetAlertThresholds.DEFAULT
+                    ?: BudgetAlertThresholds.DEFAULT,
+                isEmailVisible = emailVisible,
+                spendoraId = spendoraId
             )
         }
     }
@@ -44,5 +48,13 @@ class SettingsRepositoryImpl(
         dataStore.setBudgetAlertThresholds(
             BudgetAlertThresholds.normalize(thresholds)
         )
+    }
+
+    override suspend fun setEmailVisible(visible: Boolean) {
+        dataStore.setEmailVisible(visible)
+    }
+
+    override suspend fun setSpendoraId(spendoraId: String) {
+        dataStore.setSpendoraId(spendoraId)
     }
 }
