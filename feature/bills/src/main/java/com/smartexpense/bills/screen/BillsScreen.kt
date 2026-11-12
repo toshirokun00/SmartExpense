@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Repeat
@@ -57,6 +58,7 @@ fun BillsScreen(
     viewModel: BillsViewModel = koinViewModel(),
     onNavigateBack: () -> Unit,
     onAddBill: () -> Unit,
+    onHistory: () -> Unit,
     onEditBill: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,6 +71,11 @@ fun BillsScreen(
             icon = Icons.Default.Receipt,
             onBackClick = onNavigateBack,
             actions = {
+                ModernHeaderActionPill(
+                    label = "History",
+                    icon = Icons.Default.History,
+                    onClick = onHistory
+                )
                 ModernHeaderActionPill(
                     label = "Add Bill",
                     icon = Icons.Default.Add,

@@ -1,6 +1,7 @@
 package com.smartexpense.bills.di
 
 import com.smartexpense.bills.viewmodel.BillFormViewModel
+import com.smartexpense.bills.viewmodel.BillHistoryViewModel
 import com.smartexpense.bills.viewmodel.BillsViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -22,6 +23,13 @@ val billsModule = module {
             deleteBillUseCase = get(),
             skipBillUseCase = get(),
             categoryUseCase = get()
+        )
+    }
+
+    viewModel {
+        BillHistoryViewModel(
+            getBillPaymentHistoryUseCase = get(),
+            clock = get()
         )
     }
 }

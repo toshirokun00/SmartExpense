@@ -20,6 +20,11 @@ class GetBillPaymentsUseCase(private val repo: BillRepository) {
     operator fun invoke(billId: Long): Flow<List<BillPayment>> = repo.getPayments(billId)
 }
 
+/** All recorded bill payments for the signed-in user, newest first. */
+class GetBillPaymentHistoryUseCase(private val repo: BillRepository) {
+    operator fun invoke(): Flow<List<BillPayment>> = repo.getPaymentHistory()
+}
+
 class AddBillUseCase(private val repo: BillRepository) {
     suspend operator fun invoke(bill: Bill): Long = repo.addBill(bill)
 }

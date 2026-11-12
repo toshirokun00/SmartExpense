@@ -8,6 +8,13 @@ import kotlinx.coroutines.flow.Flow
 interface BillRepository {
     fun getBills(): Flow<List<Bill>>
     fun getPayments(billId: Long): Flow<List<BillPayment>>
+
+    /**
+     * Every bill payment recorded for the signed-in user, newest first.
+     * Kept even after a recurring bill rolls forward, so the payment history
+     * survives across cycles.
+     */
+    fun getPaymentHistory(): Flow<List<BillPayment>>
     suspend fun getBill(id: Long): Bill?
     suspend fun addBill(bill: Bill): Long
     suspend fun updateBill(bill: Bill)

@@ -9,6 +9,7 @@ import com.smartexpense.database.dao.BillPaymentDao
 import com.smartexpense.database.dao.PendingBillDeletionDao
 import com.smartexpense.database.entity.BillEntity
 import com.smartexpense.database.entity.BillPaymentEntity
+import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.BillAmountType
 import com.smartexpense.domain.model.BillFrequency
 import com.smartexpense.domain.model.PaymentMethod
@@ -329,4 +330,159 @@ class BillRepositoryImplTest {
         assertTrue(bill.skipped)
         assertEquals(false, bill.isActive)
     }
+
+    @Test
+    fun getPaymentHistoryEmitsEmptyWhenSignedOut() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns null
+
+        val payments = repository.getPaymentHistory().first()
+
+        assertTrue(payments.isEmpty())
+    }
+
+    @Test
+    fun getPaymentHistoryMapsEveryPaymentForTheUser() = runTest {
+        val firstPaidAt = millis(2026, 2, 10)
+        val secondPaidAt = millis(2026, 1, 10)
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { billPaymentDao.getPaymentsForUser("user-1") } returns flowOf(
+            listOf(
+                BillPaymentEntity(
+                    id = 2L,
+                    userId = "user-1",
+                    billId = 1L,
+                    billName = "Meralco",
+                    amount = 1250.0,
+                    paidAt = secondPaidAt,
+                    paymentMethod = PaymentMethod.E_WALLET.name,
+                    createdAt = secondPaidAt
+                ),
+                BillPaymentEntity(
+                    id = 1L,
+                    userId = "user-1",
+                    billId = 1L,
+                    billName = "Meralco",
+                    amount = 980.0,
+                    paidAt = firstPaidAt,
+                    paymentMethod = PaymentMethod.CASH.name,
+                    createdAt = firstPaidAt
+                )
+            )
+        )
+
+        val payments = repository.getPaymentHistory().first()
+
+        assertEquals(listOf(2L, 1L), payments.map { it.id })
+        assertEquals("Meralco", payments.last().billName)
+        assertEquals(980.0, payments.last().amount, 0.0)
+        assertEquals(firstPaidAt, payments.last().paidAtMillis)
+        assertEquals(PaymentMethod.CASH, payments.last().paymentMethod)
+    }
+
+    @Test
+    fun syncBillsUploadsPendingPaymentsAfterTheirBillIsSynced() = runTest {
+        val bill = billEntity(
+            id = 1L,
+            dueDate = millis(2026, 1, 15),
+            frequency = BillFrequency.MONTHLY
+        ).copy(syncStatus = SyncStatus.SYNCED)
+        val payment = paymentEntity(
+            id = 7L,
+            billId = bill.id,
+            clientId = "payment-a",
+            amount = 980.0
+        )
+        coEvery { pendingBillDeletionDao.getPendingDeletions() } returns emptyList()
+        coEvery { billDao.getUnsyncedBills() } returns emptyList()
+        coEvery { billDao.getBillById(bill.id) } returns bill
+        coEvery { billPaymentDao.getUnsyncedPayments() } returns listOf(payment)
+        coEvery { billPaymentDao.updateSyncStatus(any(), any()) } returns Unit
+
+        repository.syncBills("user-1")
+
+        coVerify(exactly = 1) {
+            supabaseBillRemoteDataSource.upsertBillPayment(
+                match {
+                    it.clientId == "payment-a" &&
+                        it.userId == "user-1" &&
+                        it.billClientId == bill.clientId &&
+                        it.billName == "Meralco" &&
+                        it.amount == 980.0 &&
+                        it.paymentMethod == PaymentMethod.CASH.name
+                }
+            )
+        }
+        coVerify(exactly = 1) {
+            billPaymentDao.updateSyncStatus(7L, SyncStatus.SYNCED.name)
+        }
+    }
+
+    @Test
+    fun syncBillsSkipsPaymentsUntilTheirBillIsSynced() = runTest {
+        val bill = billEntity(
+            id = 1L,
+            dueDate = millis(2026, 1, 15),
+            frequency = BillFrequency.MONTHLY
+        ).copy(syncStatus = SyncStatus.PENDING)
+        coEvery { pendingBillDeletionDao.getPendingDeletions() } returns emptyList()
+        coEvery { billDao.getUnsyncedBills() } returns emptyList()
+        coEvery { billDao.getBillById(bill.id) } returns bill
+        coEvery { billPaymentDao.getUnsyncedPayments() } returns listOf(paymentEntity(billId = bill.id))
+
+        repository.syncBills("user-1")
+
+        coVerify(exactly = 0) {
+            supabaseBillRemoteDataSource.upsertBillPayment(any())
+        }
+    }
+
+    @Test
+    fun syncBillsMarksPaymentFailedWhenUploadFails() = runTest {
+        val bill = billEntity(
+            id = 1L,
+            dueDate = millis(2026, 1, 15),
+            frequency = BillFrequency.MONTHLY
+        ).copy(syncStatus = SyncStatus.SYNCED)
+        val payment = paymentEntity(id = 9L, billId = bill.id)
+        coEvery { pendingBillDeletionDao.getPendingDeletions() } returns emptyList()
+        coEvery { billDao.getUnsyncedBills() } returns emptyList()
+        coEvery { billDao.getBillById(bill.id) } returns bill
+        coEvery { billPaymentDao.getUnsyncedPayments() } returns listOf(payment)
+        coEvery { billPaymentDao.updateSyncStatus(any(), any()) } returns Unit
+        coEvery {
+            supabaseBillRemoteDataSource.upsertBillPayment(any())
+        } throws RuntimeException("offline")
+
+        try {
+            repository.syncBills("user-1")
+            fail("Expected IllegalStateException")
+        } catch (expected: IllegalStateException) {
+            assertEquals("Some bills failed to synchronize", expected.message)
+        }
+
+        coVerify(exactly = 1) {
+            billPaymentDao.updateSyncStatus(9L, SyncStatus.FAILED.name)
+        }
+    }
+
+    private fun paymentEntity(
+        id: Long = 1L,
+        billId: Long = 1L,
+        clientId: String = "payment-a",
+        userId: String = "user-1",
+        amount: Double = 900.0,
+        paidAt: Long = millis(2026, 1, 15),
+        paymentMethod: PaymentMethod = PaymentMethod.CASH,
+        createdAt: Long = paidAt
+    ) = BillPaymentEntity(
+        id = id,
+        userId = userId,
+        billId = billId,
+        clientId = clientId,
+        billName = "Meralco",
+        amount = amount,
+        paidAt = paidAt,
+        paymentMethod = paymentMethod.name,
+        createdAt = createdAt
+    )
 }
