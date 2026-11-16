@@ -5,20 +5,29 @@ import com.smartexpense.data.remote.SupabaseBillRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBudgetRemoteDataSource
 import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
+import com.smartexpense.data.remote.SupabasePaycheckRemoteDataSource
 import com.smartexpense.database.dao.BillDao
 import com.smartexpense.database.dao.BillPaymentDao
 import com.smartexpense.database.dao.BudgetDao
 import com.smartexpense.database.dao.CategoryDao
 import com.smartexpense.database.dao.ExpenseDao
+import com.smartexpense.database.dao.PaycheckBillDao
+import com.smartexpense.database.dao.PaycheckDao
+import com.smartexpense.database.dao.PaycheckScheduleDao
 import com.smartexpense.database.dao.PendingBillDeletionDao
 import com.smartexpense.database.dao.PendingBudgetDeletionDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
+import com.smartexpense.database.dao.PendingPaycheckDeletionDao
 import com.smartexpense.database.entity.BillEntity
 import com.smartexpense.database.entity.BillPaymentEntity
 import com.smartexpense.database.entity.BudgetEntity
 import com.smartexpense.database.entity.CategoryEntity
 import com.smartexpense.database.entity.ExpenseEntity
+import com.smartexpense.database.entity.PaycheckBillEntity
+import com.smartexpense.database.entity.PaycheckEntity
+import com.smartexpense.database.entity.PaycheckScheduleEntity
 import com.smartexpense.database.entity.SyncStatus
+import com.smartexpense.domain.model.PaycheckFrequency
 import com.smartexpense.domain.money.Money
 import java.time.OffsetDateTime
 import kotlin.coroutines.cancellation.CancellationException
@@ -33,10 +42,15 @@ class RemoteDataSync(
     private val pendingExpenseDeletionDao: PendingExpenseDeletionDao,
     private val pendingBudgetDeletionDao: PendingBudgetDeletionDao,
     private val pendingBillDeletionDao: PendingBillDeletionDao,
+    private val paycheckDao: PaycheckDao,
+    private val paycheckBillDao: PaycheckBillDao,
+    private val paycheckScheduleDao: PaycheckScheduleDao,
+    private val pendingPaycheckDeletionDao: PendingPaycheckDeletionDao,
     private val categoryRemoteDataSource: SupabaseCategoryRemoteDataSource,
     private val expenseRemoteDataSource: SupabaseExpenseRemoteDataSource,
     private val budgetRemoteDataSource: SupabaseBudgetRemoteDataSource,
-    private val billRemoteDataSource: SupabaseBillRemoteDataSource
+    private val billRemoteDataSource: SupabaseBillRemoteDataSource,
+    private val paycheckRemoteDataSource: SupabasePaycheckRemoteDataSource
 ) {
     suspend fun pullRemoteData(userId: String) {
         val remoteCategoryIdToLocalId = pullRemoteCategories(userId)
@@ -68,6 +82,32 @@ class RemoteDataSync(
             throw exception
         } catch (exception: Exception) {
             Log.e(TAG, "Failed to restore bill payments", exception)
+        }
+
+        // Paychecks reference bills and their recurring schedule, so restore
+        // the schedules first.
+        try {
+            pullRemotePaycheckSchedules(userId)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            Log.e(TAG, "Failed to restore paycheck schedules", exception)
+        }
+
+        try {
+            pullRemotePaychecks(userId)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            Log.e(TAG, "Failed to restore paychecks", exception)
+        }
+
+        try {
+            pullRemotePaycheckBills(userId)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            Log.e(TAG, "Failed to restore paycheck bill assignments", exception)
         }
     }
 
@@ -239,6 +279,122 @@ class RemoteDataSync(
                 throw exception
             } catch (exception: Exception) {
                 Log.e(TAG, "Failed to restore bill payment ${remote.clientId}", exception)
+            }
+        }
+    }
+
+    private suspend fun pullRemotePaycheckSchedules(userId: String) {
+        val remoteSchedules = paycheckRemoteDataSource.getPaycheckSchedules(userId)
+        if (remoteSchedules.isEmpty()) return
+        val existingClientIds = paycheckScheduleDao.getAllClientIds().toSet()
+
+        for (remote in remoteSchedules) {
+            if (remote.clientId in existingClientIds) continue
+            val frequency = PaycheckFrequency.entries
+                .firstOrNull { it.name == remote.frequency }
+                ?: continue
+            val startDate = parseTimestamp(remote.startDate) ?: continue
+            val endDate = remote.endDate?.let { parseTimestamp(it) }
+            val createdAt = parseTimestamp(remote.createdAt) ?: startDate
+
+            try {
+                paycheckScheduleDao.insertScheduleIgnoringDuplicate(
+                    PaycheckScheduleEntity(
+                        userId = userId,
+                        clientId = remote.clientId,
+                        syncStatus = SyncStatus.SYNCED,
+                        amount = remote.amount,
+                        label = remote.label,
+                        frequency = frequency.name,
+                        firstDay = remote.firstDay,
+                        secondDay = remote.secondDay,
+                        startDate = startDate,
+                        endDate = endDate,
+                        isActive = remote.isActive,
+                        createdAt = createdAt
+                    )
+                )
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to restore paycheck schedule ${remote.clientId}", exception)
+            }
+        }
+    }
+
+    private suspend fun pullRemotePaychecks(userId: String) {
+        val remotePaychecks = paycheckRemoteDataSource.getPaychecks(userId)
+        if (remotePaychecks.isEmpty()) return
+        val pendingDeletionClientIds = pendingPaycheckDeletionDao
+            .getPendingDeletions()
+            .map { it.clientId }
+            .toSet()
+        for (remote in remotePaychecks) {
+            if (remote.clientId in pendingDeletionClientIds) continue
+            if (paycheckDao.getPaycheckByClientId(remote.clientId) != null) continue
+            val payDate = parseTimestamp(remote.payDate) ?: continue
+            val createdAt = remote.createdAt.let { parseTimestamp(it) } ?: payDate
+            try {
+                paycheckDao.insertPaycheck(
+                    PaycheckEntity(
+                        userId = userId,
+                        clientId = remote.clientId,
+                        syncStatus = SyncStatus.SYNCED,
+                        amount = remote.amount,
+                        payDate = payDate,
+                        label = remote.label,
+                        createdAt = createdAt,
+                        scheduleClientId = remote.scheduleClientId,
+                        occurrenceDate = remote.occurrenceDate?.let {
+                            parseTimestamp(it)
+                        },
+                        isSkipped = remote.isSkipped
+                    )
+                )
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to restore paycheck ${remote.clientId}", exception)
+            }
+        }
+    }
+
+    private suspend fun pullRemotePaycheckBills(userId: String) {
+        val remoteAssignments = paycheckRemoteDataSource.getPaycheckBills(userId)
+        if (remoteAssignments.isEmpty()) return
+        for (remote in remoteAssignments) {
+            // Both the paycheck and the bill must exist locally before the
+            // assignment can be represented.
+            val paycheck = paycheckDao.getPaycheckByClientId(
+                remote.paycheckClientId
+            ) ?: continue
+            // A paycheck with unsynced local changes is about to be uploaded
+            // together with its own selection, which replaces the remote set.
+            // Restoring remote assignments here would resurrect bills the
+            // user just removed.
+            if (paycheck.syncStatus != SyncStatus.SYNCED) continue
+            val bill = billDao.getBillByClientId(remote.billClientId) ?: continue
+            try {
+                paycheckBillDao.insertAssignment(
+                    PaycheckBillEntity(
+                        userId = userId,
+                        paycheckId = paycheck.id,
+                        billId = bill.id,
+                        clientId = remote.clientId,
+                        paycheckClientId = remote.paycheckClientId,
+                        billClientId = remote.billClientId,
+                        createdAt = parseTimestamp(remote.createdAt)
+                            ?: paycheck.createdAt
+                    )
+                )
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(
+                    TAG,
+                    "Failed to restore paycheck bill ${remote.clientId}",
+                    exception
+                )
             }
         }
     }

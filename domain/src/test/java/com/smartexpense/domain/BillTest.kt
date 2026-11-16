@@ -123,6 +123,37 @@ class BillTest {
     }
 
     @Test
+    fun oneTimeBillHasNoPreviousDueDate() {
+        val bill = bill(millis(2026, 1, 15), BillFrequency.NONE)
+        assertNull(bill.previousDueDateMillis(zone))
+    }
+
+    @Test
+    fun previousDueDateStepsBackOneCycle() {
+        assertEquals(
+            millis(2026, 1, 15),
+            bill(millis(2026, 2, 15), BillFrequency.MONTHLY)
+                .previousDueDateMillis(zone)
+        )
+        assertEquals(
+            millis(2026, 1, 22),
+            bill(millis(2026, 1, 29), BillFrequency.WEEKLY)
+                .previousDueDateMillis(zone)
+        )
+    }
+
+    @Test
+    fun previousDueDateUsesRepeatInterval() {
+        val bill = bill(millis(2026, 3, 31), BillFrequency.MONTHLY)
+            .copy(repeatInterval = 2)
+
+        assertEquals(
+            millis(2026, 1, 31),
+            bill.previousDueDateMillis(zone)
+        )
+    }
+
+    @Test
     fun statusIsComputedFromDueDate() {
         val today = millis(2026, 6, 10)
         val dueToday = bill(today, BillFrequency.NONE)

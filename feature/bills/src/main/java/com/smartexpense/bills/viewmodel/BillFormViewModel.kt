@@ -6,6 +6,7 @@ import com.smartexpense.bills.effect.BillFormEffect
 import com.smartexpense.bills.intent.BillFormIntent
 import com.smartexpense.bills.state.BillFormState
 import com.smartexpense.bills.state.BillFormUiState
+import com.smartexpense.bills.state.startOfTodayMillis
 import com.smartexpense.bills.util.formatAmountForEditing
 import com.smartexpense.core.common.util.MoneyInputUtil
 import com.smartexpense.domain.model.Bill
@@ -65,7 +66,7 @@ class BillFormViewModel(
         if (billId == null) {
             _uiState.update {
                 it.copy(
-                    form = BillFormState(dueDateMillis = System.currentTimeMillis()),
+                    form = BillFormState(dueDateMillis = startOfTodayMillis()),
                     isLoading = false
                 )
             }

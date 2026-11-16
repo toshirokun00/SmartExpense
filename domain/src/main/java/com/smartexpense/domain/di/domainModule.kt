@@ -20,6 +20,14 @@ import com.smartexpense.domain.usecase.GetExpenseReportUseCase
 import com.smartexpense.domain.usecase.GetExpenseUseCase
 import com.smartexpense.domain.usecase.GetExpensesInRangeUseCase
 import com.smartexpense.domain.usecase.PayBillUseCase
+import com.smartexpense.domain.usecase.AddPaycheckScheduleUseCase
+import com.smartexpense.domain.usecase.AddPaycheckUseCase
+import com.smartexpense.domain.usecase.DeletePaycheckUseCase
+import com.smartexpense.domain.usecase.GetPaycheckSchedulesUseCase
+import com.smartexpense.domain.usecase.GetPaycheckUseCase
+import com.smartexpense.domain.usecase.GetPaychecksUseCase
+import com.smartexpense.domain.usecase.StopPaycheckScheduleUseCase
+import com.smartexpense.domain.usecase.UpdatePaycheckUseCase
 import com.smartexpense.domain.usecase.ProcessRecurringExpensesUseCase
 import com.smartexpense.domain.usecase.RecurringExpenseUseCase
 import com.smartexpense.domain.usecase.SearchExpensesUseCase
@@ -62,6 +70,15 @@ val domainModule = module {
             addExpenseUseCase = get()
         )
     }
+
+    factory { GetPaychecksUseCase(get()) }
+    factory { GetPaycheckSchedulesUseCase(get()) }
+    factory { GetPaycheckUseCase(get()) }
+    factory { AddPaycheckUseCase(get()) }
+    factory { UpdatePaycheckUseCase(get()) }
+    factory { DeletePaycheckUseCase(get()) }
+    factory { AddPaycheckScheduleUseCase(get()) }
+    factory { StopPaycheckScheduleUseCase(get()) }
 
     factory { BudgetUseCase(get()) }
 

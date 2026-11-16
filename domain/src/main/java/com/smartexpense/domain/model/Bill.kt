@@ -156,24 +156,52 @@ data class Bill(
     }
 
     /**
-     * Returns the next due date after [dueDateMillis] for a recurring bill, or
-     * `null` for a one-time bill. Dates are advanced with calendar arithmetic
-     * (never fixed millisecond math) so month lengths are handled correctly.
+     * Returns the next due date after [from] for a recurring bill, or `null`
+     * for a one-time bill. [from] defaults to the stored due date. Dates are
+     * advanced with calendar arithmetic (never fixed millisecond math) so
+     * month lengths are handled correctly.
      */
-    fun nextDueDateMillis(zoneId: ZoneId = ZoneId.systemDefault()): Long? {
+    fun nextDueDateMillis(
+        zoneId: ZoneId = ZoneId.systemDefault(),
+        from: LocalDate = dueDate(zoneId)
+    ): Long? {
         if (frequency == BillFrequency.NONE) return null
 
-        val current = dueDate(zoneId)
         val step = repeatInterval.coerceAtLeast(1)
 
         val next = when (frequency) {
-            BillFrequency.WEEKLY -> current.plusWeeks(step.toLong())
-            BillFrequency.MONTHLY -> current.plusMonths(step.toLong())
-            BillFrequency.QUARTERLY -> current.plusMonths(step * 3L)
-            BillFrequency.YEARLY -> current.plusYears(step.toLong())
+            BillFrequency.WEEKLY -> from.plusWeeks(step.toLong())
+            BillFrequency.MONTHLY -> from.plusMonths(step.toLong())
+            BillFrequency.QUARTERLY -> from.plusMonths(step * 3L)
+            BillFrequency.YEARLY -> from.plusYears(step.toLong())
             BillFrequency.NONE -> return null
         }
 
         return next.atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
+
+    /**
+     * Returns the due date one cycle before [from] for a recurring bill, or
+     * `null` for a one-time bill. [from] defaults to the stored due date. Used
+     * to find the cycle an earlier paycheck covered after the row has moved on
+     * to a later one.
+     */
+    fun previousDueDateMillis(
+        zoneId: ZoneId = ZoneId.systemDefault(),
+        from: LocalDate = dueDate(zoneId)
+    ): Long? {
+        if (frequency == BillFrequency.NONE) return null
+
+        val step = repeatInterval.coerceAtLeast(1)
+
+        val previous = when (frequency) {
+            BillFrequency.WEEKLY -> from.minusWeeks(step.toLong())
+            BillFrequency.MONTHLY -> from.minusMonths(step.toLong())
+            BillFrequency.QUARTERLY -> from.minusMonths(step * 3L)
+            BillFrequency.YEARLY -> from.minusYears(step.toLong())
+            BillFrequency.NONE -> return null
+        }
+
+        return previous.atStartOfDay(zoneId).toInstant().toEpochMilli()
     }
 }

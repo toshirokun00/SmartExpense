@@ -79,3 +79,17 @@ data class EditBillRoute(
     val billId: Long
 ) : Route
 
+@Serializable
+data object PaychecksRoute : Route
+
+@Serializable
+data object MoneyTrackerRoute : Route
+
+@Serializable
+data object AddPaycheckRoute : Route
+
+@Serializable
+data class EditPaycheckRoute(
+    val paycheckId: Long
+) : Route
+

@@ -17,6 +17,8 @@ class BillDeletionTransaction(
 
             // Remote payments cascade from the bill, so local history can go too.
             database.billPaymentDao().deletePaymentsForBill(billId)
+            // A deleted bill can no longer be covered by a paycheck.
+            database.paycheckBillDao().deleteAssignmentsForBill(billId)
             database.billDao().deleteBillById(billId)
         }
     }

@@ -9,9 +9,13 @@ import com.smartexpense.database.dao.BudgetAlertDao
 import com.smartexpense.database.dao.BudgetDao
 import com.smartexpense.database.dao.CategoryDao
 import com.smartexpense.database.dao.ExpenseDao
+import com.smartexpense.database.dao.PaycheckBillDao
+import com.smartexpense.database.dao.PaycheckDao
+import com.smartexpense.database.dao.PaycheckScheduleDao
 import com.smartexpense.database.dao.PendingBillDeletionDao
 import com.smartexpense.database.dao.PendingBudgetDeletionDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
+import com.smartexpense.database.dao.PendingPaycheckDeletionDao
 import com.smartexpense.database.dao.RecurringScheduleDao
 import com.smartexpense.database.dao.UserProfileDao
 import com.smartexpense.database.entity.BillEntity
@@ -20,9 +24,13 @@ import com.smartexpense.database.entity.BudgetAlertRecordEntity
 import com.smartexpense.database.entity.BudgetEntity
 import com.smartexpense.database.entity.CategoryEntity
 import com.smartexpense.database.entity.ExpenseEntity
+import com.smartexpense.database.entity.PaycheckBillEntity
+import com.smartexpense.database.entity.PaycheckEntity
+import com.smartexpense.database.entity.PaycheckScheduleEntity
 import com.smartexpense.database.entity.PendingBillDeletionEntity
 import com.smartexpense.database.entity.PendingBudgetDeletionEntity
 import com.smartexpense.database.entity.PendingExpenseDeletionEntity
+import com.smartexpense.database.entity.PendingPaycheckDeletionEntity
 import com.smartexpense.database.entity.RecurringScheduleEntity
 import com.smartexpense.database.entity.UserProfileEntity
 
@@ -38,7 +46,11 @@ import com.smartexpense.database.entity.UserProfileEntity
         UserProfileEntity::class,
         BillEntity::class,
         BillPaymentEntity::class,
-        PendingBillDeletionEntity::class
+        PendingBillDeletionEntity::class,
+        PaycheckEntity::class,
+        PaycheckBillEntity::class,
+        PaycheckScheduleEntity::class,
+        PendingPaycheckDeletionEntity::class
     ],
     version = 1,
     exportSchema = true
@@ -67,6 +79,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun billPaymentDao(): BillPaymentDao
 
     abstract fun pendingBillDeletionDao(): PendingBillDeletionDao
+
+    abstract fun paycheckDao(): PaycheckDao
+
+    abstract fun paycheckBillDao(): PaycheckBillDao
+
+    abstract fun paycheckScheduleDao(): PaycheckScheduleDao
+
+    abstract fun pendingPaycheckDeletionDao(): PendingPaycheckDeletionDao
 
     companion object {
     }

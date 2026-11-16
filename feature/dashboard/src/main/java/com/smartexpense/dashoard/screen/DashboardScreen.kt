@@ -69,7 +69,9 @@ fun DashboardScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToReports: () -> Unit,
     onNavigateToRecurring: () -> Unit,
-    onNavigateToBills: () -> Unit
+    onNavigateToBills: () -> Unit,
+    onNavigateToPaychecks: () -> Unit,
+    onNavigateToMoneyTracker: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val colorScheme = MaterialTheme.colorScheme
@@ -192,7 +194,9 @@ fun DashboardScreen(
                     onNavigateToBudgets = onNavigateToBudgets,
                     onNavigateToReports = onNavigateToReports,
                     onNavigateToRecurring = onNavigateToRecurring,
-                    onNavigateToBills = onNavigateToBills
+                    onNavigateToBills = onNavigateToBills,
+                    onNavigateToPaychecks = onNavigateToPaychecks,
+                    onNavigateToMoneyTracker = onNavigateToMoneyTracker
                 )
             }
 
@@ -731,7 +735,9 @@ private fun QuickActionsGrid(
     onNavigateToBudgets: () -> Unit,
     onNavigateToReports: () -> Unit,
     onNavigateToRecurring: () -> Unit,
-    onNavigateToBills: () -> Unit
+    onNavigateToBills: () -> Unit,
+    onNavigateToPaychecks: () -> Unit,
+    onNavigateToMoneyTracker: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -744,7 +750,7 @@ private fun QuickActionsGrid(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.18f))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
@@ -757,44 +763,118 @@ private fun QuickActionsGrid(
                     )
                 )
                 .padding(horizontal = 12.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            QuickActionItem(
-                modifier = Modifier.weight(1f),
-                label = "Expenses",
-                icon = Icons.AutoMirrored.Filled.ReceiptLong,
-                accent = Color(0xFF2563EB),
-                onClick = onNavigateToExpenses
+            MoneyTrackerAction(onClick = onNavigateToMoneyTracker)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                QuickActionItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Expenses",
+                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                    accent = Color(0xFF2563EB),
+                    onClick = onNavigateToExpenses
+                )
+                QuickActionItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Budgets",
+                    icon = Icons.Default.Wallet,
+                    accent = Color(0xFF3B82F6),
+                    onClick = onNavigateToBudgets
+                )
+                QuickActionItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Reports",
+                    icon = Icons.Default.BarChart,
+                    accent = Color(0xFF2563EB),
+                    onClick = onNavigateToReports
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                QuickActionItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Recurring",
+                    icon = Icons.Default.Update,
+                    accent = Color(0xFF1E40AF),
+                    onClick = onNavigateToRecurring
+                )
+                QuickActionItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Bills",
+                    icon = Icons.Default.Receipt,
+                    accent = Color(0xFF2563EB),
+                    onClick = onNavigateToBills
+                )
+                QuickActionItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Paychecks",
+                    icon = Icons.Default.Payments,
+                    accent = Color(0xFF1D4ED8),
+                    onClick = onNavigateToPaychecks
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoneyTrackerAction(onClick: () -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.18f),
+                        accent.copy(alpha = 0.06f)
+                    )
+                )
             )
-            QuickActionItem(
-                modifier = Modifier.weight(1f),
-                label = "Budgets",
-                icon = Icons.Default.Wallet,
-                accent = Color(0xFF3B82F6),
-                onClick = onNavigateToBudgets
-            )
-            QuickActionItem(
-                modifier = Modifier.weight(1f),
-                label = "Reports",
-                icon = Icons.Default.BarChart,
-                accent = Color(0xFF2563EB),
-                onClick = onNavigateToReports
-            )
-            QuickActionItem(
-                modifier = Modifier.weight(1f),
-                label = "Recurring",
-                icon = Icons.Default.Update,
-                accent = Color(0xFF1E40AF),
-                onClick = onNavigateToRecurring
-            )
-            QuickActionItem(
-                modifier = Modifier.weight(1f),
-                label = "Bills",
-                icon = Icons.Default.Receipt,
-                accent = Color(0xFF2563EB),
-                onClick = onNavigateToBills
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(accent.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Savings,
+                contentDescription = null,
+                tint = accent
             )
         }
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "Money Tracker",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "See what is left after bills and spending",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
