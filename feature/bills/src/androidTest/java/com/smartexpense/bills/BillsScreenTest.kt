@@ -34,7 +34,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class BillsScreenTest {
@@ -201,6 +204,35 @@ class BillsScreenTest {
         composeRule.onNodeWithText(900.0.toPesoAmount()).assertIsDisplayed()
         composeRule.onAllNodesWithText("Est. ${900.0.toPesoAmount()}").assertCountEquals(0)
     }
+
+    @Test
+    fun billsAreGroupedUnderMonthHeaders() {
+        val currentMonth = YearMonth.now()
+        val nextMonth = currentMonth.plusMonths(1)
+        billsFlow.value = listOf(
+            bill(id = 1L),
+            bill(id = 2L, name = "Internet").copy(
+                dueDateMillis = nextMonth.atDay(2)
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+            )
+        )
+        setContent()
+        composeRule.waitForIdle()
+
+        composeRule
+            .onNodeWithText(monthHeader("This month • ", currentMonth))
+            .assertIsDisplayed()
+        composeRule
+            .onNodeWithText(monthHeader("Next month • ", nextMonth))
+            .assertExists()
+    }
+
+    private fun monthHeader(prefix: String, month: YearMonth): String =
+        prefix + month.format(
+            DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+        )
 
     @Test
     fun tappingCardForwardsBillId() {

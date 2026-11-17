@@ -52,7 +52,7 @@ import com.smartexpense.database.entity.UserProfileEntity
         PaycheckScheduleEntity::class,
         PendingPaycheckDeletionEntity::class
     ],
-    version = 1,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(SyncStatusConverter::class)

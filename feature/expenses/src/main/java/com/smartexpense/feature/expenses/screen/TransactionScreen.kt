@@ -106,7 +106,7 @@ fun TransactionScreen(
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = "Filter",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -144,7 +144,7 @@ fun TransactionScreen(
                             text = "Active filters",
                             style = MaterialTheme.typography.labelSmall,
                             color = LivelyIndigo,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -154,7 +154,7 @@ fun TransactionScreen(
                         contentColor = LivelyRose
                     )
                 ) {
-                    Text("Clear", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Clear", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -258,7 +258,7 @@ fun TransactionScreen(
         AlertDialog(
             onDismissRequest = { showFilterDialog = false },
             title = {
-                Text("Filter Transactions", fontWeight = FontWeight.Bold, color = LivelyIndigo)
+                Text("Filter Transactions", fontWeight = FontWeight.Medium, color = LivelyIndigo)
             },
             text = {
                 FilterDialogContent(
@@ -281,7 +281,7 @@ fun TransactionScreen(
                     ),
                     shape = RoundedCornerShape(percent = 50)
                 ) {
-                    Text("Apply", fontWeight = FontWeight.SemiBold)
+                    Text("Apply", fontWeight = FontWeight.Medium)
                 }
             },
             dismissButton = {
@@ -292,7 +292,7 @@ fun TransactionScreen(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = LivelyRose)
                 ) {
-                    Text("Cancel", fontWeight = FontWeight.SemiBold)
+                    Text("Cancel", fontWeight = FontWeight.Medium)
                 }
             },
             shape = RoundedCornerShape(24.dp)
@@ -356,7 +356,7 @@ private fun TransactionCard(
                         expense.description.ifBlank { "Transaction" }
                     },
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -381,7 +381,7 @@ private fun TransactionCard(
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = expense.amount.toPesoAmount(),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (expense.syncStatus == ExpenseSyncStatus.FAILED) {
@@ -486,7 +486,7 @@ private fun FilterDialogContent(
                     Text(
                         text = "Select range",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }

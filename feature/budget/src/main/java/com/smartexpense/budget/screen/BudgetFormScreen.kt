@@ -138,7 +138,7 @@ fun BudgetFormScreen(
                                 Text(
                                     text = if (budgetId == null) "New Budget" else "Edit Budget",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
@@ -293,7 +293,7 @@ fun BudgetFormScreen(
                                     Text(
                                         text = if (budgetId == null) "Add Budget" else "Update Budget",
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.Medium,
                                         color = Color.White
                                     )
                                 }

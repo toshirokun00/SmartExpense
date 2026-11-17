@@ -25,21 +25,21 @@ val Typography = Typography(
     // Large display heading for hero sections
     displayLarge = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         fontSize = 32.sp,
         lineHeight = 40.sp,
         letterSpacing = -0.25.sp
     ),
     displayMedium = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         fontSize = 28.sp,
         lineHeight = 36.sp,
         letterSpacing = -0.25.sp
     ),
     displaySmall = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp
@@ -47,21 +47,21 @@ val Typography = Typography(
     // Section headings
     headlineLarge = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Medium,
         fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp
     ),
     headlineSmall = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp
@@ -112,14 +112,14 @@ val Typography = Typography(
     ),
     titleLarge = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         fontSize = 20.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
     titleMedium = TextStyle(
         fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp

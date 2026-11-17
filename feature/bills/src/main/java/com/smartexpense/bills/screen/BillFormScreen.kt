@@ -568,7 +568,7 @@ fun BillFormScreen(
                             } else {
                                 Text(
                                     if (form.editingBillId == null) "Save Bill" else "Update Bill",
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
@@ -595,7 +595,7 @@ fun BillFormScreen(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(Modifier.width(4.dp))
-                                        Text("Skip", fontWeight = FontWeight.SemiBold)
+                                        Text("Skip", fontWeight = FontWeight.Medium)
                                     }
                                 }
                                 TextButton(
@@ -612,7 +612,7 @@ fun BillFormScreen(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Delete", fontWeight = FontWeight.SemiBold)
+                                    Text("Delete", fontWeight = FontWeight.Medium)
                                 }
                             }
                         }
@@ -630,7 +630,7 @@ fun BillFormScreen(
             title = {
                 Text(
                     "Delete bill?",
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = LivelyRose
                 )
             },
@@ -647,7 +647,7 @@ fun BillFormScreen(
                     ),
                     shape = RoundedCornerShape(percent = 50)
                 ) {
-                    Text("Delete", fontWeight = FontWeight.SemiBold)
+                    Text("Delete", fontWeight = FontWeight.Medium)
                 }
             },
             dismissButton = {
@@ -655,7 +655,7 @@ fun BillFormScreen(
                     onClick = { confirmDelete = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = LivelyIndigo)
                 ) {
-                    Text("Cancel", fontWeight = FontWeight.SemiBold)
+                    Text("Cancel", fontWeight = FontWeight.Medium)
                 }
             },
             shape = RoundedCornerShape(24.dp)

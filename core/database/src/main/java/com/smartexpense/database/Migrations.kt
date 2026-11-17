@@ -116,3 +116,24 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         )
     }
 }
+
+/**
+ * Remembers the day of month a recurring bill repeats on.
+ *
+ * Without it a bill due on the 30th clamped to Feb 28 and stayed on the 28th
+ * for every later month. The backfill takes the day of the existing due date
+ * so already stored bills keep their current schedule.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE `bills` ADD COLUMN `repeatDayOfMonth` INTEGER"
+        )
+        db.execSQL(
+            "UPDATE `bills` SET `repeatDayOfMonth` = " +
+                "CAST(strftime('%d', `dueDate` / 1000, 'unixepoch', " +
+                "'localtime') AS INTEGER) " +
+                "WHERE `frequency` != 'NONE'"
+        )
+    }
+}

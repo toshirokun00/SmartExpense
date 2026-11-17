@@ -139,7 +139,7 @@ private fun TrackerSummaryCard(uiState: MoneyTrackerUiState) {
         Text(
             text = uiState.totalRemaining.toPesoAmount(),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = accent
         )
 
@@ -195,7 +195,7 @@ private fun SummaryStat(
         Text(
             text = value.toPesoAmount(),
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -239,7 +239,7 @@ private fun EnvelopeCard(
                     Text(
                         text = envelope.paycheck.displayLabel(),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -262,7 +262,7 @@ private fun EnvelopeCard(
                     Text(
                         text = envelope.income.toPesoAmount(),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1
                     )
                     Text(
@@ -303,7 +303,7 @@ private fun EnvelopeCard(
                     Text(
                         text = envelope.remaining.toPesoAmount(),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = accent,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -366,7 +366,7 @@ private fun DeductionStat(
             Text(
                 text = "−${value.toPesoAmount()}",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = color,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

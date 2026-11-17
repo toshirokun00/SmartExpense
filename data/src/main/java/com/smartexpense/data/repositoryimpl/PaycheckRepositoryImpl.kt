@@ -102,6 +102,10 @@ class PaycheckRepositoryImpl(
             billIds = paycheck.billIds
         )
 
+        // A hand-added paycheck owns its pay date; hide any schedule twin that
+        // sync may already have materialized for the same day.
+        pruneGeneratedTwinsOfManualPaychecks(userId)
+
         expenseSyncEnqueuer.enqueue()
         return paycheckId
     }
@@ -161,6 +165,24 @@ class PaycheckRepositoryImpl(
             )
         )
         expenseSyncEnqueuer.enqueue()
+    }
+
+    override suspend fun ensurePaycheckOccurrences(from: LocalDate, to: LocalDate) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        if (from.isAfter(to)) return
+
+        // Remove any twin an earlier sync created on a hand-added pay date.
+        pruneGeneratedTwinsOfManualPaychecks(userId)
+
+        var created = 0
+        for (schedule in paycheckScheduleDao.getActiveSchedulesForUser(userId)) {
+            created += materializeOccurrences(
+                schedule = schedule,
+                from = from,
+                to = to
+            ).size
+        }
+        if (created > 0) expenseSyncEnqueuer.enqueue()
     }
 
     override suspend fun updatePaycheck(paycheck: Paycheck) {
@@ -405,6 +427,8 @@ class PaycheckRepositoryImpl(
         val today = LocalDate.now(clock)
         val horizon = today.plusMonths(HORIZON_MONTHS)
 
+        pruneGeneratedTwinsOfManualPaychecks(userId)
+
         for (schedule in paycheckScheduleDao.getActiveSchedulesForUser(userId)) {
             // New cutoffs start without bills. The user assigns what is still
             // uncovered, so a bill is never planned on two paychecks.
@@ -415,6 +439,63 @@ class PaycheckRepositoryImpl(
             )
         }
     }
+
+    /**
+     * Deletes schedule-generated cutoffs that share a day with a paycheck the
+     * user added by hand. Older syncs created those twins because only month
+     * browsing knew about hand-added dates.
+     *
+     * Bills already planned on a twin move to the hand-added paycheck so the
+     * user's coverage choice is not lost. The twin is kept as a tombstone so
+     * the next materialization cannot recreate it.
+     */
+    private suspend fun pruneGeneratedTwinsOfManualPaychecks(userId: String) {
+        val active = paycheckDao.getActivePaychecksForUser(userId)
+        if (active.isEmpty()) return
+
+        val manualByDate = active
+            .filter { it.scheduleClientId == null }
+            .groupBy { it.payDate.toLocalDate() }
+        if (manualByDate.isEmpty()) return
+
+        var changed = false
+        for (twin in active) {
+            if (twin.scheduleClientId == null) continue
+            val survivor = manualByDate[twin.payDate.toLocalDate()]?.firstOrNull()
+                ?: continue
+            val survivorBillIds = paycheckBillDao
+                .getAssignmentsForPaycheck(survivor.id)
+                .mapTo(mutableSetOf()) { it.billId }
+
+            val movedAssignments = paycheckBillDao.getAssignmentsForPaycheck(twin.id)
+            paycheckBillDao.deleteAssignmentsForPaycheck(twin.id)
+            var moved = false
+            for (assignment in movedAssignments) {
+                if (!survivorBillIds.add(assignment.billId)) continue
+                paycheckBillDao.insertAssignment(
+                    assignment.copy(
+                        id = 0L,
+                        clientId = UUID.randomUUID().toString(),
+                        paycheckId = survivor.id,
+                        paycheckClientId = survivor.clientId
+                    )
+                )
+                moved = true
+            }
+            if (moved) {
+                paycheckDao.updatePaycheck(survivor.copy(syncStatus = SyncStatus.PENDING))
+            }
+
+            paycheckDao.updatePaycheck(
+                twin.copy(isSkipped = true, syncStatus = SyncStatus.PENDING)
+            )
+            changed = true
+        }
+        if (changed) expenseSyncEnqueuer.enqueue()
+    }
+
+    private fun Long.toLocalDate(): LocalDate =
+        Instant.ofEpochMilli(this).atZone(clock.zone).toLocalDate()
 
     /**
      * Inserts any missing occurrences in [from]..[to]. Deterministic client ids
@@ -432,6 +513,12 @@ class PaycheckRepositoryImpl(
         if (!schedule.isActive) return emptyList()
         if (from.isAfter(to)) return emptyList()
 
+        // A paycheck the user added by hand keeps its date. This applies to
+        // every generation path (sync, schedule creation, month browsing), so
+        // a schedule never creates a second card on the same day.
+        val manualDates = paycheckDao.getOneOffPayDates(schedule.userId)
+            .mapTo(mutableSetOf()) { millis -> millis.toLocalDate() }
+
         val domain = schedule.toDomain()
         val dates = domain.occurrencesBetween(
             from = from,
@@ -444,6 +531,7 @@ class PaycheckRepositoryImpl(
         val created = mutableListOf<PaycheckEntity>()
 
         for (date in dates) {
+            if (date in manualDates) continue
             val dateMillis = date.atStartOfDay(clock.zone).toInstant().toEpochMilli()
             val occurrence = PaycheckEntity(
                 userId = schedule.userId,

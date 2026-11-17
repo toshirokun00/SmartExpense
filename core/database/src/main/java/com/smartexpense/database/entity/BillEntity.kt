@@ -30,6 +30,12 @@ data class BillEntity(
     val frequency: String = "NONE",
     @ColumnInfo(defaultValue = "1")
     val repeatInterval: Int = 1,
+    /**
+     * Day of month monthly/quarterly/yearly cycles land on. Kept so a short
+     * month (February) clamps the due date without moving the bill's day
+     * permanently.
+     */
+    val repeatDayOfMonth: Int? = null,
     @ColumnInfo(defaultValue = "STATIC")
     val amountType: String = "STATIC",
     @ColumnInfo(defaultValue = "0")

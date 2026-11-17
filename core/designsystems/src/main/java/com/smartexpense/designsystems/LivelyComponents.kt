@@ -162,7 +162,7 @@ fun LivelySectionCard(
                             Text(
                                 text = title,
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color = colorScheme.onSurface
                             )
                         }
@@ -233,7 +233,7 @@ fun LivelyInfoRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -299,7 +299,7 @@ fun LivelyToggleRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurface
             )
             if (!subtitle.isNullOrBlank()) {
@@ -392,7 +392,7 @@ fun LivelyChoicePill(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = if (selected) Color.White else colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -450,7 +450,7 @@ fun LivelyGradientButton(
         Text(
             text = text,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = Color.White
         )
     }

@@ -269,6 +269,75 @@ class BillRepositoryImplTest {
     }
 
     @Test
+    fun addBillAnchorsRecurringBillToItsDueDateDay() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { billDao.insertBill(any()) } returns 1L
+
+        repository.addBill(
+            com.smartexpense.domain.model.Bill(
+                name = "Rent",
+                amount = 1000.0,
+                dueDateMillis = millis(2026, 1, 30),
+                frequency = BillFrequency.MONTHLY
+            )
+        )
+
+        coVerify {
+            billDao.insertBill(match { it.repeatDayOfMonth == 30 })
+        }
+    }
+
+    @Test
+    fun updateBillKeepsItsAnchorWhenTheDueDateKeepsItsDay() = runTest {
+        val entity = billEntity(
+            id = 1L,
+            dueDate = millis(2026, 1, 30),
+            frequency = BillFrequency.MONTHLY
+        ).copy(repeatDayOfMonth = 30)
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { billDao.getBillById(1L) } returns entity
+
+        repository.updateBill(
+            com.smartexpense.domain.model.Bill(
+                id = 1L,
+                name = "Rent",
+                amount = 1000.0,
+                dueDateMillis = millis(2026, 3, 30),
+                frequency = BillFrequency.MONTHLY
+            )
+        )
+
+        coVerify {
+            billDao.updateBill(match { it.repeatDayOfMonth == 30 })
+        }
+    }
+
+    @Test
+    fun updateBillMovesItsAnchorWhenTheDueDateDayChanges() = runTest {
+        val entity = billEntity(
+            id = 1L,
+            dueDate = millis(2026, 3, 30),
+            frequency = BillFrequency.MONTHLY
+        ).copy(repeatDayOfMonth = 30)
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { billDao.getBillById(1L) } returns entity
+
+        repository.updateBill(
+            com.smartexpense.domain.model.Bill(
+                id = 1L,
+                name = "Rent",
+                amount = 1000.0,
+                dueDateMillis = millis(2026, 4, 15),
+                frequency = BillFrequency.MONTHLY
+            )
+        )
+
+        coVerify {
+            billDao.updateBill(match { it.repeatDayOfMonth == 15 })
+        }
+    }
+
+    @Test
     fun deleteBillQueuesRemoteDeletionAndRemovesPaymentHistory() = runTest {
         val entity = billEntity(
             id = 8L,

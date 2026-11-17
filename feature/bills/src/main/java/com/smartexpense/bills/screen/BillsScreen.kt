@@ -25,11 +25,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartexpense.bills.intent.BillsIntent
 import com.smartexpense.bills.util.formatAmountForEditing
+import com.smartexpense.bills.util.groupBillsByMonth
 import com.smartexpense.bills.viewmodel.BillsViewModel
 import com.smartexpense.core.common.toDateString
 import com.smartexpense.core.common.toPesoAmount
@@ -63,6 +65,7 @@ fun BillsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val now = System.currentTimeMillis()
+    val billMonths = groupBillsByMonth(uiState.bills)
 
     Column(Modifier.fillMaxSize()) {
         ModernHeader(
@@ -95,34 +98,27 @@ fun BillsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                BILL_GROUPS.forEach { group ->
-                    val section = uiState.bills
-                        .filter { it.status(now) in group.statuses }
-                        .sortedBy { it.dueDateMillis }
-
-                    if (section.isNotEmpty()) {
-                        item(key = "header-${group.title}") {
-                            BillGroupHeader(
-                                title = group.title,
-                                count = section.size,
-                                total = section.sumOf { it.amount },
-                                color = group.accent
-                            )
-                        }
-                        items(section, key = { "bill-${it.id}" }) { bill ->
-                            BillCard(
-                                bill = bill,
-                                status = bill.status(now),
-                                needsAmount = bill.needsAmount(now),
-                                categoryName = uiState.categories
-                                    .firstOrNull { it.id == bill.categoryId }
-                                    ?.name,
-                                onClick = { onEditBill(bill.id) },
-                                onMarkPaid = {
-                                    viewModel.onIntent(BillsIntent.ShowPaySheet(bill))
-                                }
-                            )
-                        }
+                billMonths.forEach { month ->
+                    item(key = "month-${month.yearMonth}") {
+                        BillMonthHeader(
+                            title = month.label,
+                            count = month.count,
+                            total = month.total
+                        )
+                    }
+                    items(month.bills, key = { "bill-${it.id}" }) { bill ->
+                        BillCard(
+                            bill = bill,
+                            status = bill.status(now),
+                            needsAmount = bill.needsAmount(now),
+                            categoryName = uiState.categories
+                                .firstOrNull { it.id == bill.categoryId }
+                                ?.name,
+                            onClick = { onEditBill(bill.id) },
+                            onMarkPaid = {
+                                viewModel.onIntent(BillsIntent.ShowPaySheet(bill))
+                            }
+                        )
                     }
                 }
                 item { Spacer(Modifier.height(12.dp)) }
@@ -154,30 +150,11 @@ fun BillsScreen(
 // List
 // ---------------------------------------------------------------------------
 
-private data class BillGroup(
-    val title: String,
-    val statuses: Set<BillStatus>,
-    val accent: Color
-)
-
-private val BILL_GROUPS = listOf(
-    BillGroup("Overdue", setOf(BillStatus.OVERDUE), LivelyRose),
-    BillGroup(
-        "Due this week",
-        setOf(BillStatus.DUE_TODAY, BillStatus.DUE_SOON),
-        LivelyIndigo
-    ),
-    BillGroup("Upcoming", setOf(BillStatus.UPCOMING), LivelyViolet),
-    BillGroup("Paid", setOf(BillStatus.PAID, BillStatus.SKIPPED), LivelyBlue),
-    BillGroup("Paused", setOf(BillStatus.PAUSED), Color(0xFF64748B))
-)
-
 @Composable
-private fun BillGroupHeader(
+private fun BillMonthHeader(
     title: String,
     count: Int,
-    total: Double,
-    color: Color
+    total: Double
 ) {
     Row(
         modifier = Modifier
@@ -188,14 +165,18 @@ private fun BillGroupHeader(
         Text(
             title,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
+            fontWeight = FontWeight.Medium,
+            color = Color.Black,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.width(8.dp))
         Text(
             "$count • ${total.toPesoAmount()}",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
         )
     }
 }
@@ -248,7 +229,7 @@ private fun BillCard(
                     Text(
                         bill.name,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     Spacer(Modifier.width(6.dp))
@@ -287,14 +268,14 @@ private fun BillCard(
                     } else {
                         bill.amount.toPesoAmount()
                     },
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Medium
                 )
                 if (status == BillStatus.PAID) {
                     Text(
                         bill.paidAtMillis?.toDateString() ?: "Paid",
                         style = MaterialTheme.typography.labelSmall,
                         color = LivelyBlue,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Medium
                     )
                 } else if (status != BillStatus.SKIPPED && status != BillStatus.PAUSED) {
                     TextButton(
@@ -314,7 +295,7 @@ private fun StatusChip(label: String, color: Color) {
     Text(
         text = label,
         style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Medium,
         color = color,
         maxLines = 1,
         modifier = Modifier
@@ -382,7 +363,7 @@ private fun BillPaySheet(
                     Text(
                         "Mark as paid",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                     Text(
                         bill.name,
@@ -483,7 +464,7 @@ private fun BillPaySheet(
                     ),
                     shape = RoundedCornerShape(percent = 50)
                 ) {
-                    Text("Mark paid", fontWeight = FontWeight.SemiBold)
+                    Text("Mark paid", fontWeight = FontWeight.Medium)
                 }
             }
         }

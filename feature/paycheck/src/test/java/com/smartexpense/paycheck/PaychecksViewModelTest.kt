@@ -4,6 +4,7 @@ import com.smartexpense.domain.model.Bill
 import com.smartexpense.domain.model.BillFrequency
 import com.smartexpense.domain.model.BillPayment
 import com.smartexpense.domain.model.Paycheck
+import com.smartexpense.domain.usecase.EnsurePaycheckOccurrencesUseCase
 import com.smartexpense.domain.usecase.GetBillPaymentHistoryUseCase
 import com.smartexpense.domain.usecase.GetBillsUseCase
 import com.smartexpense.domain.usecase.GetPaychecksUseCase
@@ -11,6 +12,7 @@ import com.smartexpense.paycheck.intent.PaychecksIntent
 import com.smartexpense.paycheck.state.PlannedBill
 import com.smartexpense.paycheck.viewmodel.PaychecksViewModel
 import com.smartexpense.test.MainDispatcherRule
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneOffset
 
@@ -54,18 +57,26 @@ class PaychecksViewModelTest {
     private fun createViewModel(
         paychecks: MutableStateFlow<List<Paycheck>> = paychecksFlow(),
         bills: MutableStateFlow<List<Bill>> = MutableStateFlow(emptyList()),
-        payments: MutableStateFlow<List<BillPayment>> = MutableStateFlow(emptyList())
+        payments: MutableStateFlow<List<BillPayment>> = MutableStateFlow(emptyList()),
+        onEnsure: (LocalDate, LocalDate) -> Unit = { _, _ -> }
     ): PaychecksViewModel {
         val getPaychecksUseCase = mockk<GetPaychecksUseCase>()
         val getBillsUseCase = mockk<GetBillsUseCase>()
         val getBillPaymentHistoryUseCase = mockk<GetBillPaymentHistoryUseCase>()
+        val ensurePaycheckOccurrencesUseCase = mockk<EnsurePaycheckOccurrencesUseCase>()
         every { getPaychecksUseCase() } returns paychecks
         every { getBillsUseCase() } returns bills
         every { getBillPaymentHistoryUseCase() } returns payments
+        coEvery {
+            ensurePaycheckOccurrencesUseCase(any(), any())
+        } coAnswers {
+            onEnsure(firstArg(), secondArg())
+        }
         return PaychecksViewModel(
             getPaychecksUseCase = getPaychecksUseCase,
             getBillsUseCase = getBillsUseCase,
             getBillPaymentHistoryUseCase = getBillPaymentHistoryUseCase,
+            ensurePaycheckOccurrencesUseCase = ensurePaycheckOccurrencesUseCase,
             clock = clock
         )
     }
@@ -133,6 +144,41 @@ class PaychecksViewModelTest {
 
         assertEquals(YearMonth.of(2026, 11), viewModel.uiState.value.selectedMonth)
         assertEquals(listOf(2L), viewModel.uiState.value.paychecks.map { it.id })
+    }
+
+    @Test
+    fun `materializes the paychecks of every browsed month`() = runTest {
+        val ensured = mutableListOf<Pair<LocalDate, LocalDate>>()
+        val paychecks = paychecksFlow()
+        val viewModel = createViewModel(
+            paychecks = paychecks,
+            onEnsure = { from, to ->
+                ensured.add(from to to)
+                if (YearMonth.from(to) == YearMonth.of(2027, 2)) {
+                    paychecks.value = paychecks.value + Paycheck(
+                        id = 6,
+                        amount = 1000.0,
+                        payDateMillis = millis(2027, 2, 15)
+                    )
+                }
+            }
+        )
+        advanceUntilIdle()
+
+        // The month on screen at startup is filled in as well.
+        assertEquals(
+            LocalDate.of(2026, 11, 1) to LocalDate.of(2026, 11, 30),
+            ensured.first()
+        )
+
+        viewModel.onIntent(PaychecksIntent.SelectMonth(2027, 2))
+        advanceUntilIdle()
+
+        assertEquals(
+            LocalDate.of(2027, 2, 1) to LocalDate.of(2027, 2, 28),
+            ensured.last()
+        )
+        assertEquals(listOf(6L), viewModel.uiState.value.paychecks.map { it.id })
     }
 
     @Test

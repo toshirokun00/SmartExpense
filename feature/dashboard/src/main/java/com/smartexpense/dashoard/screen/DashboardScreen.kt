@@ -87,7 +87,7 @@ fun DashboardScreen(
                     Text(
                         text = "Overview",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -334,7 +334,7 @@ private fun HeroBalanceCard(
                             Text(
                                 text = "TOTAL BALANCE",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                                 letterSpacing = 1.sp,
                                 color = Color.White.copy(alpha = 0.9f)
                             )
@@ -344,7 +344,7 @@ private fun HeroBalanceCard(
                             text = balance.toPesoAmount(),
                             style = MaterialTheme.typography.displaySmall,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -394,7 +394,7 @@ private fun HeroBalanceCard(
                             Text(
                                 text = "${(progress * 100).toInt()}%",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                                 color = Color.White
                             )
                         }
@@ -415,7 +415,7 @@ private fun HeroBalanceCard(
                             text = totalExpense.toPesoAmount(),
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Medium
                         )
                         Text(
                             text = "of ${totalBudget.toPesoAmount()}",
@@ -555,7 +555,7 @@ private fun StatCard(
                 Text(
                     text = title.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     letterSpacing = 0.8.sp,
                     color = accentColor
                 )
@@ -566,7 +566,7 @@ private fun StatCard(
             Text(
                 text = amount.toPesoAmount(),
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -671,7 +671,7 @@ private fun DashboardInsightCard(insight: BudgetInsight) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = accent
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -698,7 +698,7 @@ private fun SectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
         )
         if (onSeeAllClick != null) {
@@ -715,7 +715,7 @@ private fun SectionHeader(
                 Text(
                     text = "See all",
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Icon(
@@ -861,7 +861,7 @@ private fun MoneyTrackerAction(onClick: () -> Unit) {
             Text(
                 text = "Money Tracker",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium
             )
             Text(
                 text = "See what is left after bills and spending",
@@ -941,7 +941,7 @@ private fun QuickActionItem(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1
         )
     }
@@ -1018,7 +1018,7 @@ private fun RecentExpenseItem(expense: Expense) {
                 Text(
                     text = expense.description.ifBlank { "Expense" },
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -1051,7 +1051,7 @@ private fun RecentExpenseItem(expense: Expense) {
             Text(
                 text = expense.amount.toPesoAmount(),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurface,
                 maxLines = 1
             )
@@ -1170,7 +1170,7 @@ private fun BillsDueCard(
                 Text(
                     text = "$count ${if (count == 1) "bill" else "bills"} due this week",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = colorScheme.onSurface
                 )
                 Text(

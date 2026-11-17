@@ -26,6 +26,20 @@ interface PaycheckDao {
     @Query("SELECT clientId FROM paychecks")
     suspend fun getAllClientIds(): List<String>
 
+    /**
+     * Pay dates of paychecks the user added by hand (not generated from a
+     * schedule). Browsing a month must not create a generated twin of one.
+     */
+    @Query(
+        "SELECT payDate FROM paychecks " +
+            "WHERE userId = :userId AND scheduleClientId IS NULL"
+    )
+    suspend fun getOneOffPayDates(userId: String): List<Long>
+
+    /** Every paycheck of [userId] that is still shown, tombstones excluded. */
+    @Query("SELECT * FROM paychecks WHERE userId = :userId AND isSkipped = 0")
+    suspend fun getActivePaychecksForUser(userId: String): List<PaycheckEntity>
+
     @Query("SELECT * FROM paychecks WHERE syncStatus IN ('PENDING', 'FAILED')")
     suspend fun getUnsyncedPaychecks(): List<PaycheckEntity>
 

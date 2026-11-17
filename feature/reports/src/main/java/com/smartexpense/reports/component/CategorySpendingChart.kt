@@ -103,7 +103,7 @@ fun CategorySpendingChart(
                 Text(
                     text = "Share of spending",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.weight(1f))
@@ -182,7 +182,7 @@ private fun CategoryRow(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -190,7 +190,7 @@ private fun CategoryRow(
                 Text(
                     text = amount,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = accent
                 )
             }
@@ -211,7 +211,7 @@ private fun CategoryRow(
                 Text(
                     text = "${"%.1f".format(Locale.US, percentage)}%",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = accent
                 )
             }

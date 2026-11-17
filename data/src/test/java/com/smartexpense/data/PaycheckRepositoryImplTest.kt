@@ -632,6 +632,123 @@ class PaycheckRepositoryImplTest {
     }
 
     @Test
+    fun `ensuring a browsed month creates only that month's cutoffs`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { paycheckScheduleDao.getActiveSchedulesForUser("user-1") } returns
+            listOf(scheduleEntity())
+        coEvery { paycheckDao.insertPaycheckIgnoringDuplicate(any()) } returns 10L
+
+        repository.ensurePaycheckOccurrences(
+            LocalDate.of(2027, 1, 1),
+            LocalDate.of(2027, 1, 31)
+        )
+
+        // The 15th and 30th schedule pays twice in January.
+        coVerify(exactly = 2) { paycheckDao.insertPaycheckIgnoringDuplicate(any()) }
+        coVerify(exactly = 1) { expenseSyncEnqueuer.enqueue() }
+    }
+
+    @Test
+    fun `ensuring a month keeps paychecks the user added by hand`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { paycheckScheduleDao.getActiveSchedulesForUser("user-1") } returns
+            listOf(scheduleEntity())
+        coEvery { paycheckDao.getOneOffPayDates("user-1") } returns
+            listOf(dateMillis(2027, 1, 15))
+        coEvery { paycheckDao.insertPaycheckIgnoringDuplicate(any()) } returns 10L
+
+        repository.ensurePaycheckOccurrences(
+            LocalDate.of(2027, 1, 1),
+            LocalDate.of(2027, 1, 31)
+        )
+
+        coVerify(exactly = 1) {
+            paycheckDao.insertPaycheckIgnoringDuplicate(
+                match { it.payDate == dateMillis(2027, 1, 30) }
+            )
+        }
+    }
+
+    @Test
+    fun `sync keeps hand-added pay dates free`() = runTest {
+        coEvery { paycheckScheduleDao.getActiveSchedulesForUser("user-1") } returns
+            listOf(scheduleEntity())
+        coEvery { paycheckDao.getOneOffPayDates("user-1") } returns
+            listOf(dateMillis(2026, 11, 15))
+        coEvery { paycheckDao.insertPaycheckIgnoringDuplicate(any()) } returns 10L
+
+        repository.syncPaychecks("user-1")
+
+        coVerify(exactly = 0) {
+            paycheckDao.insertPaycheckIgnoringDuplicate(
+                match { it.payDate == dateMillis(2026, 11, 15) }
+            )
+        }
+    }
+
+    @Test
+    fun `sync hides a generated twin of a hand-added paycheck`() = runTest {
+        val manual = paycheckEntity(id = 1L, clientId = "manual-1").copy(
+            payDate = dateMillis(2026, 11, 30)
+        )
+        val twin = paycheckEntity(id = 2L, clientId = "twin-1").copy(
+            payDate = dateMillis(2026, 11, 30),
+            scheduleClientId = "schedule-1",
+            occurrenceDate = dateMillis(2026, 11, 30)
+        )
+        coEvery { paycheckDao.getActivePaychecksForUser("user-1") } returns
+            listOf(manual, twin)
+        coEvery { paycheckBillDao.getAssignmentsForPaycheck(1L) } returns emptyList()
+        coEvery { paycheckBillDao.getAssignmentsForPaycheck(2L) } returns emptyList()
+
+        repository.syncPaychecks("user-1")
+
+        coVerify(exactly = 1) {
+            paycheckDao.updatePaycheck(
+                match {
+                    it.id == 2L &&
+                        it.isSkipped &&
+                        it.syncStatus == SyncStatus.PENDING
+                }
+            )
+        }
+        coVerify(exactly = 0) {
+            paycheckDao.updatePaycheck(match { it.id == 1L && it.isSkipped })
+        }
+    }
+
+    @Test
+    fun `a twin's planned bills move to the hand-added paycheck`() = runTest {
+        val manual = paycheckEntity(id = 1L, clientId = "manual-1").copy(
+            payDate = dateMillis(2026, 11, 30)
+        )
+        val twin = paycheckEntity(id = 2L, clientId = "twin-1").copy(
+            payDate = dateMillis(2026, 11, 30),
+            scheduleClientId = "schedule-1",
+            occurrenceDate = dateMillis(2026, 11, 30)
+        )
+        coEvery { paycheckDao.getActivePaychecksForUser("user-1") } returns
+            listOf(manual, twin)
+        coEvery { paycheckBillDao.getAssignmentsForPaycheck(1L) } returns emptyList()
+        coEvery { paycheckBillDao.getAssignmentsForPaycheck(2L) } returns
+            listOf(assignment(id = 9L, paycheckId = 2L, billId = 4L))
+
+        repository.syncPaychecks("user-1")
+
+        coVerify(exactly = 1) {
+            paycheckBillDao.insertAssignment(
+                match { it.paycheckId == 1L && it.billId == 4L }
+            )
+        }
+        coVerify(exactly = 1) { paycheckBillDao.deleteAssignmentsForPaycheck(2L) }
+        coVerify(exactly = 1) {
+            paycheckDao.updatePaycheck(
+                match { it.id == 1L && it.syncStatus == SyncStatus.PENDING }
+            )
+        }
+    }
+
+    @Test
     fun `sync uploads recurring occurrence fields`() = runTest {
         val occurrenceDate = dateMillis(2026, 11, 15)
         coEvery { paycheckDao.getUnsyncedPaychecks() } returns listOf(

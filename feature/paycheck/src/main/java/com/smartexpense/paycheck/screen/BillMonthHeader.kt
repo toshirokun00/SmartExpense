@@ -51,7 +51,7 @@ internal fun BillMonthHeader(
             } else {
                 MaterialTheme.typography.titleSmall
             },
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = LivelyIndigo,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

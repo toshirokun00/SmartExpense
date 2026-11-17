@@ -240,7 +240,7 @@ private fun PaycheckFormContent(
             Text(
                 text = "Bills to cover",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium
             )
             Text(
                 text = "${form.selectedBillIds.size} selected",
@@ -333,7 +333,7 @@ private fun PaycheckFormContent(
                         form.isRecurring -> "Create recurring paycheck"
                         else -> "Add paycheck"
                     },
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -370,7 +370,7 @@ private fun PayDateCard(
             Text(
                 text = dateMillis.toDateString(),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -396,7 +396,7 @@ private fun RecurrenceCard(
                 Text(
                     text = "Repeat this paycheck",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = "Create each cutoff automatically",
@@ -609,7 +609,7 @@ private fun SummaryRow(
         Text(
             text = value,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = valueColor
         )
     }
@@ -653,7 +653,7 @@ private fun BillSelectionRow(
                 Text(
                     text = bill.name,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
@@ -681,7 +681,7 @@ private fun BillSelectionRow(
         Text(
             text = bill.amount.toPesoAmount(),
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1
         )
     }
@@ -692,7 +692,7 @@ private fun SelectionChip(label: String, color: Color) {
     Text(
         text = label,
         style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Medium,
         color = color,
         maxLines = 1,
         modifier = Modifier

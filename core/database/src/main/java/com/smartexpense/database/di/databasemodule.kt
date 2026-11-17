@@ -7,6 +7,7 @@ import com.smartexpense.database.BudgetDeletionTransaction
 import com.smartexpense.database.ExpenseDeletionTransaction
 import com.smartexpense.database.MIGRATION_1_2
 import com.smartexpense.database.MIGRATION_2_3
+import com.smartexpense.database.MIGRATION_3_4
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -17,7 +18,7 @@ val databaseModule = module {
             AppDatabase::class.java,
             "smart_expense.db"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .fallbackToDestructiveMigration()
             .build()
     }

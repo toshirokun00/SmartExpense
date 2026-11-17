@@ -3,6 +3,7 @@ package com.smartexpense.domain.repository
 import com.smartexpense.domain.model.Paycheck
 import com.smartexpense.domain.model.PaycheckSchedule
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 interface PaycheckRepository {
     /** Paychecks for the signed-in user, soonest pay date first. */
@@ -33,6 +34,14 @@ interface PaycheckRepository {
 
     /** Stops future generation while keeping the paychecks already created. */
     suspend fun stopPaycheckSchedule(scheduleClientId: String)
+
+    /**
+     * Creates any missing paychecks the active schedules pay inside
+     * [from]..[to]. Browsing a month calls this so a recurring payroll shows a
+     * cutoff for every month, not only for the rolling window that was
+     * materialized the last time the app synced.
+     */
+    suspend fun ensurePaycheckOccurrences(from: LocalDate, to: LocalDate)
 
     /**
      * Uploads schedules, paychecks, their bill assignments, and queued

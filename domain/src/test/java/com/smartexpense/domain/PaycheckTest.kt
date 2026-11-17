@@ -576,6 +576,48 @@ class PaycheckTest {
         assertEquals(millis(2026, 12, 30), plans[3L]?.dueByBillId?.get(1L))
     }
 
+    @Test
+    fun `a bill due on the 30th stays on the 30th cutoff after February`() {
+        // Rent repeats on the 30th. February's cycle is clamped to the 28th,
+        // but March must be back on the 30th instead of drifting to a day that
+        // the March 15 cutoff would claim.
+        val rent = Bill(
+            id = 1,
+            name = "Rent",
+            amount = 500.0,
+            dueDateMillis = millis(2026, 11, 30),
+            frequency = BillFrequency.MONTHLY,
+            repeatDayOfMonth = 30
+        )
+        val paychecks = listOf(
+            Paycheck(id = 1, amount = 1_000.0, payDateMillis = millis(2026, 11, 15)),
+            Paycheck(id = 2, amount = 1_000.0, payDateMillis = millis(2026, 11, 30)),
+            Paycheck(id = 3, amount = 1_000.0, payDateMillis = millis(2026, 12, 15)),
+            Paycheck(id = 4, amount = 1_000.0, payDateMillis = millis(2026, 12, 30)),
+            Paycheck(id = 5, amount = 1_000.0, payDateMillis = millis(2027, 1, 15)),
+            Paycheck(id = 6, amount = 1_000.0, payDateMillis = millis(2027, 1, 30)),
+            Paycheck(id = 7, amount = 1_000.0, payDateMillis = millis(2027, 2, 15)),
+            Paycheck(id = 8, amount = 1_000.0, payDateMillis = millis(2027, 2, 28)),
+            Paycheck(id = 9, amount = 1_000.0, payDateMillis = millis(2027, 3, 15)),
+            Paycheck(id = 10, amount = 1_000.0, payDateMillis = millis(2027, 3, 30))
+        )
+
+        val plans = planPaychecks(paychecks, listOf(rent), zone)
+
+        // Every 15th cutoff is empty; every end-of-month cutoff covers the
+        // cycle of its own month.
+        assertEquals(emptyList<Long>(), plans[1L]?.billIds)
+        assertEquals(millis(2026, 11, 30), plans[2L]?.dueByBillId?.get(1L))
+        assertEquals(emptyList<Long>(), plans[3L]?.billIds)
+        assertEquals(millis(2026, 12, 30), plans[4L]?.dueByBillId?.get(1L))
+        assertEquals(emptyList<Long>(), plans[5L]?.billIds)
+        assertEquals(millis(2027, 1, 30), plans[6L]?.dueByBillId?.get(1L))
+        assertEquals(emptyList<Long>(), plans[7L]?.billIds)
+        assertEquals(millis(2027, 2, 28), plans[8L]?.dueByBillId?.get(1L))
+        assertEquals(emptyList<Long>(), plans[9L]?.billIds)
+        assertEquals(millis(2027, 3, 30), plans[10L]?.dueByBillId?.get(1L))
+    }
+
     private fun paycheckOn(year: Int, month: Int, day: Int) = Paycheck(
         amount = 1_000.0,
         payDateMillis = millis(year, month, day)

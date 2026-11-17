@@ -210,7 +210,7 @@ private fun MonthSelector(
                 Text(
                     text = selectedMonth.format(formatter),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = LivelyIndigo
                 )
                 Spacer(Modifier.width(4.dp))
@@ -256,7 +256,7 @@ private fun MonthPickerDialog(
         title = {
             Text(
                 text = "Jump to month",
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium
             )
         },
         text = {
@@ -277,7 +277,7 @@ private fun MonthPickerDialog(
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                     IconButton(onClick = { year++ }) {
                         Icon(
@@ -347,7 +347,7 @@ private fun MonthOption(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = if (selected) Color.White else LivelyIndigo
         )
     }
@@ -436,7 +436,7 @@ private fun PaycheckCard(
                                 fontSize = 13.sp,
                                 lineHeight = 18.sp
                             ),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
@@ -472,7 +472,7 @@ private fun PaycheckCard(
                         fontSize = 15.sp,
                         lineHeight = 18.sp
                     ),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1
                 )
             }
@@ -500,7 +500,7 @@ private fun PaycheckCard(
                     Text(
                         text = "All bills paid",
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = LivelyBlue,
                         maxLines = 1,
                         modifier = Modifier
@@ -576,7 +576,7 @@ private fun PaycheckCard(
                         fontSize = 13.sp,
                         lineHeight = 18.sp
                     ),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = if (isShort) LivelyRose else LivelyBlue
                 )
             }
@@ -622,13 +622,13 @@ private fun CoveredBillRow(
         Text(
             text = if (isPaid) "Paid" else "Unpaid",
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = if (isPaid) LivelyBlue else LivelyRose
         )
         Text(
             text = bill.amount.toPesoAmount(),
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1
         )
     }

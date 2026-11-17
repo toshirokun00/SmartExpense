@@ -12,6 +12,7 @@ val paycheckModule = module {
             getPaychecksUseCase = get(),
             getBillsUseCase = get(),
             getBillPaymentHistoryUseCase = get(),
+            ensurePaycheckOccurrencesUseCase = get(),
             clock = get()
         )
     }

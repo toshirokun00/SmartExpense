@@ -254,7 +254,7 @@ fun CategoryScreen(
                                         ) {
                                             Text(
                                                 "Edit",
-                                                fontWeight = FontWeight.SemiBold
+                                                fontWeight = FontWeight.Medium
                                             )
                                         }
                                         TextButton(
@@ -271,7 +271,7 @@ fun CategoryScreen(
                                         ) {
                                             Text(
                                                 "Delete",
-                                                fontWeight = FontWeight.SemiBold
+                                                fontWeight = FontWeight.Medium
                                             )
                                         }
                                     }

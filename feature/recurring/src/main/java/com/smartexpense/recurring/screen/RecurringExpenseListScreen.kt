@@ -277,7 +277,7 @@ private fun RecurringScheduleCard(
                 Text(
                     text = summary.schedule.description,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -295,7 +295,7 @@ private fun RecurringScheduleCard(
                         text = summary.statusLabel(),
                         style = MaterialTheme.typography.labelMedium,
                         color = statusColor,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Medium
                     )
                     if (summary.status != RecurringScheduleStatus.ENDED) {
                         Text(
@@ -314,7 +314,7 @@ private fun RecurringScheduleCard(
                 Text(
                     text = summary.schedule.amount.toPesoAmount(),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Row {

@@ -4,6 +4,7 @@ import com.smartexpense.domain.model.Paycheck
 import com.smartexpense.domain.model.PaycheckSchedule
 import com.smartexpense.domain.repository.PaycheckRepository
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 class GetPaychecksUseCase(private val repo: PaycheckRepository) {
     operator fun invoke(): Flow<List<Paycheck>> = repo.getPaychecks()
@@ -39,4 +40,13 @@ class AddPaycheckScheduleUseCase(private val repo: PaycheckRepository) {
 class StopPaycheckScheduleUseCase(private val repo: PaycheckRepository) {
     suspend operator fun invoke(scheduleClientId: String) =
         repo.stopPaycheckSchedule(scheduleClientId)
+}
+
+/**
+ * Materializes the recurring paychecks that fall inside a month the user is
+ * browsing, so every month of an active payroll schedule has its cutoff.
+ */
+class EnsurePaycheckOccurrencesUseCase(private val repo: PaycheckRepository) {
+    suspend operator fun invoke(from: LocalDate, to: LocalDate) =
+        repo.ensurePaycheckOccurrences(from, to)
 }

@@ -148,7 +148,7 @@ private fun RowScope.BottomTabItemContent(
         Text(
             text = item.label,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = FontWeight.Medium,
             color = contentColor,
             maxLines = 1
         )

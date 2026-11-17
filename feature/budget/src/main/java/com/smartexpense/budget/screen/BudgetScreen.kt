@@ -242,7 +242,7 @@ private fun BudgetSection(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -313,7 +313,7 @@ private fun ModernBudgetCard(
                     Text(
                         text = summary.categoryName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         color = colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -346,7 +346,7 @@ private fun ModernBudgetCard(
                     Text(
                         text = summary.budget.amount.toPesoAmount(),
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = colorScheme.onSurface
                     )
                 }
@@ -360,7 +360,7 @@ private fun ModernBudgetCard(
                     Text(
                         text = summary.spentAmount.toPesoAmount(),
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = colorScheme.onSurface
                     )
                 }
@@ -377,7 +377,7 @@ private fun ModernBudgetCard(
                     "Remaining ${summary.remainingAmount.toPesoAmount()}"
                 },
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = progressColor
             )
 
@@ -511,7 +511,7 @@ private fun BudgetActionButton(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = contentColor
             )
         }

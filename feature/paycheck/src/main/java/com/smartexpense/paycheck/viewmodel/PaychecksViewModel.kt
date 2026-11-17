@@ -8,12 +8,14 @@ import com.smartexpense.domain.model.Paycheck
 import com.smartexpense.domain.model.coveredOccurrenceDueMillis
 import com.smartexpense.domain.model.isOccurrencePaid
 import com.smartexpense.domain.model.planPaychecks
+import com.smartexpense.domain.usecase.EnsurePaycheckOccurrencesUseCase
 import com.smartexpense.domain.usecase.GetBillPaymentHistoryUseCase
 import com.smartexpense.domain.usecase.GetBillsUseCase
 import com.smartexpense.domain.usecase.GetPaychecksUseCase
 import com.smartexpense.paycheck.intent.PaychecksIntent
 import com.smartexpense.paycheck.state.PaychecksUiState
 import com.smartexpense.paycheck.state.PlannedBill
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +29,7 @@ class PaychecksViewModel(
     private val getPaychecksUseCase: GetPaychecksUseCase,
     private val getBillsUseCase: GetBillsUseCase,
     private val getBillPaymentHistoryUseCase: GetBillPaymentHistoryUseCase,
+    private val ensurePaycheckOccurrencesUseCase: EnsurePaycheckOccurrencesUseCase,
     private val clock: Clock
 ) : ViewModel() {
 
@@ -45,6 +48,7 @@ class PaychecksViewModel(
     val uiState: StateFlow<PaychecksUiState> = _uiState.asStateFlow()
 
     init {
+        ensureMonthIsMaterialized(currentMonth)
         viewModelScope.launch {
             getPaychecksUseCase().collect { paychecks ->
                 allPaychecks = paychecks
@@ -84,6 +88,28 @@ class PaychecksViewModel(
     private fun showMonth(month: YearMonth) {
         _uiState.update { it.copy(selectedMonth = month) }
         recompute()
+        ensureMonthIsMaterialized(month)
+    }
+
+    /**
+     * Creates the recurring paychecks of [month] if the schedule has not
+     * materialized them yet, so a monthly payroll shows a cutoff for every
+     * month the user browses, including months outside the rolling window.
+     */
+    private fun ensureMonthIsMaterialized(month: YearMonth) {
+        viewModelScope.launch {
+            try {
+                ensurePaycheckOccurrencesUseCase(
+                    month.atDay(1),
+                    month.atEndOfMonth()
+                )
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Exception) {
+                // Failing to generate leaves the stored paychecks on screen;
+                // the month must still render.
+            }
+        }
     }
 
     private fun recompute(isLoading: Boolean? = null) {

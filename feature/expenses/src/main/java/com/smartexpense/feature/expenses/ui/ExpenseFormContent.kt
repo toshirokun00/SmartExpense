@@ -347,7 +347,7 @@ private fun AmountHeroCard(
                 Text(
                     text = "AMOUNT",
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     letterSpacing = 1.sp,
                     color = FormPrimary
                 )
@@ -361,7 +361,7 @@ private fun AmountHeroCard(
                 label = "Amount",
                 prefix = "₱",
                 textStyle = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Medium
                 ),
                 colors = expenseFieldColors(FormPrimary),
                 shape = RoundedCornerShape(16.dp),
@@ -373,7 +373,7 @@ private fun AmountHeroCard(
             Text(
                 text = "Expense type",
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurfaceVariant
             )
 
@@ -433,7 +433,7 @@ private fun ExpenseTypePill(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = if (selected) {
                 Color.White
             } else {
@@ -499,7 +499,7 @@ private fun FormSectionCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = colorScheme.onSurface
                 )
             }
@@ -583,7 +583,7 @@ private fun SyncStatusCard(
                 Text(
                     text = "Sync Now",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = accent,
                     modifier = Modifier
                         .clip(RoundedCornerShape(percent = 50))
@@ -643,7 +643,7 @@ private fun GradientSubmitButton(
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = Color.White
             )
         }

@@ -10,10 +10,12 @@ import com.smartexpense.database.BillDeletionTransaction
 import com.smartexpense.database.dao.BillDao
 import com.smartexpense.database.dao.BillPaymentDao
 import com.smartexpense.database.dao.PendingBillDeletionDao
+import com.smartexpense.database.entity.BillEntity
 import com.smartexpense.database.entity.BillPaymentEntity
 import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.Bill
 import com.smartexpense.domain.model.BillAmountType
+import com.smartexpense.domain.model.BillFrequency
 import com.smartexpense.domain.model.BillPayment
 import com.smartexpense.domain.model.PaymentMethod
 import com.smartexpense.domain.repository.AuthRepository
@@ -75,7 +77,9 @@ class BillRepositoryImpl(
         val userId = authRepository.getCurrentUserId()
             ?: throw IllegalStateException("Sign in to add bills")
         val id = billDao.insertBill(
-            bill.toEntity(userId).copy(syncStatus = SyncStatus.PENDING)
+            bill.withRepeatAnchor(existing = null)
+                .toEntity(userId)
+                .copy(syncStatus = SyncStatus.PENDING)
         )
         expenseSyncEnqueuer.enqueue()
         return id
@@ -88,11 +92,13 @@ class BillRepositoryImpl(
             ?: throw IllegalArgumentException("Bill not found")
         if (existing.userId != userId) throw IllegalArgumentException("Bill not found")
         billDao.updateBill(
-            bill.toEntity(userId).copy(
-                id = bill.id,
-                clientId = existing.clientId,
-                syncStatus = SyncStatus.PENDING
-            )
+            bill.withRepeatAnchor(existing)
+                .toEntity(userId)
+                .copy(
+                    id = bill.id,
+                    clientId = existing.clientId,
+                    syncStatus = SyncStatus.PENDING
+                )
         )
         expenseSyncEnqueuer.enqueue()
     }
@@ -315,6 +321,28 @@ class BillRepositoryImpl(
         if (recent.isEmpty()) return null
         val average = recent.map { it.amount }.average()
         return round(average * 100.0) / 100.0
+    }
+
+    /**
+     * Pins the day of month a recurring bill repeats on.
+     *
+     * Adding a bill anchors it to its due date. Editing keeps the stored anchor
+     * unless the due date moved to a different day, in which case the new day
+     * wins. One-time bills have no cycle to anchor.
+     */
+    private fun Bill.withRepeatAnchor(existing: BillEntity?): Bill {
+        if (frequency == BillFrequency.NONE) {
+            return copy(repeatDayOfMonth = null)
+        }
+
+        val dueDay = dueDate(clock.zone).dayOfMonth
+        val previousDay = existing?.toDomain()?.dueDate(clock.zone)?.dayOfMonth
+        val anchor = when {
+            existing == null -> dueDay
+            previousDay != dueDay -> dueDay
+            else -> repeatDayOfMonth ?: existing.repeatDayOfMonth ?: dueDay
+        }
+        return copy(repeatDayOfMonth = anchor)
     }
 
     private companion object {

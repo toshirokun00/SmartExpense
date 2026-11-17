@@ -29,7 +29,9 @@ import com.smartexpense.database.entity.PaycheckScheduleEntity
 import com.smartexpense.database.entity.SyncStatus
 import com.smartexpense.domain.model.PaycheckFrequency
 import com.smartexpense.domain.money.Money
+import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import kotlin.coroutines.cancellation.CancellationException
 
 /** Restores the signed-in user's remote data into Room on login and new installs. */
@@ -229,6 +231,13 @@ class RemoteDataSync(
                         notes = remote.notes,
                         frequency = remote.frequency,
                         repeatInterval = remote.repeatInterval,
+                        repeatDayOfMonth = if (remote.frequency == "NONE") {
+                            null
+                        } else {
+                            Instant.ofEpochMilli(dueDate)
+                                .atZone(ZoneId.systemDefault())
+                                .dayOfMonth
+                        },
                         amountType = remote.amountType,
                         amountEstimated = remote.amountEstimated,
                         categoryId = remote.categoryId?.let { categoryIds[it] },

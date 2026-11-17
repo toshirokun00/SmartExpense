@@ -289,7 +289,7 @@ private fun DailyStatChip(
         Text(
             text = label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             letterSpacing = 0.6.sp,
             color = accent
         )
@@ -297,7 +297,7 @@ private fun DailyStatChip(
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
         )
     }

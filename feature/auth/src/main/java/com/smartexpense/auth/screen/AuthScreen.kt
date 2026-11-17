@@ -108,7 +108,7 @@ fun AuthScreen(
                 Text(
                     text = "Spendora",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = Color.White
                 )
 
@@ -350,7 +350,7 @@ fun AuthScreen(
                             Text(
                                 text = if (state.isSignUp) "Create account" else "Sign in",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
@@ -449,7 +449,7 @@ private fun RowScope.ModePill(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 color = contentColor,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                fontWeight = FontWeight.Medium
             )
         }
     }

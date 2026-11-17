@@ -124,7 +124,7 @@ fun ExpenseDateCalendarDialog(
                         Text(
                             text = "Select date",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -200,7 +200,7 @@ fun ExpenseDateCalendarDialog(
                     ) {
                         Text(
                             text = "Apply",
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -279,7 +279,7 @@ private fun MonthCalendar(
                             )
                         } ${displayedMonth.year}",
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                     Spacer(Modifier.width(4.dp))
                     Icon(
@@ -310,7 +310,7 @@ private fun MonthCalendar(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -370,7 +370,7 @@ private fun MonthCalendar(
                                     text = dayNumber.toString(),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = if (isSelected) {
-                                        FontWeight.Bold
+                                        FontWeight.Medium
                                     } else {
                                         FontWeight.Medium
                                     },
@@ -431,7 +431,7 @@ private fun MonthYearPicker(
             Text(
                 text = "Select month & year",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
@@ -459,7 +459,7 @@ private fun MonthYearPicker(
             Text(
                 text = year.toString(),
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
@@ -535,7 +535,7 @@ private fun MonthChip(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = if (selected) {
                 Color.White
             } else {

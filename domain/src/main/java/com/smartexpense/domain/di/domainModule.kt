@@ -23,6 +23,7 @@ import com.smartexpense.domain.usecase.PayBillUseCase
 import com.smartexpense.domain.usecase.AddPaycheckScheduleUseCase
 import com.smartexpense.domain.usecase.AddPaycheckUseCase
 import com.smartexpense.domain.usecase.DeletePaycheckUseCase
+import com.smartexpense.domain.usecase.EnsurePaycheckOccurrencesUseCase
 import com.smartexpense.domain.usecase.GetPaycheckSchedulesUseCase
 import com.smartexpense.domain.usecase.GetPaycheckUseCase
 import com.smartexpense.domain.usecase.GetPaychecksUseCase
@@ -79,6 +80,7 @@ val domainModule = module {
     factory { DeletePaycheckUseCase(get()) }
     factory { AddPaycheckScheduleUseCase(get()) }
     factory { StopPaycheckScheduleUseCase(get()) }
+    factory { EnsurePaycheckOccurrencesUseCase(get()) }
 
     factory { BudgetUseCase(get()) }
 

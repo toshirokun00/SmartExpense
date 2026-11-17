@@ -201,7 +201,7 @@ private fun AboutHeroCard(
             Text(
                 text = appName,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = Color.White
             )
 
@@ -224,7 +224,7 @@ private fun AboutHeroCard(
                 Text(
                     text = "Version $version",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                 )
             }

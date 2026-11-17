@@ -411,7 +411,7 @@ private fun DateRangeCard(
                     Text(
                         text = "Change range",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -434,7 +434,7 @@ private fun RangeEndpoint(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = accent
         )
 
@@ -443,7 +443,7 @@ private fun RangeEndpoint(
         Text(
             text = date,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -481,7 +481,7 @@ private fun ExportCard(
         Text(
             text = "Report type",
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
@@ -525,7 +525,7 @@ private fun ExportCard(
         Text(
             text = "File format",
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp)
         )
@@ -576,7 +576,7 @@ private fun ExportCard(
                 Text(
                     text = "$typeLabel • $formatLabel",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = LivelyIndigo
                 )
             }
@@ -670,7 +670,7 @@ private fun SoftActionButton(
         Text(
             text = text,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = contentColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -731,7 +731,7 @@ private fun SummaryCard(
                 Text(
                     text = "Total Spending",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = Color.White
                 )
             }
@@ -739,7 +739,7 @@ private fun SummaryCard(
             Text(
                 text = formatCurrency(report.totalAmount),
                 style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = Color.White
             )
 
@@ -786,7 +786,7 @@ private fun SummaryMetric(
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = Color.White
         )
     }
