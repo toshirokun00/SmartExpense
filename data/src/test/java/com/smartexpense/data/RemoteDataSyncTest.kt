@@ -9,18 +9,27 @@ import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
 import com.smartexpense.data.remote.SupabaseCategoryResponseDto
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseResponseDto
+import com.smartexpense.data.remote.SupabasePaycheckBillResponseDto
+import com.smartexpense.data.remote.SupabasePaycheckRemoteDataSource
+import com.smartexpense.data.remote.SupabasePaycheckResponseDto
+import com.smartexpense.data.remote.SupabasePaycheckScheduleResponseDto
 import com.smartexpense.data.sync.RemoteDataSync
 import com.smartexpense.database.dao.BillDao
 import com.smartexpense.database.dao.BillPaymentDao
 import com.smartexpense.database.dao.BudgetDao
 import com.smartexpense.database.dao.CategoryDao
 import com.smartexpense.database.dao.ExpenseDao
+import com.smartexpense.database.dao.PaycheckBillDao
+import com.smartexpense.database.dao.PaycheckDao
+import com.smartexpense.database.dao.PaycheckScheduleDao
 import com.smartexpense.database.dao.PendingBillDeletionDao
 import com.smartexpense.database.dao.PendingBudgetDeletionDao
 import com.smartexpense.database.dao.PendingExpenseDeletionDao
+import com.smartexpense.database.dao.PendingPaycheckDeletionDao
 import com.smartexpense.database.entity.BillEntity
 import com.smartexpense.database.entity.BudgetEntity
 import com.smartexpense.database.entity.CategoryEntity
+import com.smartexpense.database.entity.PaycheckEntity
 import com.smartexpense.database.entity.PendingBudgetDeletionEntity
 import com.smartexpense.database.entity.PendingExpenseDeletionEntity
 import com.smartexpense.database.entity.SyncStatus
@@ -42,10 +51,15 @@ class RemoteDataSyncTest {
     private lateinit var pendingExpenseDeletionDao: PendingExpenseDeletionDao
     private lateinit var pendingBudgetDeletionDao: PendingBudgetDeletionDao
     private lateinit var pendingBillDeletionDao: PendingBillDeletionDao
+    private lateinit var paycheckDao: PaycheckDao
+    private lateinit var paycheckBillDao: PaycheckBillDao
+    private lateinit var paycheckScheduleDao: PaycheckScheduleDao
+    private lateinit var pendingPaycheckDeletionDao: PendingPaycheckDeletionDao
     private lateinit var categoryRemoteDataSource: SupabaseCategoryRemoteDataSource
     private lateinit var expenseRemoteDataSource: SupabaseExpenseRemoteDataSource
     private lateinit var budgetRemoteDataSource: SupabaseBudgetRemoteDataSource
     private lateinit var billRemoteDataSource: SupabaseBillRemoteDataSource
+    private lateinit var paycheckRemoteDataSource: SupabasePaycheckRemoteDataSource
 
     private lateinit var remoteDataSync: RemoteDataSync
 
@@ -59,10 +73,15 @@ class RemoteDataSyncTest {
         pendingExpenseDeletionDao = mockk(relaxed = true)
         pendingBudgetDeletionDao = mockk(relaxed = true)
         pendingBillDeletionDao = mockk(relaxed = true)
+        paycheckDao = mockk(relaxed = true)
+        paycheckBillDao = mockk(relaxed = true)
+        paycheckScheduleDao = mockk(relaxed = true)
+        pendingPaycheckDeletionDao = mockk(relaxed = true)
         categoryRemoteDataSource = mockk(relaxed = true)
         expenseRemoteDataSource = mockk(relaxed = true)
         budgetRemoteDataSource = mockk(relaxed = true)
         billRemoteDataSource = mockk(relaxed = true)
+        paycheckRemoteDataSource = mockk(relaxed = true)
 
         remoteDataSync = RemoteDataSync(
             categoryDao = categoryDao,
@@ -73,10 +92,15 @@ class RemoteDataSyncTest {
             pendingExpenseDeletionDao = pendingExpenseDeletionDao,
             pendingBudgetDeletionDao = pendingBudgetDeletionDao,
             pendingBillDeletionDao = pendingBillDeletionDao,
+            paycheckDao = paycheckDao,
+            paycheckBillDao = paycheckBillDao,
+            paycheckScheduleDao = paycheckScheduleDao,
+            pendingPaycheckDeletionDao = pendingPaycheckDeletionDao,
             categoryRemoteDataSource = categoryRemoteDataSource,
             expenseRemoteDataSource = expenseRemoteDataSource,
             budgetRemoteDataSource = budgetRemoteDataSource,
-            billRemoteDataSource = billRemoteDataSource
+            billRemoteDataSource = billRemoteDataSource,
+            paycheckRemoteDataSource = paycheckRemoteDataSource
         )
     }
 
@@ -551,6 +575,189 @@ class RemoteDataSyncTest {
         paymentMethod = "E_WALLET",
         createdAt = "2026-11-10T08:00:00Z"
     )
+
+    @Test
+    fun `restores remote paycheck schedules before their occurrences`() = runTest {
+        coEvery { paycheckRemoteDataSource.getPaycheckSchedules(USER_ID) } returns listOf(
+            SupabasePaycheckScheduleResponseDto(
+                id = 1L,
+                clientId = "schedule-1",
+                userId = USER_ID,
+                amount = 2_000.0,
+                label = "Salary",
+                frequency = "SEMI_MONTHLY",
+                firstDay = 15,
+                secondDay = 30,
+                startDate = "2026-11-15T00:00:00Z",
+                isActive = true,
+                createdAt = "2026-11-01T00:00:00Z"
+            )
+        )
+        coEvery { paycheckScheduleDao.getAllClientIds() } returns emptyList()
+
+        remoteDataSync.pullRemoteData(USER_ID)
+
+        coVerify(exactly = 1) {
+            paycheckScheduleDao.insertScheduleIgnoringDuplicate(
+                match {
+                    it.clientId == "schedule-1" &&
+                        it.userId == USER_ID &&
+                        it.frequency == "SEMI_MONTHLY" &&
+                        it.firstDay == 15 &&
+                        it.secondDay == 30 &&
+                        it.isActive &&
+                        it.syncStatus == SyncStatus.SYNCED
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `restores skipped recurring occurrences as tombstones`() = runTest {
+        val payDate = "2026-11-15T00:00:00Z"
+        coEvery { paycheckRemoteDataSource.getPaychecks(USER_ID) } returns listOf(
+            SupabasePaycheckResponseDto(
+                id = 1L,
+                clientId = "pc-1",
+                userId = USER_ID,
+                amount = 2_000.0,
+                payDate = payDate,
+                label = "Pay",
+                createdAt = "2026-11-01T00:00:00Z",
+                scheduleClientId = "schedule-1",
+                occurrenceDate = payDate,
+                isSkipped = true
+            )
+        )
+        coEvery { paycheckDao.getPaycheckByClientId("pc-1") } returns null
+
+        remoteDataSync.pullRemoteData(USER_ID)
+
+        coVerify(exactly = 1) {
+            paycheckDao.insertPaycheck(
+                match {
+                    it.clientId == "pc-1" &&
+                        it.isSkipped &&
+                        it.scheduleClientId == "schedule-1"
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `restores remote paychecks and their bill assignments`() = runTest {
+        val payDate = "2026-11-15T00:00:00Z"
+        val createdAt = "2026-11-01T00:00:00Z"
+        coEvery { paycheckRemoteDataSource.getPaychecks(USER_ID) } returns listOf(
+            SupabasePaycheckResponseDto(
+                id = 1L,
+                clientId = "pc-1",
+                userId = USER_ID,
+                amount = 2_000.0,
+                payDate = payDate,
+                label = "Pay",
+                createdAt = createdAt,
+                scheduleClientId = "schedule-1",
+                occurrenceDate = payDate
+            )
+        )
+        val restored = PaycheckEntity(
+            id = 5L,
+            userId = USER_ID,
+            clientId = "pc-1",
+            syncStatus = SyncStatus.SYNCED,
+            amount = 2_000.0,
+            payDate = 1_000L,
+            label = "Pay",
+            createdAt = 500L
+        )
+        coEvery { paycheckDao.getPaycheckByClientId("pc-1") } returnsMany listOf(
+            null,
+            restored
+        )
+        coEvery { paycheckDao.insertPaycheck(any()) } returns 5L
+        coEvery { paycheckRemoteDataSource.getPaycheckBills(USER_ID) } returns listOf(
+            SupabasePaycheckBillResponseDto(
+                id = 2L,
+                clientId = "assignment-1",
+                userId = USER_ID,
+                paycheckClientId = "pc-1",
+                billClientId = "bill-1",
+                createdAt = createdAt
+            )
+        )
+        coEvery { billDao.getBillByClientId("bill-1") } returns BillEntity(
+            id = 10L,
+            userId = USER_ID,
+            clientId = "bill-1",
+            name = "Rent",
+            amount = 900.0,
+            dueDate = 1_000L
+        )
+
+        remoteDataSync.pullRemoteData(USER_ID)
+
+        coVerify(exactly = 1) {
+            paycheckDao.insertPaycheck(
+                match {
+                    it.clientId == "pc-1" &&
+                        it.scheduleClientId == "schedule-1" &&
+                        it.occurrenceDate != null
+                }
+            )
+        }
+        coVerify(exactly = 1) {
+            paycheckBillDao.insertAssignment(
+                match {
+                    it.paycheckId == 5L &&
+                        it.billId == 10L &&
+                        it.clientId == "assignment-1"
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `does not restore assignments for a paycheck with unsynced local changes`() = runTest {
+        val payDate = "2026-11-15T00:00:00Z"
+        val createdAt = "2026-11-01T00:00:00Z"
+        // The paycheck exists locally and is waiting to be uploaded together
+        // with its own selection.
+        coEvery { paycheckDao.getPaycheckByClientId("pc-1") } returns PaycheckEntity(
+            id = 5L,
+            userId = USER_ID,
+            clientId = "pc-1",
+            amount = 2_000.0,
+            payDate = 1_000L,
+            label = "Pay",
+            createdAt = 500L
+        )
+        coEvery { paycheckRemoteDataSource.getPaychecks(USER_ID) } returns emptyList()
+        coEvery { paycheckRemoteDataSource.getPaycheckBills(USER_ID) } returns listOf(
+            SupabasePaycheckBillResponseDto(
+                id = 2L,
+                clientId = "assignment-1",
+                userId = USER_ID,
+                paycheckClientId = "pc-1",
+                billClientId = "bill-1",
+                createdAt = createdAt
+            )
+        )
+        coEvery { billDao.getBillByClientId("bill-1") } returns BillEntity(
+            id = 10L,
+            userId = USER_ID,
+            clientId = "bill-1",
+            name = "Rent",
+            amount = 900.0,
+            dueDate = 1_000L
+        )
+
+        remoteDataSync.pullRemoteData(USER_ID)
+
+        // The pending upload replaces the remote selection, so restoring the
+        // remote assignment would resurrect a bill the user removed.
+        coVerify(exactly = 0) { paycheckBillDao.insertAssignment(any()) }
+    }
 
     private fun remoteBudget(clientId: String) = SupabaseBudgetResponseDto(        id = 1L,
         clientId = clientId,

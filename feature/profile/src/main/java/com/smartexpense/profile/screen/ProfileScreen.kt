@@ -385,7 +385,7 @@ private fun ProfileHeroCard(
                                     text = username.first().toString().uppercase(),
                                     style = MaterialTheme.typography.displaySmall,
                                     color = Color.White,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Medium
                                 )
 
                                 else -> Icon(
@@ -424,7 +424,7 @@ private fun ProfileHeroCard(
                     Text(
                         text = username.takeIf { it.isNotBlank() } ?: "Your name",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -467,7 +467,7 @@ private fun ProfileHeroCard(
                         Text(
                             text = "Change photo",
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
@@ -554,7 +554,7 @@ private fun EditNicknameDialog(
         title = {
             Text(
                 "Edit Nickname",
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = LivelyIndigo
             )
         },
@@ -594,7 +594,7 @@ private fun EditNicknameDialog(
                 ),
                 shape = RoundedCornerShape(percent = 50)
             ) {
-                Text("Save", fontWeight = FontWeight.SemiBold)
+                Text("Save", fontWeight = FontWeight.Medium)
             }
         },
         dismissButton = {
@@ -602,7 +602,7 @@ private fun EditNicknameDialog(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(contentColor = LivelyRose)
             ) {
-                Text("Cancel", fontWeight = FontWeight.SemiBold)
+                Text("Cancel", fontWeight = FontWeight.Medium)
             }
         },
         shape = RoundedCornerShape(24.dp)

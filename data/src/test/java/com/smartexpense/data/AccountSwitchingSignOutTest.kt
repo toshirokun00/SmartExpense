@@ -54,6 +54,7 @@ class AccountSwitchingSignOutTest {
             categoryRepository = categoryRepository,
             budgetRepository = budgetRepository,
             billRepository = mockk(relaxed = true),
+            paycheckRepository = mockk(relaxed = true),
             expenseSyncEnqueuer = expenseSyncEnqueuer,
             pendingExpenseDeletionDao = pendingDeletionDao,
             deletionTransaction = deletionTransaction,

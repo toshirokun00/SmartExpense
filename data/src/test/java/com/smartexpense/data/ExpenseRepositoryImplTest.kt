@@ -54,6 +54,7 @@ class ExpenseRepositoryImplTest {
             categoryRepository = categoryRepository,
             budgetRepository = mockk(relaxed = true),
             billRepository = mockk(relaxed = true),
+            paycheckRepository = mockk(relaxed = true),
             expenseSyncEnqueuer = expenseSyncEnqueuer,
             pendingExpenseDeletionDao = pendingExpenseDeletionDao,
             deletionTransaction = deletionTransaction,

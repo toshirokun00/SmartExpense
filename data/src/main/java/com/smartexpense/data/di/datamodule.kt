@@ -4,6 +4,7 @@ import com.smartexpense.data.remote.SupabaseCategoryRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBudgetRemoteDataSource
 import com.smartexpense.data.remote.SupabaseBillRemoteDataSource
 import com.smartexpense.data.remote.SupabaseExpenseRemoteDataSource
+import com.smartexpense.data.remote.SupabasePaycheckRemoteDataSource
 import com.smartexpense.data.remote.SupabaseStorageRemoteDataSource
 import com.smartexpense.data.recurring.RecurringExpenseProcessor
 import com.smartexpense.data.repositoryimpl.AccountDataManagerImpl
@@ -13,6 +14,7 @@ import com.smartexpense.data.repositoryimpl.CategoryRepositoryImpl
 import com.smartexpense.data.repositoryimpl.ExpenseRepositoryImpl
 import com.smartexpense.data.repositoryimpl.ProfileRepositoryImpl
 import com.smartexpense.data.repositoryimpl.BillRepositoryImpl
+import com.smartexpense.data.repositoryimpl.PaycheckRepositoryImpl
 import com.smartexpense.data.repositoryimpl.RecurringExpenseRepositoryImpl
 import com.smartexpense.data.repositoryimpl.SettingsRepositoryImpl
 import com.smartexpense.data.repositoryimpl.SupabaseProfileRemoteRepository
@@ -31,6 +33,7 @@ import com.smartexpense.domain.repository.ProfileRepository
 import com.smartexpense.domain.repository.ProfileRemoteRepository
 import com.smartexpense.domain.repository.AuthRepository
 import com.smartexpense.domain.repository.BillRepository
+import com.smartexpense.domain.repository.PaycheckRepository
 import com.smartexpense.domain.repository.RecurringExpenseRepository
 import com.smartexpense.domain.repository.SettingsRepository
 import com.smartexpense.domain.repository.SyncEnqueuer
@@ -119,6 +122,12 @@ val dataModule = module {
     }
 
     single {
+        SupabasePaycheckRemoteDataSource(
+            supabaseClient = get()
+        )
+    }
+
+    single {
         RemoteDataSync(
             categoryDao = get(),
             expenseDao = get(),
@@ -128,10 +137,15 @@ val dataModule = module {
             pendingExpenseDeletionDao = get(),
             pendingBudgetDeletionDao = get(),
             pendingBillDeletionDao = get(),
+            paycheckDao = get(),
+            paycheckBillDao = get(),
+            paycheckScheduleDao = get(),
+            pendingPaycheckDeletionDao = get(),
             categoryRemoteDataSource = get(),
             expenseRemoteDataSource = get(),
             budgetRemoteDataSource = get(),
-            billRemoteDataSource = get()
+            billRemoteDataSource = get(),
+            paycheckRemoteDataSource = get()
         )
     }
 
@@ -144,6 +158,7 @@ val dataModule = module {
             categoryRepository = get(),
             budgetRepository = get(),
             billRepository = get(),
+            paycheckRepository = get(),
             expenseSyncEnqueuer = get(),
             pendingExpenseDeletionDao = get(),
             deletionTransaction = get(),
@@ -205,6 +220,20 @@ val dataModule = module {
     single<SettingsRepository> {
         SettingsRepositoryImpl(
             dataStore = get()
+        )
+    }
+
+    single<PaycheckRepository> {
+        PaycheckRepositoryImpl(
+            paycheckDao = get(),
+            paycheckBillDao = get(),
+            paycheckScheduleDao = get(),
+            pendingPaycheckDeletionDao = get(),
+            supabasePaycheckRemoteDataSource = get(),
+            billDao = get(),
+            expenseSyncEnqueuer = get(),
+            authRepository = get(),
+            clock = get()
         )
     }
 

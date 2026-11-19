@@ -267,7 +267,7 @@ private fun GradientCta(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = Color.White
         )
     }
@@ -345,7 +345,7 @@ private fun ExpenseStatCard(
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     letterSpacing = 0.8.sp,
                     color = accent,
                     maxLines = 1,
@@ -358,7 +358,7 @@ private fun ExpenseStatCard(
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -452,7 +452,7 @@ private fun ExpenseListCard(
                 Text(
                     text = expense.description.ifBlank { "Expense" },
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -486,7 +486,7 @@ private fun ExpenseListCard(
             Text(
                 text = expense.amount.toPesoAmount(),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurface,
                 maxLines = 1
             )

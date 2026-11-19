@@ -17,6 +17,9 @@ import com.smartexpense.budget.screen.BudgetScreen
 import com.smartexpense.bills.screen.BillFormScreen
 import com.smartexpense.bills.screen.BillHistoryScreen
 import com.smartexpense.bills.screen.BillsScreen
+import com.smartexpense.paycheck.screen.MoneyTrackerScreen
+import com.smartexpense.paycheck.screen.PaycheckFormScreen
+import com.smartexpense.paycheck.screen.PaychecksScreen
 import com.smartexpense.reports.screen.ReportsScreen
 import com.smartexpense.profile.screen.AboutScreen
 import com.smartexpense.settings.screen.SettingsScreen
@@ -231,6 +234,57 @@ fun AppNavHost() {
                         navController.popBackStack()
                     },
                     onSaved = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable<PaychecksRoute> {
+                PaychecksScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onAddPaycheck = { navController.navigate(AddPaycheckRoute) },
+                    onPaycheckClick = { paycheckId ->
+                        navController.navigate(EditPaycheckRoute(paycheckId))
+                    }
+                )
+            }
+
+            composable<MoneyTrackerRoute> {
+                MoneyTrackerScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onPaycheckClick = { paycheckId ->
+                        navController.navigate(EditPaycheckRoute(paycheckId))
+                    }
+                )
+            }
+
+            composable<AddPaycheckRoute> {
+                PaycheckFormScreen(
+                    paycheckId = null,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
+                    },
+                    onDeleted = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable<EditPaycheckRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<EditPaycheckRoute>()
+
+                PaycheckFormScreen(
+                    paycheckId = route.paycheckId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onSaved = {
+                        navController.popBackStack()
+                    },
+                    onDeleted = {
                         navController.popBackStack()
                     }
                 )

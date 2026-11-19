@@ -300,7 +300,7 @@ fun RecurringExpenseFormScreen(
                                     form.interval
                                 ),
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -389,7 +389,7 @@ fun RecurringExpenseFormScreen(
                                     "Save Changes"
                                 },
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color = Color.White
                             )
                         }
@@ -518,7 +518,7 @@ private fun RecurringSection(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }

@@ -123,6 +123,108 @@ class BillTest {
     }
 
     @Test
+    fun oneTimeBillHasNoPreviousDueDate() {
+        val bill = bill(millis(2026, 1, 15), BillFrequency.NONE)
+        assertNull(bill.previousDueDateMillis(zone))
+    }
+
+    @Test
+    fun previousDueDateStepsBackOneCycle() {
+        assertEquals(
+            millis(2026, 1, 15),
+            bill(millis(2026, 2, 15), BillFrequency.MONTHLY)
+                .previousDueDateMillis(zone)
+        )
+        assertEquals(
+            millis(2026, 1, 22),
+            bill(millis(2026, 1, 29), BillFrequency.WEEKLY)
+                .previousDueDateMillis(zone)
+        )
+    }
+
+    @Test
+    fun previousDueDateUsesRepeatInterval() {
+        val bill = bill(millis(2026, 3, 31), BillFrequency.MONTHLY)
+            .copy(repeatInterval = 2)
+
+        assertEquals(
+            millis(2026, 1, 31),
+            bill.previousDueDateMillis(zone)
+        )
+    }
+
+    @Test
+    fun monthlyBillOnThe30thReturnsToThe30thAfterFebruary() {
+        val rent = Bill(
+            name = "Rent",
+            amount = 1200.0,
+            dueDateMillis = millis(2026, 11, 30),
+            frequency = BillFrequency.MONTHLY,
+            repeatDayOfMonth = 30
+        )
+
+        var date = rent.dueDate(zone)
+        val dates = mutableListOf(date)
+        repeat(5) {
+            date = Instant.ofEpochMilli(
+                rent.nextDueDateMillis(zone, from = date)!!
+            ).atZone(zone).toLocalDate()
+            dates += date
+        }
+
+        assertEquals(
+            listOf(
+                LocalDate.of(2026, 11, 30),
+                LocalDate.of(2026, 12, 30),
+                LocalDate.of(2027, 1, 30),
+                // February clamps to its last day...
+                LocalDate.of(2027, 2, 28),
+                // ...but March goes back to the anchored day.
+                LocalDate.of(2027, 3, 30),
+                LocalDate.of(2027, 4, 30)
+            ),
+            dates
+        )
+    }
+
+    @Test
+    fun previousDueDateStepsBackFromAClampedFebruaryToTheAnchorDay() {
+        val rent = Bill(
+            name = "Rent",
+            amount = 1200.0,
+            dueDateMillis = millis(2027, 3, 30),
+            frequency = BillFrequency.MONTHLY,
+            repeatDayOfMonth = 30
+        )
+
+        val february = Instant.ofEpochMilli(
+            rent.previousDueDateMillis(zone)!!
+        ).atZone(zone).toLocalDate()
+        val january = Instant.ofEpochMilli(
+            rent.previousDueDateMillis(zone, from = february)!!
+        ).atZone(zone).toLocalDate()
+
+        assertEquals(LocalDate.of(2027, 2, 28), february)
+        assertEquals(LocalDate.of(2027, 1, 30), january)
+    }
+
+    @Test
+    fun leapDayBillReturnsToFebruary29InTheNextLeapYear() {
+        val bill = bill(millis(2028, 2, 29), BillFrequency.YEARLY)
+            .copy(repeatDayOfMonth = 29)
+
+        val next = Instant.ofEpochMilli(
+            bill.nextDueDateMillis(zone)!!
+        ).atZone(zone).toLocalDate()
+        val leapYear = Instant.ofEpochMilli(
+            bill.nextDueDateMillis(zone, from = LocalDate.of(2031, 2, 28))!!
+        ).atZone(zone).toLocalDate()
+
+        assertEquals(LocalDate.of(2029, 2, 28), next)
+        assertEquals(LocalDate.of(2032, 2, 29), leapYear)
+    }
+
+    @Test
     fun statusIsComputedFromDueDate() {
         val today = millis(2026, 6, 10)
         val dueToday = bill(today, BillFrequency.NONE)

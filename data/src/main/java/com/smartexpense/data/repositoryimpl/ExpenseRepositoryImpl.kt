@@ -18,6 +18,7 @@ import com.smartexpense.domain.repository.BudgetRepository
 import com.smartexpense.domain.repository.CategoryRepository
 import com.smartexpense.domain.repository.ExpenseRepository
 import com.smartexpense.domain.repository.BillRepository
+import com.smartexpense.domain.repository.PaycheckRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +36,7 @@ class ExpenseRepositoryImpl(
     private val categoryRepository: CategoryRepository,
     private val budgetRepository: BudgetRepository,
     private val billRepository: BillRepository,
+    private val paycheckRepository: PaycheckRepository,
     private val expenseSyncEnqueuer: ExpenseSyncEnqueuer,
     private val pendingExpenseDeletionDao: PendingExpenseDeletionDao,
     private val deletionTransaction: ExpenseDeletionTransaction,
@@ -186,6 +188,15 @@ class ExpenseRepositoryImpl(
             throw exception
         } catch (exception: Exception) {
             // Bill failures must not block expenses or budgets.
+            hasFailures = true
+        }
+
+        try {
+            paycheckRepository.syncPaychecks(userId)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            // Paycheck failures must not block the rest of the sync.
             hasFailures = true
         }
 

@@ -5,6 +5,7 @@ import androidx.work.Configuration
 import com.smartexpene.categories.di.categoryModule
 import com.smartexpense.auth.di.authFeatureModule
 import com.smartexpense.bills.di.billsModule
+import com.smartexpense.paycheck.di.paycheckModule
 import com.smartexpense.budget.alerts.BudgetAlertCoordinator
 import com.smartexpense.budget.di.budgetModule
 import com.smartexpense.core.common.dataStoreModule
@@ -63,7 +64,8 @@ class SmartExpenseApplication : Application(), Configuration.Provider, KoinCompo
                 authFeatureModule,
                 recurringModule,
                 profileModule,
-                billsModule
+                billsModule,
+                paycheckModule
             )
         }
 

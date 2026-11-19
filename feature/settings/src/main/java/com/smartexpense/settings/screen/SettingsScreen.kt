@@ -274,7 +274,7 @@ private fun ThemeTile(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = if (selected) Color.White else colorScheme.onSurface,
             textAlign = TextAlign.Center
         )

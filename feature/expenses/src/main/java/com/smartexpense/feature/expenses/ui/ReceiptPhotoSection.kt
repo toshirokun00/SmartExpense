@@ -148,7 +148,7 @@ fun ReceiptPhotoSection(
                         Text(
                             text = "Add receipt photo",
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(

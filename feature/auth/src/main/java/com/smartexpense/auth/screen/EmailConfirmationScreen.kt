@@ -61,7 +61,7 @@ fun EmailConfirmationScreen(
             Text(
                 text = "Check your email",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = Color.White
             )
 
@@ -106,7 +106,7 @@ fun EmailConfirmationScreen(
                             contentColor = Color.White
                         )
                     ) {
-                        Text("Back to sign in", fontWeight = FontWeight.SemiBold)
+                        Text("Back to sign in", fontWeight = FontWeight.Medium)
                     }
                 }
             }

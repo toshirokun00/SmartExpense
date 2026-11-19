@@ -2,6 +2,7 @@ package com.smartexpense.domain.model
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
@@ -61,6 +62,15 @@ data class Bill(
      * [BillFrequency.WEEKLY] means every two weeks.
      */
     val repeatInterval: Int = 1,
+    /**
+     * Day of month this bill repeats on.
+     *
+     * A month shorter than this day clamps the occurrence to its last day, but
+     * the next longer month returns to this day. Without the anchor a bill due
+     * on the 30th would drift to the 28th after February and stay there. Null
+     * falls back to the day of the stored [dueDateMillis].
+     */
+    val repeatDayOfMonth: Int? = null,
     val amountType: BillAmountType = BillAmountType.STATIC,
     /**
      * True while [amount] is the estimate for a variable bill rather than an
@@ -156,24 +166,68 @@ data class Bill(
     }
 
     /**
-     * Returns the next due date after [dueDateMillis] for a recurring bill, or
-     * `null` for a one-time bill. Dates are advanced with calendar arithmetic
-     * (never fixed millisecond math) so month lengths are handled correctly.
+     * Returns the next due date after [from] for a recurring bill, or `null`
+     * for a one-time bill. [from] defaults to the stored due date. Dates are
+     * advanced with calendar arithmetic (never fixed millisecond math) so
+     * month lengths are handled correctly.
+     *
+     * Monthly, quarterly and yearly bills step by whole months and land on
+     * [repeatDayOfMonth] in the target month, clamped to that month's last day
+     * when it is shorter. A bill due on the 30th is therefore Feb 28 in a
+     * non-leap year and Mar 30 again afterwards.
      */
-    fun nextDueDateMillis(zoneId: ZoneId = ZoneId.systemDefault()): Long? {
+    fun nextDueDateMillis(
+        zoneId: ZoneId = ZoneId.systemDefault(),
+        from: LocalDate = dueDate(zoneId)
+    ): Long? {
+        val next = shiftedDate(zoneId, from, direction = 1) ?: return null
+        return next.atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
+
+    /**
+     * Returns the due date one cycle before [from] for a recurring bill, or
+     * `null` for a one-time bill. [from] defaults to the stored due date. Used
+     * to find the cycle an earlier paycheck covered after the row has moved on
+     * to a later one.
+     */
+    fun previousDueDateMillis(
+        zoneId: ZoneId = ZoneId.systemDefault(),
+        from: LocalDate = dueDate(zoneId)
+    ): Long? {
+        val previous = shiftedDate(zoneId, from, direction = -1) ?: return null
+        return previous.atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
+
+    /** Day of month cycles land on, taken from [repeatDayOfMonth] when set. */
+    private fun anchorDayOfMonth(zoneId: ZoneId): Int =
+        (repeatDayOfMonth ?: dueDate(zoneId).dayOfMonth).coerceIn(1, 31)
+
+    /** Shifts [from] by one recurrence cycle; `direction` is 1 or -1. */
+    private fun shiftedDate(
+        zoneId: ZoneId,
+        from: LocalDate,
+        direction: Long
+    ): LocalDate? {
         if (frequency == BillFrequency.NONE) return null
 
-        val current = dueDate(zoneId)
-        val step = repeatInterval.coerceAtLeast(1)
-
-        val next = when (frequency) {
-            BillFrequency.WEEKLY -> current.plusWeeks(step.toLong())
-            BillFrequency.MONTHLY -> current.plusMonths(step.toLong())
-            BillFrequency.QUARTERLY -> current.plusMonths(step * 3L)
-            BillFrequency.YEARLY -> current.plusYears(step.toLong())
-            BillFrequency.NONE -> return null
+        val step = repeatInterval.coerceAtLeast(1).toLong() * direction
+        return when (frequency) {
+            BillFrequency.WEEKLY -> from.plusWeeks(step)
+            BillFrequency.MONTHLY -> shiftMonths(from, step, zoneId)
+            BillFrequency.QUARTERLY -> shiftMonths(from, step * 3, zoneId)
+            BillFrequency.YEARLY -> shiftMonths(from, step * 12, zoneId)
+            BillFrequency.NONE -> null
         }
+    }
 
-        return next.atStartOfDay(zoneId).toInstant().toEpochMilli()
+    /**
+     * Moves [from] by [months] whole months and lands on the anchor day,
+     * clamped to the target month's length. Years are handled as 12 months so
+     * a leap-day bill keeps its day when the target year is a leap year.
+     */
+    private fun shiftMonths(from: LocalDate, months: Long, zoneId: ZoneId): LocalDate {
+        val target = YearMonth.from(from).plusMonths(months)
+        val day = anchorDayOfMonth(zoneId).coerceAtMost(target.lengthOfMonth())
+        return target.atDay(day)
     }
 }

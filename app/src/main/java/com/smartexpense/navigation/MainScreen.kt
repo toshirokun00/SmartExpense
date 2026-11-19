@@ -99,6 +99,12 @@ fun MainScreen(navController: NavHostController) {
                         },
                         onNavigateToBills = {
                             navController.navigate(BillsRoute)
+                        },
+                        onNavigateToPaychecks = {
+                            navController.navigate(PaychecksRoute)
+                        },
+                        onNavigateToMoneyTracker = {
+                            navController.navigate(MoneyTrackerRoute)
                         }
                     )
 

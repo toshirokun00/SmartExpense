@@ -4,11 +4,20 @@ import com.smartexpense.domain.model.BillAmountType
 import com.smartexpense.domain.model.BillFrequency
 import com.smartexpense.domain.model.Category
 import com.smartexpense.domain.model.PaymentMethod
+import java.time.LocalDate
+import java.time.ZoneId
+
+/**
+ * Today at local midnight. A default due date carries no time of day so the
+ * date-only planning math (bill cycles, paycheck coverage) stays aligned.
+ */
+fun startOfTodayMillis(): Long =
+    LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
 /** Text-field values and toggles captured by the add/edit bill screen. */
 data class BillFormState(
     val amount: String = "",
-    val dueDateMillis: Long = System.currentTimeMillis(),
+    val dueDateMillis: Long = startOfTodayMillis(),
     val notes: String = "",
     val isRecurring: Boolean = false,
     val frequency: BillFrequency = BillFrequency.MONTHLY,

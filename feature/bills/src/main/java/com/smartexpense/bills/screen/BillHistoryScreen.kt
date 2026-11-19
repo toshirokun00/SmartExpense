@@ -221,7 +221,7 @@ private fun SummaryCard(
         Text(
             total.toPesoAmount(),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Medium
         )
         Text(
             formatHistoryCount(count),
@@ -242,7 +242,7 @@ private fun MonthHeader(month: BillPaymentMonth) {
         Text(
             month.label,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = LivelyIndigo
         )
         Spacer(Modifier.weight(1f))
@@ -277,7 +277,7 @@ private fun PaymentRow(payment: BillPayment) {
                 Text(
                     payment.billName.ifBlank { "Bill payment" },
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Medium
                 )
                 Text(
                     "Paid on ${payment.paidAtMillis.toDateString()}",
@@ -293,7 +293,7 @@ private fun PaymentRow(payment: BillPayment) {
             Text(
                 payment.amount.toPesoAmount(),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium
             )
         }
     }

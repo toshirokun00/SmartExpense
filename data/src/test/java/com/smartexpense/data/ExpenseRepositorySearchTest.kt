@@ -31,6 +31,7 @@ class ExpenseRepositorySearchTest {
             categoryRepository = mockk(relaxed = true),
             budgetRepository = mockk(relaxed = true),
             billRepository = mockk(relaxed = true),
+            paycheckRepository = mockk(relaxed = true),
             expenseSyncEnqueuer = mockk(relaxed = true),
             pendingExpenseDeletionDao = mockk(relaxed = true),
             deletionTransaction = mockk(relaxed = true),

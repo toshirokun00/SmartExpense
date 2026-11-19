@@ -137,7 +137,7 @@ fun ModernHeader(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
                     color = titleColor,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -224,7 +224,7 @@ fun ModernHeaderActionPill(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = contentColor
             )
         }
@@ -279,7 +279,7 @@ fun ModernStatCard(
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             if (subtitle != null) {
@@ -364,7 +364,7 @@ fun ModernListItemCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (subtitle != null) {
@@ -403,7 +403,7 @@ fun ModernSectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
         )
         if (action != null) {
@@ -447,7 +447,7 @@ fun ModernEmptyState(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
         )
         if (subtitle != null) {
