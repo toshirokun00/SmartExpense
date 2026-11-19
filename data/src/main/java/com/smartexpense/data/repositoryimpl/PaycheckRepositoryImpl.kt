@@ -151,19 +151,47 @@ class PaycheckRepositoryImpl(
         return scheduleId
     }
 
-    override suspend fun stopPaycheckSchedule(scheduleClientId: String) {
+    override suspend fun stopPaycheckSchedule(
+        scheduleClientId: String,
+        fromPayDateMillis: Long
+    ) {
         val userId = authRepository.getCurrentUserId() ?: return
         val schedule = paycheckScheduleDao.getScheduleByClientId(scheduleClientId)
             ?: return
         if (schedule.userId != userId) return
-        if (!schedule.isActive) return
 
-        paycheckScheduleDao.updateSchedule(
-            schedule.copy(
-                isActive = false,
-                syncStatus = SyncStatus.PENDING
+        // Stop is idempotent: schedules stopped by an older build (or restored
+        // from the server as inactive) can still have later paychecks left
+        // over. Re-running it must trim those instead of returning early.
+        if (schedule.isActive) {
+            paycheckScheduleDao.updateSchedule(
+                schedule.copy(
+                    isActive = false,
+                    syncStatus = SyncStatus.PENDING
+                )
             )
-        )
+        }
+
+        // Stopping from a cutoff keeps that paycheck and cancels only the ones
+        // after it: the user is saying this month's paycheck is the last one.
+        val stopDate = Instant.ofEpochMilli(fromPayDateMillis)
+            .atZone(clock.zone)
+            .toLocalDate()
+        for (paycheck in paycheckDao.getPaychecksForSchedule(scheduleClientId)) {
+            val paycheckDate = Instant.ofEpochMilli(paycheck.payDate)
+                .atZone(clock.zone)
+                .toLocalDate()
+            if (!paycheckDate.isAfter(stopDate)) continue
+
+            paycheckBillDao.deleteAssignmentsForPaycheck(paycheck.id)
+            paycheckDao.updatePaycheck(
+                paycheck.copy(
+                    isSkipped = true,
+                    syncStatus = SyncStatus.PENDING
+                )
+            )
+        }
+
         expenseSyncEnqueuer.enqueue()
     }
 
@@ -254,24 +282,47 @@ class PaycheckRepositoryImpl(
         val existing = paycheckDao.getPaycheckById(id) ?: return
         if (existing.userId != userId) return
 
-        if (existing.scheduleClientId != null) {
-            // Keep a tombstone so the deterministic cutoff is not recreated by
-            // the next horizon materialization or on another device.
-            paycheckDao.updatePaycheck(
-                existing.copy(
-                    isSkipped = true,
-                    syncStatus = SyncStatus.PENDING
-                )
-            )
+        val scheduleClientId = existing.scheduleClientId
+        if (scheduleClientId != null) {
+            deleteRecurringPaychecks(scheduleClientId)
         } else {
             pendingPaycheckDeletionDao.insert(
                 PendingPaycheckDeletionEntity(clientId = existing.clientId)
             )
             paycheckDao.deletePaycheckById(existing.id)
+            paycheckBillDao.deleteAssignmentsForPaycheck(existing.id)
         }
-        paycheckBillDao.deleteAssignmentsForPaycheck(existing.id)
 
         expenseSyncEnqueuer.enqueue()
+    }
+
+    /**
+     * Deleting one cutoff of a recurring payroll deletes the whole payroll:
+     * every paycheck the schedule generated becomes a tombstone and the
+     * schedule stops repeating. The tombstones keep their deterministic
+     * client ids, so a later materialization does not recreate the cutoffs and
+     * the deletions still reach the server.
+     */
+    private suspend fun deleteRecurringPaychecks(scheduleClientId: String) {
+        val schedule = paycheckScheduleDao.getScheduleByClientId(scheduleClientId)
+        if (schedule != null && schedule.isActive) {
+            paycheckScheduleDao.updateSchedule(
+                schedule.copy(
+                    isActive = false,
+                    syncStatus = SyncStatus.PENDING
+                )
+            )
+        }
+
+        for (paycheck in paycheckDao.getPaychecksForSchedule(scheduleClientId)) {
+            paycheckBillDao.deleteAssignmentsForPaycheck(paycheck.id)
+            paycheckDao.updatePaycheck(
+                paycheck.copy(
+                    isSkipped = true,
+                    syncStatus = SyncStatus.PENDING
+                )
+            )
+        }
     }
 
     override suspend fun syncPaychecks(userId: String) {

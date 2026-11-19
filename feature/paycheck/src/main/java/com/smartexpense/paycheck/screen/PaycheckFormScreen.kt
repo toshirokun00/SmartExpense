@@ -26,7 +26,9 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -92,6 +94,8 @@ fun PaycheckFormScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var confirmStop by remember { mutableStateOf(false) }
 
     LaunchedEffect(paycheckId) {
         viewModel.load(paycheckId)
@@ -104,7 +108,7 @@ fun PaycheckFormScreen(
                 PaycheckFormEffect.Deleted -> onDeleted()
                 PaycheckFormEffect.RecurringStopped ->
                     snackbarHostState.showSnackbar(
-                        "Recurring paychecks stopped"
+                        "Recurring stopped. This paycheck is kept."
                     )
                 is PaycheckFormEffect.ShowError ->
                     snackbarHostState.showSnackbar(effect.message)
@@ -124,9 +128,7 @@ fun PaycheckFormScreen(
                         ModernHeaderActionPill(
                             label = "Delete",
                             icon = Icons.Default.Delete,
-                            onClick = {
-                                viewModel.onIntent(PaycheckFormIntent.Delete)
-                            }
+                            onClick = { confirmDelete = true }
                         )
                     }
                 }
@@ -142,7 +144,8 @@ fun PaycheckFormScreen(
             } else {
                 PaycheckFormContent(
                     uiState = uiState,
-                    onIntent = viewModel::onIntent
+                    onIntent = viewModel::onIntent,
+                    onStopRequested = { confirmStop = true }
                 )
             }
         }
@@ -154,12 +157,119 @@ fun PaycheckFormScreen(
                 .padding(16.dp)
         )
     }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = {
+                Text(
+                    text = if (uiState.form.isRecurringOccurrence) {
+                        "Delete recurring paycheck?"
+                    } else {
+                        "Delete paycheck?"
+                    },
+                    fontWeight = FontWeight.Medium,
+                    color = LivelyRose
+                )
+            },
+            text = {
+                Text(
+                    if (uiState.form.isRecurringOccurrence) {
+                        "This paycheck is part of a recurring schedule. " +
+                            "Every paycheck created by this schedule will " +
+                            "also be deleted, and the schedule will stop repeating."
+                    } else {
+                        "This paycheck will be permanently removed."
+                    }
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        confirmDelete = false
+                        viewModel.onIntent(PaycheckFormIntent.Delete)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LivelyRose,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(percent = 50)
+                ) {
+                    Text(
+                        text = if (uiState.form.isRecurringOccurrence) {
+                            "Delete all"
+                        } else {
+                            "Delete"
+                        },
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmDelete = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = LivelyIndigo
+                    )
+                ) {
+                    Text("Cancel", fontWeight = FontWeight.Medium)
+                }
+            },
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
+
+    if (confirmStop) {
+        AlertDialog(
+            onDismissRequest = { confirmStop = false },
+            title = {
+                Text(
+                    text = "Stop repeating paycheck?",
+                    fontWeight = FontWeight.Medium,
+                    color = LivelyRose
+                )
+            },
+            text = {
+                Text(
+                    "This paycheck will be kept. Every later paycheck of " +
+                        "this schedule will be removed."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        confirmStop = false
+                        viewModel.onIntent(PaycheckFormIntent.StopRepeating)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LivelyRose,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(percent = 50)
+                ) {
+                    Text("Stop after this", fontWeight = FontWeight.Medium)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmStop = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = LivelyIndigo
+                    )
+                ) {
+                    Text("Cancel", fontWeight = FontWeight.Medium)
+                }
+            },
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
 }
 
 @Composable
 private fun PaycheckFormContent(
     uiState: PaycheckFormUiState,
-    onIntent: (PaycheckFormIntent) -> Unit
+    onIntent: (PaycheckFormIntent) -> Unit,
+    onStopRequested: () -> Unit
 ) {
     val form = uiState.form
     val assignedTotal = uiState.assignedTotal()
@@ -221,7 +331,8 @@ private fun PaycheckFormContent(
         if (form.isRecurringOccurrence) {
             RecurringOccurrenceCard(
                 form = form,
-                onIntent = onIntent
+                onIntent = onIntent,
+                onStopRequested = onStopRequested
             )
         }
 
@@ -529,7 +640,8 @@ private fun DayPicker(
 @Composable
 private fun RecurringOccurrenceCard(
     form: PaycheckFormState,
-    onIntent: (PaycheckFormIntent) -> Unit
+    onIntent: (PaycheckFormIntent) -> Unit,
+    onStopRequested: () -> Unit
 ) {
     LivelySectionCard(
         accent = LivelyViolet,
@@ -547,13 +659,13 @@ private fun RecurringOccurrenceCard(
         if (form.scheduleStopped) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Recurring stopped. Existing paychecks are kept.",
+                text = "Recurring stopped. This paycheck is kept; later ones were removed.",
                 style = MaterialTheme.typography.labelLarge,
                 color = LivelyBlue
             )
         } else {
             TextButton(
-                onClick = { onIntent(PaycheckFormIntent.StopRepeating) }
+                onClick = onStopRequested
             ) {
                 Text("Stop repeating")
             }

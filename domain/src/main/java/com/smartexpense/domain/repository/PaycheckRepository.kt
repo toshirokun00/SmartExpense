@@ -32,8 +32,16 @@ interface PaycheckRepository {
         billIds: List<Long> = emptyList()
     ): Long
 
-    /** Stops future generation while keeping the paychecks already created. */
-    suspend fun stopPaycheckSchedule(scheduleClientId: String)
+    /**
+     * Stops future generation, keeps the cutoff at [fromPayDateMillis], and
+     * removes every later paycheck of the schedule. Calling it again on an
+     * already stopped schedule still trims any paychecks left over from an
+     * older build or a server restore.
+     */
+    suspend fun stopPaycheckSchedule(
+        scheduleClientId: String,
+        fromPayDateMillis: Long
+    )
 
     /**
      * Creates any missing paychecks the active schedules pay inside

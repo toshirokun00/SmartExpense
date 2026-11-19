@@ -64,6 +64,12 @@ class PaycheckFormViewModelTest {
         ZoneOffset.UTC
     )
 
+    /** Today is the 18th, one day past the monthly 15th cutoff. */
+    private val lateNovemberClock = Clock.fixed(
+        Instant.parse("2026-11-18T12:00:00Z"),
+        ZoneOffset.UTC
+    )
+
     private val bills = listOf(
         bill(id = 1, day = 5, amount = 500.0),
         bill(id = 2, day = 10, amount = 300.0),
@@ -89,12 +95,13 @@ class PaycheckFormViewModelTest {
         coEvery { updatePaycheckUseCase(any()) } just Runs
         coEvery { deletePaycheckUseCase(any()) } just Runs
         coEvery { addPaycheckScheduleUseCase(any(), any()) } returns 1L
-        coEvery { stopPaycheckScheduleUseCase(any()) } just Runs
+        coEvery { stopPaycheckScheduleUseCase(any(), any()) } just Runs
     }
 
     private fun createViewModel(
         billsFlow: MutableStateFlow<List<Bill>>? = null,
-        paychecksFlow: MutableStateFlow<List<Paycheck>>? = null
+        paychecksFlow: MutableStateFlow<List<Paycheck>>? = null,
+        clock: Clock = this.clock
     ): PaycheckFormViewModel {
         if (billsFlow != null) {
             every { getBillsUseCase() } returns billsFlow
@@ -478,6 +485,70 @@ class PaycheckFormViewModelTest {
     }
 
     @Test
+    fun `monthly cutoff that already passed this month still starts this month`() = runTest {
+        // Today is the 18th and the payroll is every 15th: the cutoff of the
+        // month the schedule is created in must still be the first paycheck.
+        val viewModel = createViewModel(clock = lateNovemberClock)
+        viewModel.load(null)
+        advanceUntilIdle()
+        viewModel.onIntent(PaycheckFormIntent.PayDateChanged(dateMillis(2026, 11, 18)))
+        viewModel.onIntent(PaycheckFormIntent.RecurringChanged(true))
+        viewModel.onIntent(PaycheckFormIntent.FrequencyChanged(PaycheckFrequency.MONTHLY))
+        viewModel.onIntent(PaycheckFormIntent.FirstDayChanged(15))
+        advanceUntilIdle()
+
+        assertEquals(
+            dateMillis(2026, 11, 15),
+            viewModel.uiState.value.form.payDateMillis
+        )
+    }
+
+    @Test
+    fun `semi-monthly keeps this month's first cutoff when it already passed`() = runTest {
+        val viewModel = createViewModel(clock = lateNovemberClock)
+        viewModel.load(null)
+        advanceUntilIdle()
+        viewModel.onIntent(PaycheckFormIntent.PayDateChanged(dateMillis(2026, 11, 18)))
+        viewModel.onIntent(PaycheckFormIntent.RecurringChanged(true))
+        viewModel.onIntent(PaycheckFormIntent.FrequencyChanged(PaycheckFrequency.SEMI_MONTHLY))
+        viewModel.onIntent(PaycheckFormIntent.FirstDayChanged(15))
+        viewModel.onIntent(PaycheckFormIntent.SecondDayChanged(30))
+        advanceUntilIdle()
+
+        assertEquals(
+            dateMillis(2026, 11, 15),
+            viewModel.uiState.value.form.payDateMillis
+        )
+    }
+
+    @Test
+    fun `saving a monthly schedule starts at this month's cutoff`() = runTest {
+        val viewModel = createViewModel(clock = lateNovemberClock)
+        viewModel.load(null)
+        advanceUntilIdle()
+        viewModel.onIntent(PaycheckFormIntent.PayDateChanged(dateMillis(2026, 11, 18)))
+        viewModel.onIntent(PaycheckFormIntent.RecurringChanged(true))
+        viewModel.onIntent(PaycheckFormIntent.FrequencyChanged(PaycheckFrequency.MONTHLY))
+        viewModel.onIntent(PaycheckFormIntent.FirstDayChanged(15))
+        viewModel.onIntent(PaycheckFormIntent.AmountChanged("2,000"))
+        advanceUntilIdle()
+
+        viewModel.onIntent(PaycheckFormIntent.Save)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            addPaycheckScheduleUseCase(
+                match {
+                    it.frequency == PaycheckFrequency.MONTHLY &&
+                        it.firstDay == 15 &&
+                        it.startDateMillis == dateMillis(2026, 11, 15)
+                },
+                any()
+            )
+        }
+    }
+
+    @Test
     fun `switching to weekly keeps the chosen schedule start`() = runTest {
         val viewModel = createViewModel()
         viewModel.load(null)
@@ -565,7 +636,12 @@ class PaycheckFormViewModelTest {
         }
 
         assertTrue(viewModel.uiState.value.form.scheduleStopped)
-        coVerify(exactly = 1) { stopPaycheckScheduleUseCase("schedule-1") }
+        coVerify(exactly = 1) {
+            stopPaycheckScheduleUseCase(
+                "schedule-1",
+                occurrenceDate
+            )
+        }
     }
 
     @Test
@@ -597,7 +673,7 @@ class PaycheckFormViewModelTest {
             )
         }
         coVerify(exactly = 0) { addPaycheckScheduleUseCase(any(), any()) }
-        coVerify(exactly = 0) { stopPaycheckScheduleUseCase(any()) }
+        coVerify(exactly = 0) { stopPaycheckScheduleUseCase(any(), any()) }
     }
 
     @Test

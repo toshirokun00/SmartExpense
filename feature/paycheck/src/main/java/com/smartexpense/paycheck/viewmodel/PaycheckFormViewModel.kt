@@ -441,7 +441,12 @@ class PaycheckFormViewModel(
     private fun firstOccurrenceMillis(form: PaycheckFormState): Long? {
         val today = LocalDate.now(clock)
         // Interval schedules step from the chosen pay date. Day-of-month
-        // schedules preview the next matching cutoff from today.
+        // schedules start on the 1st of the current month, so a cutoff that
+        // already passed this month (payday on the 15th, created on the 18th)
+        // is still the schedule's first paycheck instead of being skipped
+        // until next month.
+        val isDayOfMonthRule = form.frequency == PaycheckFrequency.MONTHLY ||
+            form.frequency == PaycheckFrequency.SEMI_MONTHLY
         val start = when (form.frequency) {
             PaycheckFrequency.WEEKLY,
             PaycheckFrequency.BIWEEKLY -> Instant
@@ -450,8 +455,12 @@ class PaycheckFormViewModel(
                 .toLocalDate()
 
             PaycheckFrequency.MONTHLY,
-            PaycheckFrequency.SEMI_MONTHLY -> today
+            PaycheckFrequency.SEMI_MONTHLY -> today.withDayOfMonth(1)
         }
+        // Day-of-month rules scan from the schedule start so the current
+        // month is not dropped; interval rules still look forward from today
+        // unless the user picked a future anchor.
+        val occurrencesFrom = if (isDayOfMonthRule) start else maxOf(start, today)
         val preview = PaycheckSchedule(
             clientId = "preview",
             amount = 0.0,
@@ -464,7 +473,7 @@ class PaycheckFormViewModel(
                 .toEpochMilli()
         )
         return preview.occurrencesBetween(
-            from = today,
+            from = occurrencesFrom,
             to = today.plusYears(2),
             zoneId = clock.zone
         ).firstOrNull()
@@ -602,12 +611,16 @@ class PaycheckFormViewModel(
     }
 
     private fun stopRepeating() {
-        val clientId = _uiState.value.form.scheduleClientId ?: return
-        if (_uiState.value.form.isSaving) return
+        val form = _uiState.value.form
+        val clientId = form.scheduleClientId ?: return
+        if (form.isSaving) return
 
         viewModelScope.launch {
             try {
-                stopPaycheckScheduleUseCase(clientId)
+                stopPaycheckScheduleUseCase(
+                    clientId,
+                    form.payDateMillis
+                )
                 _uiState.update {
                     it.copy(form = it.form.copy(scheduleStopped = true))
                 }

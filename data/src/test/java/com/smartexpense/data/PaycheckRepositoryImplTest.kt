@@ -577,12 +577,33 @@ class PaycheckRepositoryImplTest {
     }
 
     @Test
-    fun `stop repeating deactivates the schedule and keeps existing paychecks`() = runTest {
+    fun `stop repeating keeps the stop cutoff and removes later paychecks`() = runTest {
         coEvery { authRepository.getCurrentUserId() } returns "user-1"
         coEvery { paycheckScheduleDao.getScheduleByClientId("schedule-1") } returns
             scheduleEntity()
+        coEvery { paycheckDao.getPaychecksForSchedule("schedule-1") } returns listOf(
+            paycheckEntity(id = 1, clientId = "pc-oct").copy(
+                payDate = dateMillis(2026, 10, 15),
+                scheduleClientId = "schedule-1"
+            ),
+            paycheckEntity(id = 2, clientId = "pc-nov").copy(
+                payDate = dateMillis(2026, 11, 15),
+                scheduleClientId = "schedule-1"
+            ),
+            paycheckEntity(id = 3, clientId = "pc-dec").copy(
+                payDate = dateMillis(2026, 12, 15),
+                scheduleClientId = "schedule-1"
+            ),
+            paycheckEntity(id = 4, clientId = "pc-jan").copy(
+                payDate = dateMillis(2027, 1, 15),
+                scheduleClientId = "schedule-1"
+            )
+        )
 
-        repository.stopPaycheckSchedule("schedule-1")
+        repository.stopPaycheckSchedule(
+            scheduleClientId = "schedule-1",
+            fromPayDateMillis = dateMillis(2026, 11, 15)
+        )
 
         coVerify(exactly = 1) {
             paycheckScheduleDao.updateSchedule(
@@ -593,7 +614,80 @@ class PaycheckRepositoryImplTest {
                 }
             )
         }
+        // October and November are kept: stopping keeps the cutoff the user is on
+        coVerify(exactly = 1) {
+            paycheckDao.updatePaycheck(
+                match { it.id == 3L && it.isSkipped && it.syncStatus == SyncStatus.PENDING }
+            )
+        }
+        coVerify(exactly = 1) {
+            paycheckDao.updatePaycheck(
+                match { it.id == 4L && it.isSkipped && it.syncStatus == SyncStatus.PENDING }
+            )
+        }
+        coVerify(exactly = 2) {
+            paycheckDao.updatePaycheck(
+                match { it.isSkipped && it.syncStatus == SyncStatus.PENDING }
+            )
+        }
+        coVerify(exactly = 0) {
+            paycheckDao.updatePaycheck(match { it.id == 1L && it.isSkipped })
+        }
+        coVerify(exactly = 0) {
+            paycheckDao.updatePaycheck(match { it.id == 2L && it.isSkipped })
+        }
+        coVerify(exactly = 2) {
+            paycheckBillDao.deleteAssignmentsForPaycheck(any())
+        }
+        coVerify(exactly = 1) {
+            paycheckBillDao.deleteAssignmentsForPaycheck(3L)
+        }
+        coVerify(exactly = 1) {
+            paycheckBillDao.deleteAssignmentsForPaycheck(4L)
+        }
         coVerify(exactly = 0) { paycheckDao.deletePaycheckById(any()) }
+        coVerify(exactly = 0) { pendingPaycheckDeletionDao.insert(any()) }
+    }
+
+    @Test
+    fun `stopping an already inactive schedule still removes later paychecks`() = runTest {
+        coEvery { authRepository.getCurrentUserId() } returns "user-1"
+        coEvery { paycheckScheduleDao.getScheduleByClientId("schedule-1") } returns
+            scheduleEntity(isActive = false)
+        coEvery { paycheckDao.getPaychecksForSchedule("schedule-1") } returns listOf(
+            paycheckEntity(id = 1, clientId = "pc-jul").copy(
+                payDate = dateMillis(2027, 7, 15),
+                scheduleClientId = "schedule-1"
+            ),
+            paycheckEntity(id = 2, clientId = "pc-aug").copy(
+                payDate = dateMillis(2027, 8, 15),
+                scheduleClientId = "schedule-1"
+            )
+        )
+
+        repository.stopPaycheckSchedule(
+            scheduleClientId = "schedule-1",
+            fromPayDateMillis = dateMillis(2027, 7, 15)
+        )
+
+        // Already stopped: no second schedule update is needed.
+        coVerify(exactly = 0) { paycheckScheduleDao.updateSchedule(any()) }
+        // The July cutoff stays.
+        coVerify(exactly = 0) {
+            paycheckDao.updatePaycheck(match { it.id == 1L && it.isSkipped })
+        }
+        // The leftover August cutoff is still trimmed.
+        coVerify(exactly = 1) {
+            paycheckDao.updatePaycheck(
+                match {
+                    it.id == 2L &&
+                        it.isSkipped &&
+                        it.syncStatus == SyncStatus.PENDING
+                }
+            )
+        }
+        coVerify(exactly = 1) { paycheckBillDao.deleteAssignmentsForPaycheck(2L) }
+        coVerify(exactly = 1) { expenseSyncEnqueuer.enqueue() }
     }
 
     @Test
@@ -773,31 +867,88 @@ class PaycheckRepositoryImplTest {
     }
 
     @Test
-    fun `deleting a recurring occurrence keeps a tombstone instead of deleting it`() = runTest {
-        coEvery { authRepository.getCurrentUserId() } returns "user-1"
-        coEvery { paycheckDao.getPaycheckById(6L) } returns paycheckEntity(
-            id = 6L,
-            clientId = "pc-occurrence"
-        ).copy(
-            scheduleClientId = "schedule-1",
-            occurrenceDate = dateMillis(2026, 11, 15)
-        )
-
-        repository.deletePaycheck(6L)
-
-        coVerify(exactly = 1) {
-            paycheckDao.updatePaycheck(
-                match {
-                    it.id == 6L &&
-                        it.isSkipped &&
-                        it.syncStatus == SyncStatus.PENDING
-                }
+    fun `deleting a recurring occurrence deletes every paycheck of its schedule`() =
+        runTest {
+            coEvery { authRepository.getCurrentUserId() } returns "user-1"
+            coEvery { paycheckDao.getPaycheckById(6L) } returns paycheckEntity(
+                id = 6L,
+                clientId = "pc-nov-15"
+            ).copy(
+                scheduleClientId = "schedule-1",
+                occurrenceDate = dateMillis(2026, 11, 15)
             )
+            coEvery { paycheckScheduleDao.getScheduleByClientId("schedule-1") } returns
+                scheduleEntity()
+            coEvery { paycheckDao.getPaychecksForSchedule("schedule-1") } returns
+                listOf(
+                    paycheckEntity(id = 6L, clientId = "pc-nov-15").copy(
+                        scheduleClientId = "schedule-1",
+                        occurrenceDate = dateMillis(2026, 11, 15)
+                    ),
+                    paycheckEntity(id = 7L, clientId = "pc-nov-30").copy(
+                        scheduleClientId = "schedule-1",
+                        occurrenceDate = dateMillis(2026, 11, 30)
+                    ),
+                    paycheckEntity(id = 8L, clientId = "pc-dec-15").copy(
+                        scheduleClientId = "schedule-1",
+                        occurrenceDate = dateMillis(2026, 12, 15)
+                    )
+                )
+
+            repository.deletePaycheck(6L)
+
+            coVerify(exactly = 1) {
+                paycheckScheduleDao.updateSchedule(
+                    match {
+                        it.clientId == "schedule-1" &&
+                            !it.isActive &&
+                            it.syncStatus == SyncStatus.PENDING
+                    }
+                )
+            }
+            coVerify(exactly = 3) {
+                paycheckDao.updatePaycheck(
+                    match {
+                        it.isSkipped &&
+                            it.syncStatus == SyncStatus.PENDING
+                    }
+                )
+            }
+            coVerify(exactly = 3) {
+                paycheckBillDao.deleteAssignmentsForPaycheck(any())
+            }
+            // Every cutoff becomes a tombstone, so nothing is hard-deleted and
+            // no remote deletion has to race the materialization.
+            coVerify(exactly = 0) { pendingPaycheckDeletionDao.insert(any()) }
+            coVerify(exactly = 0) { paycheckDao.deletePaycheckById(any()) }
         }
-        coVerify(exactly = 0) { pendingPaycheckDeletionDao.insert(any()) }
-        coVerify(exactly = 0) { paycheckDao.deletePaycheckById(any()) }
-        coVerify(exactly = 1) { paycheckBillDao.deleteAssignmentsForPaycheck(6L) }
-    }
+
+    @Test
+    fun `deleting an occurrence of a stopped schedule still skips its paychecks`() =
+        runTest {
+            coEvery { authRepository.getCurrentUserId() } returns "user-1"
+            coEvery { paycheckDao.getPaycheckById(6L) } returns paycheckEntity(
+                id = 6L,
+                clientId = "pc-nov-15"
+            ).copy(scheduleClientId = "schedule-1")
+            coEvery { paycheckScheduleDao.getScheduleByClientId("schedule-1") } returns
+                scheduleEntity(isActive = false)
+            coEvery { paycheckDao.getPaychecksForSchedule("schedule-1") } returns
+                listOf(
+                    paycheckEntity(id = 6L, clientId = "pc-nov-15").copy(
+                        scheduleClientId = "schedule-1"
+                    )
+                )
+
+            repository.deletePaycheck(6L)
+
+            coVerify(exactly = 0) { paycheckScheduleDao.updateSchedule(any()) }
+            coVerify(exactly = 1) {
+                paycheckDao.updatePaycheck(
+                    match { it.isSkipped && it.syncStatus == SyncStatus.PENDING }
+                )
+            }
+        }
 
     @Test
     fun `sync uploads the tombstone for a deleted recurring occurrence`() = runTest {

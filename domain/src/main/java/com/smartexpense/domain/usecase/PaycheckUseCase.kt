@@ -38,8 +38,15 @@ class AddPaycheckScheduleUseCase(private val repo: PaycheckRepository) {
 }
 
 class StopPaycheckScheduleUseCase(private val repo: PaycheckRepository) {
-    suspend operator fun invoke(scheduleClientId: String) =
-        repo.stopPaycheckSchedule(scheduleClientId)
+    /**
+     * Stops the schedule, keeps the paycheck at [fromPayDateMillis], and
+     * removes every later cutoff, so no future income is planned after the
+     * month the user stops repeating.
+     */
+    suspend operator fun invoke(
+        scheduleClientId: String,
+        fromPayDateMillis: Long
+    ) = repo.stopPaycheckSchedule(scheduleClientId, fromPayDateMillis)
 }
 
 /**
