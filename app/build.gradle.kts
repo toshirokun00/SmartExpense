@@ -96,6 +96,7 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":domain"))
     implementation(project(":core:common"))
+    implementation(project(":core:designsystems"))
     implementation(project(":core:database"))
     implementation(project(":core:notification"))
     implementation(project(":feature:expenses"))

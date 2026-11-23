@@ -4,6 +4,8 @@ import app.cash.turbine.test
 import com.smartexpense.auth.effect.AuthEffect
 import com.smartexpense.auth.intent.AuthIntent
 import com.smartexpense.auth.viewmodel.AuthViewModel
+import com.smartexpense.domain.network.NO_INTERNET_MESSAGE
+import com.smartexpense.domain.network.NetworkStatusProvider
 import com.smartexpense.domain.usecase.AuthUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import io.mockk.coEvery
@@ -23,6 +25,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.net.UnknownHostException
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -216,4 +219,79 @@ class AuthViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+    @Test
+    fun `offline sign in shows no internet message without calling use case`() =
+        runTest(testDispatcher) {
+            val offlineViewModel = AuthViewModel(
+                authUseCase,
+                scheduleSyncUseCase,
+                NetworkStatusProvider { false }
+            )
+
+            offlineViewModel.onIntent(AuthIntent.SignIn)
+
+            assertEquals(
+                NO_INTERNET_MESSAGE,
+                offlineViewModel.uiState.value.errorMessage
+            )
+            coVerify(exactly = 0) { authUseCase.signIn(any(), any()) }
+        }
+
+    @Test
+    fun `offline sign up shows no internet message without calling use case`() =
+        runTest(testDispatcher) {
+            val offlineViewModel = AuthViewModel(
+                authUseCase,
+                scheduleSyncUseCase,
+                NetworkStatusProvider { false }
+            )
+            offlineViewModel.onIntent(AuthIntent.EmailChanged("user@example.com"))
+            offlineViewModel.onIntent(AuthIntent.PasswordChanged("Password123"))
+            offlineViewModel.onIntent(
+                AuthIntent.ConfirmPasswordChanged("Password123")
+            )
+
+            offlineViewModel.onIntent(AuthIntent.SignUp)
+
+            assertEquals(
+                NO_INTERNET_MESSAGE,
+                offlineViewModel.uiState.value.errorMessage
+            )
+            coVerify(exactly = 0) { authUseCase.signUp(any(), any()) }
+        }
+
+    @Test
+    fun `network exception is mapped to no internet message`() =
+        runTest(testDispatcher) {
+            coEvery {
+                authUseCase.signIn(any(), any())
+            } throws UnknownHostException("Unable to resolve host")
+
+            viewModel.onIntent(AuthIntent.SignIn)
+            advanceUntilIdle()
+
+            assertEquals(
+                NO_INTERNET_MESSAGE,
+                viewModel.uiState.value.errorMessage
+            )
+        }
+
+    @Test
+    fun `repeating the same error creates a fresh message event`() =
+        runTest(testDispatcher) {
+            coEvery {
+                authUseCase.signIn(any(), any())
+            } throws IllegalArgumentException("Invalid credentials")
+
+            viewModel.onIntent(AuthIntent.SignIn)
+            advanceUntilIdle()
+            val firstEventId = viewModel.uiState.value.messageEventId
+
+            viewModel.onIntent(AuthIntent.SignIn)
+            advanceUntilIdle()
+
+            assertEquals("Invalid credentials", viewModel.uiState.value.errorMessage)
+            assertTrue(viewModel.uiState.value.messageEventId > firstEventId)
+        }
+
 }

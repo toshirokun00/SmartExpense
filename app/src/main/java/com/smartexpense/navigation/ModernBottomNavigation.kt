@@ -1,9 +1,11 @@
 package com.smartexpense.navigation
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,10 +23,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -54,6 +62,10 @@ private data class BottomTabItem(
     val icon: ImageVector
 )
 
+/** Shared by the ripple clip and the sliding active background. */
+private val TabCornerRadius = 16.dp
+private val TabShape = RoundedCornerShape(TabCornerRadius)
+
 @Composable
 fun ModernBottomNavigation(
     selectedTab: AppTab,
@@ -70,11 +82,39 @@ fun ModernBottomNavigation(
         )
     }
 
+    val colorScheme = MaterialTheme.colorScheme
+
+    val selectedIndex = tabs.indexOfFirst { it.tab == selectedTab }
+        .coerceAtLeast(0)
+
+    // Same motion as the auth screen's Sign in / Sign up segmented control:
+    // one animated float slides the active background to the tapped tab.
+    // animateFloatAsState retargets cleanly when taps come in mid-flight.
+    val indicatorPosition by animateFloatAsState(
+        targetValue = selectedIndex.toFloat(),
+        animationSpec = tween(
+            durationMillis = 320,
+            easing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
+        ),
+        label = "TabIndicatorPosition"
+    )
+
+    // Gradient fill for the sliding background. Its footprint is the tab cell
+    // itself, so it lines up exactly with the ripple shape drawn by clickable.
+    val pillBrush = remember(colorScheme) {
+        Brush.linearGradient(
+            colors = listOf(
+                colorScheme.primaryContainer,
+                colorScheme.primaryContainer.copy(alpha = 0.6f)
+            )
+        )
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = colorScheme.surface,
         shape = RoundedCornerShape(24.dp),
         tonalElevation = 4.dp,
         shadowElevation = 8.dp
@@ -82,7 +122,19 @@ fun ModernBottomNavigation(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .drawBehind {
+                    val itemWidth = size.width / tabs.size
+
+                    // The active background covers exactly one tab cell and
+                    // slides between cells, matching the auth toggle's pill.
+                    drawRoundRect(
+                        brush = pillBrush,
+                        topLeft = Offset(indicatorPosition * itemWidth, 0f),
+                        size = Size(itemWidth, size.height),
+                        cornerRadius = CornerRadius(TabCornerRadius.toPx())
+                    )
+                },
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -106,34 +158,33 @@ private fun RowScope.BottomTabItemContent(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    
+    val haptics = LocalHapticFeedback.current
+
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant,
-        animationSpec = tween(durationMillis = 300),
+        animationSpec = tween(durationMillis = 250),
         label = "TabContentColor"
     )
-    
-    val containerColor by animateColorAsState(
-        targetValue = if (isSelected) colorScheme.primaryContainer.copy(alpha = 0.3f) else Color.Transparent,
-        animationSpec = tween(durationMillis = 300),
-        label = "TabContainerColor"
-    )
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1f else 0.9f,
-        animationSpec = tween(durationMillis = 300),
-        label = "TabScale"
+
+    // Same icon spring as the auth screen's segmented tabs.
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.08f else 1f,
+        animationSpec = spring(
+            dampingRatio = 0.6f,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "TabIconScale"
     )
 
     Column(
         modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+            .clip(TabShape)
+            .clickable {
+                if (!isSelected) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+                onClick()
             }
-            .background(containerColor, shape = RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -141,7 +192,12 @@ private fun RowScope.BottomTabItemContent(
         Icon(
             imageVector = item.icon,
             contentDescription = item.label,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier
+                .size(24.dp)
+                .graphicsLayer {
+                    scaleX = iconScale
+                    scaleY = iconScale
+                },
             tint = contentColor
         )
         Spacer(modifier = Modifier.height(4.dp))

@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -179,22 +178,13 @@ private fun AboutHeroCard(
                 .padding(horizontal = 24.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                modifier = Modifier
-                    .size(88.dp)
-                    .clip(RoundedCornerShape(24.dp)),
-                color = Color.White,
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = logoRes),
-                    contentDescription = "Spendora logo",
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp)
-                )
-            }
+            // The logo asset already has its own rounded background.
+            Image(
+                painter = painterResource(id = logoRes),
+                contentDescription = "Spendora logo",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(88.dp)
+            )
 
             Spacer(Modifier.height(16.dp))
 

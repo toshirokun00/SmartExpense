@@ -1,28 +1,28 @@
 package com.smartexpense.auth
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.smartexpense.auth.effect.AuthEffect
 import com.smartexpense.auth.intent.AuthIntent
 import com.smartexpense.auth.screen.AuthScreen
-import com.smartexpense.auth.state.AuthUiState
 import com.smartexpense.auth.viewmodel.AuthViewModel
 import com.smartexpense.domain.usecase.AuthUseCase
 import com.smartexpense.domain.usecase.ScheduleSyncUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -57,7 +57,7 @@ class AuthScreenTest {
     fun signInTitleIsDisplayedByDefault() {
         setAuthScreen()
 
-        composeRule.onNodeWithText("Welcome back").assertIsDisplayed()
+        composeRule.onNodeWithText("Spendora").assertIsDisplayed()
         composeRule.onNodeWithText("Sign in to manage your expenses").assertIsDisplayed()
     }
 
@@ -65,14 +65,16 @@ class AuthScreenTest {
     fun signInButtonIsDisplayedByDefault() {
         setAuthScreen()
 
-        composeRule.onNodeWithText("Sign in").assertIsDisplayed()
+        submitButton().assertIsDisplayed()
     }
 
     @Test
     fun toggleLinkIsDisplayedByDefault() {
         setAuthScreen()
 
-        composeRule.onNodeWithText("Don't have an account? Sign up").assertIsDisplayed()
+        composeRule
+            .onNodeWithText("Don't have an account?", substring = true)
+            .assertIsDisplayed()
     }
 
     // --- mode toggle ---
@@ -82,11 +84,13 @@ class AuthScreenTest {
         setAuthScreen()
 
         composeRule
-            .onNodeWithText("Don't have an account? Sign up")
+            .onNodeWithText("Don't have an account?", substring = true)
             .performClick()
 
-        composeRule.onNodeWithText("Create account").assertIsDisplayed()
-        composeRule.onNodeWithText("Create your SmartExpense account").assertIsDisplayed()
+        submitButton().assertIsDisplayed()
+        composeRule
+            .onNodeWithText("Create your account and start tracking")
+            .assertIsDisplayed()
     }
 
     @Test
@@ -94,10 +98,10 @@ class AuthScreenTest {
         setAuthScreen()
 
         composeRule
-            .onNodeWithText("Don't have an account? Sign up")
+            .onNodeWithText("Don't have an account?", substring = true)
             .performClick()
 
-        composeRule.onNodeWithText("Confirm password").assertIsDisplayed()
+        field("Re-enter your password").assertIsDisplayed()
     }
 
     @Test
@@ -105,14 +109,14 @@ class AuthScreenTest {
         setAuthScreen()
 
         composeRule
-            .onNodeWithText("Don't have an account? Sign up")
+            .onNodeWithText("Don't have an account?", substring = true)
             .performClick()
 
         composeRule
-            .onNodeWithText("Already have an account? Sign in")
+            .onNodeWithText("Already have an account?", substring = true)
             .performClick()
 
-        composeRule.onNodeWithText("Welcome back").assertIsDisplayed()
+        composeRule.onNodeWithText("Spendora").assertIsDisplayed()
     }
 
     // --- sign in flow ---
@@ -123,9 +127,9 @@ class AuthScreenTest {
 
         setAuthScreen()
 
-        composeRule.onNodeWithText("Email").performTextInput("user@example.com")
-        composeRule.onNodeWithText("Password").performTextInput("Password123")
-        composeRule.onNodeWithText("Sign in").performClick()
+        field("Enter your email").performTextInput("user@example.com")
+        field("Enter your password").performTextInput("Password123")
+        submitButton().performClick()
 
         composeRule.waitForIdle()
 
@@ -140,13 +144,11 @@ class AuthScreenTest {
 
         setAuthScreen()
 
-        composeRule.onNodeWithText("Email").performTextInput("user@example.com")
-        composeRule.onNodeWithText("Password").performTextInput("wrongpassword")
-        composeRule.onNodeWithText("Sign in").performClick()
+        field("Enter your email").performTextInput("user@example.com")
+        field("Enter your password").performTextInput("wrongpassword")
+        submitButton().performClick()
 
-        composeRule.waitForIdle()
-
-        composeRule.onNodeWithText("Invalid credentials").assertIsDisplayed()
+        awaitErrorMessage()
     }
 
     @Test
@@ -158,12 +160,12 @@ class AuthScreenTest {
 
         setAuthScreen()
 
-        composeRule.onNodeWithText("Email").performTextInput("user@example.com")
-        composeRule.onNodeWithText("Password").performTextInput("Password123")
-        composeRule.onNodeWithText("Sign in").performClick()
+        field("Enter your email").performTextInput("user@example.com")
+        field("Enter your password").performTextInput("Password123")
+        submitButton().performClick()
 
         // While the coroutine is suspended the button must be disabled.
-        composeRule.onNodeWithText("Sign in").assertIsNotEnabled()
+        submitButton().assertIsNotEnabled()
     }
 
     // --- sign up flow ---
@@ -173,13 +175,13 @@ class AuthScreenTest {
         setAuthScreen()
 
         composeRule
-            .onNodeWithText("Don't have an account? Sign up")
+            .onNodeWithText("Don't have an account?", substring = true)
             .performClick()
 
-        composeRule.onNodeWithText("Email").performTextInput("user@example.com")
-        composeRule.onNodeWithText("Password").performTextInput("Password123")
-        composeRule.onNodeWithText("Confirm password").performTextInput("Different123")
-        composeRule.onNodeWithText("Create account").performClick()
+        field("Enter your email").performTextInput("user@example.com")
+        field("Enter your password").performTextInput("Password123")
+        field("Re-enter your password").performTextInput("Different123")
+        submitButton().performClick()
 
         composeRule.waitForIdle()
 
@@ -197,13 +199,13 @@ class AuthScreenTest {
         setAuthScreen(onNavigateToHome = { navigatedToHome = true })
 
         composeRule
-            .onNodeWithText("Don't have an account? Sign up")
+            .onNodeWithText("Don't have an account?", substring = true)
             .performClick()
 
-        composeRule.onNodeWithText("Email").performTextInput("user@example.com")
-        composeRule.onNodeWithText("Password").performTextInput("Password123")
-        composeRule.onNodeWithText("Confirm password").performTextInput("Password123")
-        composeRule.onNodeWithText("Create account").performClick()
+        field("Enter your email").performTextInput("user@example.com")
+        field("Enter your password").performTextInput("Password123")
+        field("Re-enter your password").performTextInput("Password123")
+        submitButton().performClick()
 
         composeRule.waitForIdle()
 
@@ -222,13 +224,13 @@ class AuthScreenTest {
         )
 
         composeRule
-            .onNodeWithText("Don't have an account? Sign up")
+            .onNodeWithText("Don't have an account?", substring = true)
             .performClick()
 
-        composeRule.onNodeWithText("Email").performTextInput("user@example.com")
-        composeRule.onNodeWithText("Password").performTextInput("Password123")
-        composeRule.onNodeWithText("Confirm password").performTextInput("Password123")
-        composeRule.onNodeWithText("Create account").performClick()
+        field("Enter your email").performTextInput("user@example.com")
+        field("Enter your password").performTextInput("Password123")
+        field("Re-enter your password").performTextInput("Password123")
+        submitButton().performClick()
 
         composeRule.waitForIdle()
 
@@ -237,7 +239,57 @@ class AuthScreenTest {
         }
     }
 
+    @Test
+    fun sameErrorShowsToastAgainOnNextAttempt() {
+        coEvery {
+            authUseCase.signIn(any(), any())
+        } throws IllegalArgumentException("Invalid credentials")
+
+        setAuthScreen()
+
+        field("Enter your email").performTextInput("user@example.com")
+        field("Enter your password").performTextInput("Password123")
+        submitButton().performClick()
+        awaitErrorMessage()
+
+        // Dismiss the first toast, then repeat the same failing action.
+        composeRule
+            .onNodeWithContentDescription("Dismiss message")
+            .performClick()
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            composeRule
+                .onAllNodesWithText("Invalid credentials")
+                .fetchSemanticsNodes()
+                .isEmpty()
+        }
+
+        submitButton().performClick()
+
+        awaitErrorMessage()
+    }
+
+    private fun awaitErrorMessage() {
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule
+                .onAllNodesWithText("Invalid credentials")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        composeRule.onNodeWithText("Invalid credentials").assertIsDisplayed()
+    }
+
     // --- helpers ---
+
+    private fun hasRole(role: Role): SemanticsMatcher =
+        SemanticsMatcher.expectValue(SemanticsProperties.Role, role)
+
+    /** Matches an outlined text field by its placeholder, not its (hidden) label. */
+    private fun field(placeholder: String) =
+        composeRule.onNode(hasText(placeholder) and hasSetTextAction())
+
+    /** Matches the submit Button, so the segmented Sign in / Sign up tabs don't collide. */
+    private fun submitButton() =
+        composeRule.onNode(hasTestTag("authSubmitButton") and hasRole(Role.Button))
 
     private fun setAuthScreen(
         onNavigateToHome: () -> Unit = {},

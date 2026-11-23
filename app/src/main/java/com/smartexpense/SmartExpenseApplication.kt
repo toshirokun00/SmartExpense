@@ -23,6 +23,7 @@ import com.smartexpense.di.mainModule
 import com.smartexpense.domain.di.domainModule
 import com.smartexpense.feature.expenses.di.expenseModule
 import com.smartexpense.notification.notificationModule
+import com.smartexpense.network.AndroidNetworkStatusProvider
 import com.smartexpense.recurring.di.recurringModule
 import com.smartexpense.reports.di.expenseReportModule
 import com.smartexpense.profile.di.profileModule
@@ -68,6 +69,10 @@ class SmartExpenseApplication : Application(), Configuration.Provider, KoinCompo
                 paycheckModule
             )
         }
+
+        // Keep connectivity state live so data-loading screens can explain
+        // when Supabase is unreachable.
+        get<AndroidNetworkStatusProvider>().start()
 
         // Observe budgets/expenses so alerts fire when a threshold is crossed.
         get<BudgetAlertCoordinator>().start(applicationScope)

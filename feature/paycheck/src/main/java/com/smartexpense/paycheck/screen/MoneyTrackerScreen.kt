@@ -31,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -217,10 +216,11 @@ private fun EnvelopeCard(
         compact = true,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
     ) {
+        // No clip here: the rounded card already bounds the ripple, and
+        // clipping the content cut off the bottom labels near its corners.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onClick)
         ) {
             Row(

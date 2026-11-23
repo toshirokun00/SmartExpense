@@ -8,5 +8,7 @@ data class AuthUiState(
     val isPasswordVisible: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    /** Increments for every new message so repeated errors re-show the toast. */
+    val messageEventId: Long = 0L
 )
